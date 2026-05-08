@@ -188,7 +188,7 @@
         .section-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 16px; }
 
         /* ── ACCIONES RÁPIDAS ── */
-        .actions-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+        .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
         .action-btn {
             background: var(--white); border: 1px solid var(--border); border-radius: 14px;
@@ -373,6 +373,10 @@
         .dest-box-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 6px; font-family: 'Inter', sans-serif; font-weight: 500; }
         .dest-name { font-size: 1rem; font-weight: 700; color: var(--text); font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
         .dest-cbu { font-size: 0.78rem; color: var(--muted); margin-top: 3px; word-break: break-all; font-family: 'Inter', sans-serif; }
+        .dest-details { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .dest-detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-family: 'Inter', sans-serif; }
+        .dest-detail-row .det-lbl { color: var(--muted); }
+        .dest-detail-row .det-val { color: var(--text); font-weight: 500; text-align: right; max-width: 60%; word-break: break-all; }
 
         .importe-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px; font-family: 'Inter', sans-serif; font-weight: 500; }
         .importe-input-wrap { position: relative; }
@@ -545,6 +549,11 @@
             .tx-amount { font-size: 0.84rem; }
             .modal-header-title { font-size: 0.9rem; }
         }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
     </style>
 </head>
 <body>
@@ -570,6 +579,16 @@
                     <button class="dropdown-item" onclick="abrirDatosPersonales()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         Datos personales
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="navTo('depositar.html')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                        Depositar
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="navTo('contactos.html')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Contactos
                     </button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="abrirEstadisticas()">
@@ -638,21 +657,13 @@
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
                     <span class="action-label">Transferir</span>
                 </button>
-                <button class="action-btn" onclick="abrirModalDeposito()" data-tooltip="Ingresá fondos">
+                <button class="action-btn" onclick="navTo('depositar.html')" data-tooltip="Depositar fondos">
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
                     <span class="action-label">Depositar</span>
-                </button>
-                <button class="action-btn" data-tooltip="Retirá efectivo">
-                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
-                    <span class="action-label">Extraer</span>
                 </button>
                 <button class="action-btn" onclick="abrirHistorial()" data-tooltip="Ver todos los movimientos">
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div>
                     <span class="action-label">Historial</span>
-                </button>
-                <button class="action-btn" onclick="abrirModalContactos()" data-tooltip="Tus contactos guardados">
-                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-                    <span class="action-label">Contactos</span>
                 </button>
             </div>
         </div>
@@ -743,6 +754,11 @@
                         <div class="dest-box-label">Destinatario</div>
                         <div id="destinatarioNombre" class="dest-name"></div>
                         <div id="destinatarioCbu" class="dest-cbu"></div>
+                        <div id="destinatarioDetails" class="dest-details" style="display:none;">
+                            <div class="dest-detail-row"><span class="det-lbl">DNI</span><span class="det-val" id="destinatarioDni">—</span></div>
+                            <div class="dest-detail-row"><span class="det-lbl">Alias</span><span class="det-val" id="destinatarioAlias">—</span></div>
+                            <div class="dest-detail-row" id="destinatarioBancoRow" style="display:none;"><span class="det-lbl">Banco</span><span class="det-val" id="destinatarioBanco">—</span></div>
+                        </div>
                     </div>
                     <div class="importe-label">Importe a transferir</div>
                     <div class="importe-input-wrap">
@@ -783,43 +799,6 @@
                     </div>
                 </div>
 
-            </div>
-        </div>
-    </div>
-
-    <!-- ── MODAL DEPOSITO ── -->
-    <div id="modalDeposito" class="modal-overlay" style="display:none;">
-        <div class="modal-panel" style="max-width:400px;">
-            <div class="modal-header">
-                <span class="modal-header-title">Depositar fondos</span>
-                <button class="modal-close-btn" onclick="cerrarModalDeposito()">✕</button>
-            </div>
-            <div id="depositoPaso1" style="padding:28px;">
-                <div class="importe-label">Importe a depositar</div>
-                <div class="importe-input-wrap">
-                    <span class="importe-symbol">$</span>
-                    <input id="importeDeposito" class="input-modal" type="number" min="1" max="1000000"
-                        placeholder="0,00" style="padding-left:18px;"
-                        oninput="previsualizarDeposito()"
-                        onkeydown="if(event.key==='Enter') confirmarDeposito()">
-                </div>
-                <div id="depositoPreview" class="importe-preview" style="opacity:0;"></div>
-                <div id="errorDeposito" class="modal-error"></div>
-                <button class="modal-btn-primary" id="btnConfirmarDeposito" onclick="confirmarDeposito()" disabled>Depositar</button>
-            </div>
-            <div id="depositoPaso2" style="display:none;padding:28px;">
-                <div class="result-wrap">
-                    <div class="result-icon">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
-                    <div class="result-title">¡Depósito exitoso!</div>
-                    <div class="result-msg">El dinero fue acreditado en tu cuenta</div>
-                    <div class="result-saldo-box">
-                        <div class="result-saldo-label">Nuevo saldo</div>
-                        <div class="result-saldo-val" id="depositoNuevoSaldo"></div>
-                    </div>
-                    <button class="btn-cerrar-result" onclick="cerrarModalDeposito()">Cerrar</button>
-                </div>
             </div>
         </div>
     </div>
@@ -889,17 +868,6 @@
                     <button style="flex:1;padding:10px;background:var(--accent);color:white;border:none;border-radius:10px;font-size:0.86rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'" onclick="confirmarContacto()">Agregar</button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- ── MODAL CONTACTOS ── -->
-    <div id="modalContactos" class="modal-overlay">
-        <div class="modal-panel" style="max-width:420px;">
-            <div class="modal-header">
-                <span class="modal-header-title">Contactos</span>
-                <button class="modal-close-btn" onclick="cerrarModalContactos()">✕</button>
-            </div>
-            <div id="contactosList" class="contact-modal-list"></div>
         </div>
     </div>
 
@@ -1205,7 +1173,7 @@
         const userData = localStorage.getItem('usuarioLogueado');
 
         if (!userData) {
-            window.location.href = 'login.html';
+            navTo('login.html');
         } else {
             const u = JSON.parse(userData);
             const ini = ((u.nombre?.[0] || '') + (u.apellido?.[0] || '')).toUpperCase();
@@ -1225,6 +1193,18 @@
             actualizarSaldoDisplay(parseFloat(u.saldo) || 0);
             mostrarSkeleton(document.getElementById('recentTxList'));
             cargarRecentTx();
+
+            // Abrir transferencia pre-cargada si viene desde contactos.html
+            const params = new URLSearchParams(window.location.search);
+            const cbuParam = params.get('transferir');
+            if (cbuParam) {
+                setTimeout(() => {
+                    abrirModalTransferencia();
+                    document.getElementById('inputBusqueda').value = decodeURIComponent(cbuParam);
+                    buscarDestinatario();
+                    history.replaceState({}, '', window.location.pathname);
+                }, 400);
+            }
         }
 
         function pedirConfirmLogout() {
@@ -1234,7 +1214,7 @@
 
         function cerrarSesion() {
             localStorage.removeItem('usuarioLogueado');
-            window.location.href = 'login.html';
+            navTo('login.html');
         }
 
         // ── FAVORITES ────────────────────────────────────────────────────
@@ -1285,7 +1265,25 @@
             buscarDestinatario();
         }
         function eliminarFavoritoUI(cbu) {
-            eliminarContactoModal(cbu);
+            const lista = getFavoritos();
+            const f = lista.find(x => x.cbu === cbu);
+            _cbuPendienteEliminar = cbu;
+            document.getElementById('confirmEliminarNombre').textContent =
+                f ? `¿Eliminar a ${f.nombre}?` : '¿Eliminar contacto?';
+            document.getElementById('confirmEliminarContacto').style.display = 'flex';
+        }
+        let _cbuPendienteEliminar = null;
+        function cancelarEliminarContacto() {
+            document.getElementById('confirmEliminarContacto').style.display = 'none';
+            _cbuPendienteEliminar = null;
+        }
+        function confirmarEliminarContacto() {
+            if (!_cbuPendienteEliminar) return;
+            eliminarFavorito(_cbuPendienteEliminar);
+            _cbuPendienteEliminar = null;
+            document.getElementById('confirmEliminarContacto').style.display = 'none';
+            renderizarFavoritos();
+            showToast('Contacto eliminado');
         }
 
         // ── CONTACTOS ────────────────────────────────────────────────────
@@ -1301,63 +1299,7 @@
             renderizarFavoritos();
         }
 
-        function abrirModalContactos() {
-            document.getElementById('modalContactos').style.display = 'flex';
-            renderizarModalContactos();
-        }
-        function cerrarModalContactos() {
-            document.getElementById('modalContactos').style.display = 'none';
-        }
-        function renderizarModalContactos() {
-            const lista = getFavoritos();
-            const el    = document.getElementById('contactosList');
-            if (lista.length === 0) {
-                el.innerHTML = `<div class="contact-modal-empty">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <p>No tenés contactos guardados.<br>Se agregan automáticamente después de una transferencia.</p>
-                </div>`;
-                return;
-            }
-            el.innerHTML = lista.map(f => {
-                const safeNombre = f.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                const safeCbu    = f.cbu.replace(/'/g, "\\'");
-                return `<div class="contact-modal-item">
-                    <div class="contact-modal-avatar" style="background:${avatarColor(f.nombre)};">${initials(f.nombre)}</div>
-                    <div style="flex:1;min-width:0;">
-                        <div class="contact-modal-name">${f.nombre}</div>
-                        <div class="contact-modal-cbu">CBU ...${f.cbu.slice(-6)}</div>
-                    </div>
-                    <button class="btn-eliminar-contacto" onclick="eliminarContactoModal('${safeCbu}')" title="Eliminar contacto">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                    <button class="btn-transferir-contacto" onclick="transferirAContacto('${safeCbu}','${safeNombre}')">Transferir</button>
-                </div>`;
-            }).join('');
-        }
-        let _cbuPendienteEliminar = null;
-        function eliminarContactoModal(cbu) {
-            const lista  = getFavoritos();
-            const f      = lista.find(x => x.cbu === cbu);
-            _cbuPendienteEliminar = cbu;
-            document.getElementById('confirmEliminarNombre').textContent =
-                f ? `¿Eliminar a ${f.nombre}?` : '¿Eliminar contacto?';
-            document.getElementById('confirmEliminarContacto').style.display = 'flex';
-        }
-        function cancelarEliminarContacto() {
-            document.getElementById('confirmEliminarContacto').style.display = 'none';
-            _cbuPendienteEliminar = null;
-        }
-        function confirmarEliminarContacto() {
-            if (!_cbuPendienteEliminar) return;
-            eliminarFavorito(_cbuPendienteEliminar);
-            _cbuPendienteEliminar = null;
-            document.getElementById('confirmEliminarContacto').style.display = 'none';
-            renderizarModalContactos();
-            renderizarFavoritos();
-            showToast('Contacto eliminado');
-        }
         function transferirAContacto(cbu, nombre) {
-            cerrarModalContactos();
             abrirModalTransferencia();
             document.getElementById('inputBusqueda').value = cbu;
             buscarDestinatario();
@@ -1531,9 +1473,12 @@
             const labelRole      = esEnvio ? 'Destinatario'    : 'Emisor';
             const labelDir       = esEnvio ? 'Enviaste a'      : 'Recibiste de';
 
-            const nombre  = persona ? `${persona.nombre} ${persona.apellido}` : (getNombrePorCbu(cbuContraparte) || 'Desconocido');
-            const dni     = persona?.dni || getDniPorCbu(cbuContraparte) || '—';
-            const alias   = persona?.alias || '—';
+            const personaCache = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}');
+            const cachedPersona = personaCache[cbuContraparte] || null;
+
+            const nombre  = persona ? `${persona.nombre} ${persona.apellido}` : (cachedPersona ? `${cachedPersona.nombre} ${cachedPersona.apellido}` : (getNombrePorCbu(cbuContraparte) || 'Desconocido'));
+            const dni     = persona?.dni || getDniPorCbu(cbuContraparte) || cachedPersona?.dni || '—';
+            const alias   = persona?.alias || cachedPersona?.alias || '—';
             const cbu     = persona?.cbu   || cbuContraparte || '—';
 
             const bankCodeContraparte = esEnvio ? t.bankCodeDestino : t.bankCodeOrigen;
@@ -2110,9 +2055,6 @@
             }
         }
 
-        document.getElementById('modalContactos').addEventListener('click', function(e) {
-            if (e.target === this) cerrarModalContactos();
-        });
 
         document.getElementById('modalHistorial').addEventListener('click', function(e) {
             if (e.target === this) this.style.display = 'none';
@@ -2163,82 +2105,7 @@
             if (window._txsCache) {
                 localStorage.setItem('tuo_txs_cache', JSON.stringify(window._txsCache));
             }
-            window.location.href = 'estadisticas.html';
-        }
-
-        function abrirModalDeposito() {
-            document.getElementById('importeDeposito').value = '';
-            document.getElementById('errorDeposito').style.display = 'none';
-            document.getElementById('btnConfirmarDeposito').disabled = true;
-            document.getElementById('depositoPaso1').style.display = 'block';
-            document.getElementById('depositoPaso2').style.display = 'none';
-            document.getElementById('modalDeposito').style.display = 'flex';
-            setTimeout(() => document.getElementById('importeDeposito').focus(), 100);
-        }
-
-        function cerrarModalDeposito() {
-            document.getElementById('modalDeposito').style.display = 'none';
-        }
-
-        function previsualizarDeposito() {
-            const val = Number(document.getElementById('importeDeposito').value);
-            const btn = document.getElementById('btnConfirmarDeposito');
-            const err = document.getElementById('errorDeposito');
-            const preview = document.getElementById('depositoPreview');
-            err.style.display = 'none';
-            if (val > 0) {
-                preview.textContent = '$ ' + val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                preview.style.opacity = '1';
-            } else {
-                preview.textContent = '';
-                preview.style.opacity = '0';
-            }
-            btn.disabled = !val || val <= 0 || val > 1000000;
-        }
-
-        async function confirmarDeposito() {
-            const importe = Number(document.getElementById('importeDeposito').value);
-            const err = document.getElementById('errorDeposito');
-            const btn = document.getElementById('btnConfirmarDeposito');
-            err.style.display = 'none';
-
-            if (!importe || importe <= 0) { err.textContent = 'Ingresá un importe válido'; err.style.display = 'block'; return; }
-            if (importe > 1000000) { err.textContent = 'El importe no puede superar $1.000.000'; err.style.display = 'block'; return; }
-
-            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-            if (!u) return;
-
-            btn.disabled = true;
-            btn.textContent = 'Procesando...';
-
-            try {
-                const res = await fetch('/api/depositar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cbu: u.cbu, importe })
-                });
-                const data = await res.json();
-                if (!res.ok) { err.textContent = data.error || 'Error al procesar el depósito'; err.style.display = 'block'; return; }
-
-                u.saldo = data.nuevoSaldo;
-                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
-                actualizarSaldoDisplay(data.nuevoSaldo, true);
-
-                document.getElementById('depositoNuevoSaldo').textContent =
-                    '$ ' + data.nuevoSaldo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-                document.getElementById('depositoPaso1').style.display = 'none';
-                document.getElementById('depositoPaso2').style.display = 'block';
-
-                showToast('Depósito acreditado exitosamente');
-                cargarRecentTx();
-            } catch {
-                err.textContent = 'Error de conexión. Intentá de nuevo.';
-                err.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Depositar';
-            }
+            navTo('estadisticas.html');
         }
 
         function updateStepper(active) {
@@ -2276,6 +2143,8 @@
         function volverPaso1() {
             mostrarPaso(1, 'back');
             document.getElementById('errorBusqueda').style.display = 'none';
+            document.getElementById('destinatarioDetails').style.display = 'none';
+            document.getElementById('destinatarioBancoRow').style.display = 'none';
         }
 
         function actualizarImportePreview(val) {
@@ -2316,10 +2185,33 @@
                 }
                 // Cache name and DNI for history display
                 guardarNombreCbu(data.cbu, `${data.nombre} ${data.apellido}`);
-                guardarDniCbu(data.cbu, data.dni);
+                if (data.dni) guardarDniCbu(data.cbu, data.dni);
+
+                // Cache full persona for outgoing transfer detail lookups
+                const personaCache = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}');
+                personaCache[data.cbu] = { nombre: data.nombre, apellido: data.apellido, dni: data.dni, alias: data.alias, cbu: data.cbu };
+                localStorage.setItem('tuo_persona_cache', JSON.stringify(personaCache));
+
                 destinatarioCbuSeleccionado = data.cbu;
                 document.getElementById('destinatarioNombre').textContent = `${data.nombre} ${data.apellido}`;
                 document.getElementById('destinatarioCbu').textContent = `CBU: ${formatCbu(data.cbu)}`;
+
+                // Populate extra details
+                document.getElementById('destinatarioDni').textContent = data.dni || '—';
+                document.getElementById('destinatarioAlias').textContent = data.alias || '—';
+                document.getElementById('destinatarioDetails').style.display = 'flex';
+
+                // Banco: try bankCode from API, fall back to first 3 digits of CBU
+                const bankCode = data.bankCode || data.codigoBanco || (data.cbu ? data.cbu.substring(0, 3) : null);
+                if (bankCode) {
+                    getNombreBanco(bankCode).then(nombre => {
+                        if (nombre) {
+                            document.getElementById('destinatarioBanco').textContent = nombre;
+                            document.getElementById('destinatarioBancoRow').style.display = 'flex';
+                        }
+                    });
+                }
+
                 document.getElementById('errorTransferencia').style.display = 'none';
                 mostrarPaso(2);
             } catch (err) {
@@ -2445,6 +2337,19 @@
                 errEl.style.display = 'block';
             }
         }
+
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+            e.preventDefault();
+            navTo(href);
+        });
     </script>
 
 </body>

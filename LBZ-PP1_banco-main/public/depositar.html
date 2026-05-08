@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Depositar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9; --text: #1A1A1B; --accent: #0052FF;
+            --muted: #6B6B6B; --border: #E5E5E5; --white: #FFFFFF;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 40px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .btn-back {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 12px; cursor: pointer; color: var(--muted);
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
+        .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+        .page-title { font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        .main {
+            display: flex; justify-content: center;
+            padding: 48px 24px 80px;
+        }
+
+        .card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 20px; padding: 36px 32px;
+            width: 100%; max-width: 400px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .card-title {
+            font-size: 1.1rem; font-weight: 700; color: var(--text);
+            letter-spacing: -0.02em; margin-bottom: 6px;
+        }
+        .card-subtitle { font-size: 0.84rem; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+
+        .importe-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px; font-weight: 500; }
+        .importe-input-wrap { position: relative; }
+        .importe-symbol { position: absolute; left: 0; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--muted); font-weight: 500; }
+        .input-dep {
+            width: 100%; padding: 12px 0 12px 18px;
+            border: none; border-bottom: 1.5px solid var(--border);
+            font-size: 0.95rem; font-family: 'Inter', sans-serif;
+            color: var(--text); background: transparent; outline: none;
+            box-sizing: border-box; transition: border-color 0.2s;
+        }
+        .input-dep:focus { border-bottom-color: var(--accent); }
+        .input-dep::placeholder { color: var(--muted); }
+        .importe-preview {
+            font-size: 1.9rem; font-weight: 700; color: var(--text);
+            letter-spacing: -0.03em; text-align: center;
+            margin-top: 14px; min-height: 2.4rem; transition: opacity 0.15s;
+        }
+        .dep-error { color: #B91C1C; font-size: 0.8rem; margin-top: 10px; display: none; }
+        .btn-depositar {
+            width: 100%; padding: 13px; background: var(--accent); color: white;
+            border: none; border-radius: 10px; font-size: 0.92rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+            letter-spacing: -0.01em; margin-top: 22px;
+        }
+        .btn-depositar:hover { opacity: 0.88; }
+        .btn-depositar:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        /* Success state */
+        .result-wrap { text-align: center; padding: 8px 0; display: none; }
+        .result-icon { width: 64px; height: 64px; background: #F0FDF4; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+        .result-title { font-size: 1.15rem; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.02em; }
+        .result-msg { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+        .result-saldo-box { background: var(--bg); border-radius: 12px; padding: 16px; margin-bottom: 28px; border: 1px solid var(--border); }
+        .result-saldo-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; font-weight: 500; }
+        .result-saldo-val { font-size: 2rem; font-weight: 700; color: var(--text); margin-top: 6px; letter-spacing: -0.03em; }
+        .btn-volver {
+            width: 100%; padding: 13px; background: #1A1A1B; color: white;
+            border: none; border-radius: 10px; font-size: 0.92rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; letter-spacing: -0.01em;
+        }
+        [data-theme="dark"] .btn-volver { background: var(--accent); }
+        .btn-volver:hover { opacity: 0.85; }
+
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; }
+            .main { padding: 24px 16px 60px; }
+            .card { padding: 28px 20px; }
+            .importe-preview { font-size: 1.5rem; }
+        }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+            </button>
+            <span class="header-logo">tuo</span>
+        </div>
+        <span class="page-title">Depositar fondos</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main">
+        <div class="card">
+
+            <!-- Paso 1: formulario -->
+            <div id="paso1">
+                <div class="card-title">Depositar fondos</div>
+                <div class="card-subtitle">El dinero se acredita de forma inmediata en tu cuenta.</div>
+
+                <div class="importe-label">Importe a depositar</div>
+                <div class="importe-input-wrap">
+                    <span class="importe-symbol">$</span>
+                    <input id="importeDeposito" class="input-dep" type="number" min="1" max="1000000"
+                        placeholder="0,00" autofocus
+                        oninput="previsualizar()"
+                        onkeydown="if(event.key==='Enter') depositar()">
+                </div>
+                <div id="preview" class="importe-preview" style="opacity:0;"></div>
+                <div id="depError" class="dep-error"></div>
+                <button id="btnDepositar" class="btn-depositar" onclick="depositar()" disabled>Depositar</button>
+            </div>
+
+            <!-- Paso 2: éxito -->
+            <div class="result-wrap" id="paso2">
+                <div class="result-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="result-title">¡Depósito exitoso!</div>
+                <div class="result-msg">El dinero fue acreditado en tu cuenta.</div>
+                <div class="result-saldo-box">
+                    <div class="result-saldo-label">Nuevo saldo</div>
+                    <div class="result-saldo-val" id="nuevoSaldo">—</div>
+                </div>
+                <button class="btn-volver" onclick="navTo('dashboard.html')">Volver al inicio</button>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const savedTheme = localStorage.getItem('tuo_theme') || 'light';
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo_theme', dark ? 'light' : 'dark');
+        }
+
+        const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+        if (!u) { window.location.href = 'login.html'; }
+
+        function previsualizar() {
+            const val = Number(document.getElementById('importeDeposito').value);
+            const preview = document.getElementById('preview');
+            const err = document.getElementById('depError');
+            err.style.display = 'none';
+            if (val > 0) {
+                preview.textContent = '$ ' + val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                preview.style.opacity = '1';
+            } else {
+                preview.textContent = '';
+                preview.style.opacity = '0';
+            }
+            document.getElementById('btnDepositar').disabled = !val || val <= 0 || val > 1000000;
+        }
+
+        async function depositar() {
+            const importe = Number(document.getElementById('importeDeposito').value);
+            const err = document.getElementById('depError');
+            const btn = document.getElementById('btnDepositar');
+            err.style.display = 'none';
+
+            if (!importe || importe <= 0) { err.textContent = 'Ingresá un importe válido'; err.style.display = 'block'; return; }
+            if (importe > 1000000) { err.textContent = 'El importe no puede superar $1.000.000'; err.style.display = 'block'; return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
+
+            try {
+                const res = await fetch('/api/depositar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbu: u.cbu, importe })
+                });
+                const data = await res.json();
+                if (!res.ok) { err.textContent = data.error || 'Error al procesar el depósito'; err.style.display = 'block'; return; }
+
+                u.saldo = data.nuevoSaldo;
+                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+
+                document.getElementById('nuevoSaldo').textContent =
+                    '$ ' + Number(data.nuevoSaldo).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                document.getElementById('paso1').style.display = 'none';
+                document.getElementById('paso2').style.display = 'block';
+            } catch {
+                err.textContent = 'Error de conexión. Intentá de nuevo.';
+                err.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Depositar';
+            }
+        }
+
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+            e.preventDefault();
+            navTo(href);
+        });
+    </script>
+</body>
+</html>

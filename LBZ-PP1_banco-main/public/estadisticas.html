@@ -171,13 +171,18 @@
         td.green { color: #16a34a; text-align: right; }
         td.red   { color: #dc2626; text-align: right; }
         td.muted { color: var(--muted); text-align: center; padding: 16px; }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
     </style>
 </head>
 <body>
 
     <header class="header">
         <div class="header-left">
-            <button class="btn-back" onclick="window.location.href='dashboard.html'">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                 Volver
             </button>
@@ -435,7 +440,7 @@
         // ── INIT ──
         document.addEventListener('DOMContentLoaded', () => {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-            if (!u) { window.location.href = 'login.html'; return; }
+            if (!u) { navTo('login.html'); return; }
 
             const txs = JSON.parse(localStorage.getItem('tuo_txs_cache') || '[]');
 
@@ -451,6 +456,19 @@
                     }
                 }, 100);
             }
+        });
+
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+            e.preventDefault();
+            navTo(href);
         });
     </script>
 </body>
