@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd \"c:\\\\Users\\\\Bruno\\\\Desktop\\\\SEGUNDO AÑO\\\\PRACTICAS\\\\BANCO PP2\\\\LBZ-PP1_banco-main\"; node app\\.js$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Estadísticas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9;
+            --text: #1A1A1B;
+            --accent: #0052FF;
+            --muted: #6B6B6B;
+            --border: #E5E5E5;
+            --white: #FFFFFF;
+        }
+
+        [data-theme="dark"] {
+            --bg: #111113;
+            --text: #F0F0F0;
+            --muted: #8E8E8E;
+            --border: #2C2C2E;
+            --white: #1C1C1E;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-back {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 12px; cursor: pointer; color: var(--muted);
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
+
+        .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+
+        .page-title {
+            font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em;
+        }
+
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        /* ── MAIN ── */
+        .main {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 32px 24px 60px;
+        }
+
+        .section-label {
+            font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--muted);
+            margin-bottom: 14px; margin-top: 32px;
+        }
+        .section-label:first-child { margin-top: 0; }
+
+        /* ── CHARTS ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 700px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .header { padding: 0 16px; }
+            .main { padding: 24px 16px 60px; }
+        }
+
+        .stats-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .stats-card-title {
+            font-size: 0.72rem; font-weight: 600; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 14px;
+        }
+
+        .chart-container { position: relative; height: 200px; }
+
+        .chart-empty {
+            position: absolute; inset: 0; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; color: var(--muted);
+        }
+        .chart-empty p { font-size: 0.78rem; text-align: center; max-width: 160px; }
+
+        /* ── DATOS GENERALES ── */
+        .summary-cards {
+            display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px;
+        }
+
+        .summary-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px 20px;
+            flex: 1; min-width: 140px;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .summary-card-label {
+            font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px;
+        }
+
+        .summary-card-val { font-size: 1.25rem; font-weight: 700; }
+
+        .table-wrap {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 12px; overflow: hidden; margin-bottom: 4px;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            text-align: left; font-size: 0.68rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+            padding: 10px 14px; border-bottom: 1px solid var(--border);
+        }
+        th.right { text-align: right; }
+        th.center { text-align: center; }
+
+        td {
+            padding: 10px 14px; border-bottom: 1px solid var(--border);
+            color: var(--text); font-size: 0.875rem;
+        }
+        td:last-child { border-bottom: none; }
+        tr:last-child td { border-bottom: none; }
+        td.right { text-align: right; }
+        td.center { text-align: center; }
+        td.green { color: #16a34a; text-align: right; }
+        td.red   { color: #dc2626; text-align: right; }
+        td.muted { color: var(--muted); text-align: center; padding: 16px; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="window.location.href='dashboard.html'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+            </button>
+            <span class="header-logo">tuo</span>
+        </div>
+        <span class="page-title">Estadísticas</span>
+        <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg id="iconTheme" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main">
+
+        <div class="section-label">Gráficos</div>
+        <div class="stats-grid">
+            <div class="stats-card">
+                <div class="stats-card-title">Gastos por motivo</div>
+                <div class="chart-container">
+                    <canvas id="chartMotivos"></canvas>
+                    <div id="chartMotivosEmpty" class="chart-empty" style="display:flex;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                        <p>Realizá una transferencia con motivo para ver estadísticas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-card-title">Ingresos mensuales</div>
+                <div class="chart-container">
+                    <canvas id="chartIngresos"></canvas>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-card-title">Gastos mensuales</div>
+                <div class="chart-container">
+                    <canvas id="chartGastos"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-label" style="margin-top:36px;">Datos generales</div>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="summary-card-label">Total ingresos</div>
+                <div class="summary-card-val" id="valIngresos" style="color:#16a34a;">—</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-label">Total gastos</div>
+                <div class="summary-card-val" id="valGastos" style="color:#dc2626;">—</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-label">Total depositado</div>
+                <div class="summary-card-val" id="valDepositos" style="color:var(--accent);">—</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-label">Saldo actual</div>
+                <div class="summary-card-val" id="valSaldo" style="color:var(--text);">—</div>
+            </div>
+        </div>
+
+        <div class="section-label">Gastos por motivo</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Motivo</th><th class="center">Veces</th><th class="right">Total</th></tr></thead>
+                <tbody id="tbodyMotivos"><tr><td class="muted" colspan="3">Cargando...</td></tr></tbody>
+            </table>
+        </div>
+
+        <div class="section-label">Ingresos y gastos por mes</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Mes</th><th class="right">Ingresos</th><th class="right">Gastos</th></tr></thead>
+                <tbody id="tbodyMeses"><tr><td class="muted" colspan="3">Cargando...</td></tr></tbody>
+            </table>
+        </div>
+
+        <div class="section-label">Depósitos realizados</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Fecha</th><th class="right">Importe</th></tr></thead>
+                <tbody id="tbodyDepositos"><tr><td class="muted" colspan="2">Cargando...</td></tr></tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <script>
+        // ── THEME ──
+        const savedTheme = localStorage.getItem('tuo_theme') || 'light';
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo_theme', dark ? 'light' : 'dark');
+        }
+
+        // ── UTILS ──
+        const fmt      = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmtFecha = d => new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        function last6Months() {
+            const result = [];
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                const label = d.toLocaleDateString('es-AR', { month: 'short' }).replace('.','') + " '" + String(d.getFullYear()).slice(2);
+                result.push({ key, label });
+            }
+            return result;
+        }
+
+        function groupByMonth(txs) {
+            const m = {};
+            txs.forEach(t => {
+                const f = t.createdAt || t.created_at || t.fecha || t.timestamp;
+                if (!f) return;
+                const d   = new Date(f);
+                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                m[key] = (m[key] || 0) + Number(t.importe || 0);
+            });
+            return m;
+        }
+
+        // ── CHARTS ──
+        let chartMotivosInst = null, chartIngresosInst = null, chartGastosInst = null;
+
+        function destroyCharts() {
+            chartMotivosInst?.destroy();
+            chartIngresosInst?.destroy();
+            chartGastosInst?.destroy();
+            chartMotivosInst = chartIngresosInst = chartGastosInst = null;
+        }
+
+        function inicializarGraficos(todasLasTx, u) {
+            if (typeof Chart === 'undefined') return;
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const clr  = dark
+                ? { grid: '#2C2C2E', text: '#8E8E8E', barIn: '#3B82F6', barOut: '#EF4444' }
+                : { grid: '#E5E5E5', text: '#6B6B6B', barIn: '#0052FF', barOut: '#B91C1C' };
+
+            destroyCharts();
+
+            const motivosRaw = JSON.parse(localStorage.getItem('tuo_transferencias_' + u.cbu) || '[]');
+            const mTotals    = {};
+            motivosRaw.forEach(m => { mTotals[m.motivo] = (mTotals[m.motivo] || 0) + Number(m.importe); });
+            const pieLabels  = Object.keys(mTotals);
+            const pieVals    = Object.values(mTotals);
+            const ctxPie     = document.getElementById('chartMotivos');
+            const emptyDiv   = document.getElementById('chartMotivosEmpty');
+
+            if (pieLabels.length === 0) {
+                ctxPie.style.display = 'none';
+                emptyDiv.style.display = 'flex';
+            } else {
+                ctxPie.style.display = 'block';
+                emptyDiv.style.display = 'none';
+                const PIE_COLORS = ['#0052FF','#7C3AED','#059669','#D97706','#DB2777','#0284C7','#DC2626','#10B981','#F59E0B','#0891B2'];
+                chartMotivosInst = new Chart(ctxPie, {
+                    type: 'doughnut',
+                    data: {
+                        labels: pieLabels,
+                        datasets: [{ data: pieVals, backgroundColor: PIE_COLORS.slice(0, pieLabels.length), borderWidth: 0 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: clr.text, font: { family: 'Inter', size: 10 }, padding: 10, boxWidth: 12 } },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
+                        }
+                    }
+                });
+            }
+
+            const recibidas = todasLasTx.filter(t => t.cbuDestino === u.cbu);
+            const enviadas  = todasLasTx.filter(t => t.cbuOrigen  === u.cbu);
+            const meses     = last6Months();
+            const labels    = meses.map(m => m.label);
+            const grpIn     = groupByMonth(recibidas);
+            const grpOut    = groupByMonth(enviadas);
+            const dataIn    = meses.map(m => grpIn[m.key]  || 0);
+            const dataOut   = meses.map(m => grpOut[m.key] || 0);
+
+            const barOpts = (color) => ({
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
+                },
+                scales: {
+                    x: { grid: { color: clr.grid }, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, autoSkip: false, maxRotation: 0 } },
+                    y: { grid: { color: clr.grid }, beginAtZero: true, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, callback: v => '$' + v.toLocaleString('es-AR') } }
+                }
+            });
+
+            chartIngresosInst = new Chart(document.getElementById('chartIngresos'), {
+                type: 'bar',
+                data: { labels, datasets: [{ data: dataIn, backgroundColor: dark ? 'rgba(59,130,246,0.25)' : 'rgba(0,82,255,0.15)', borderColor: clr.barIn, borderWidth: 2, borderRadius: 6 }] },
+                options: barOpts(clr.barIn)
+            });
+
+            chartGastosInst = new Chart(document.getElementById('chartGastos'), {
+                type: 'bar',
+                data: { labels, datasets: [{ data: dataOut, backgroundColor: dark ? 'rgba(239,68,68,0.25)' : 'rgba(185,28,28,0.12)', borderColor: clr.barOut, borderWidth: 2, borderRadius: 6 }] },
+                options: barOpts(clr.barOut)
+            });
+        }
+
+        // ── DATOS GENERALES ──
+        function renderDatosGenerales(txs, u) {
+            const depositos = txs.filter(t => t.cbuOrigen === 'DEPOSITO' && t.cbuDestino === u.cbu);
+            const ingresos  = txs.filter(t => t.cbuDestino === u.cbu && t.cbuOrigen !== 'DEPOSITO' && (t.estado === 'aprobada' || t.estado === 'approved'));
+            const gastos    = txs.filter(t => t.cbuOrigen === u.cbu && (t.estado === 'aprobada' || t.estado === 'approved'));
+
+            document.getElementById('valIngresos').textContent  = fmt(ingresos.reduce((s, t) => s + Number(t.importe), 0));
+            document.getElementById('valGastos').textContent    = fmt(gastos.reduce((s, t) => s + Number(t.importe), 0));
+            document.getElementById('valDepositos').textContent = fmt(depositos.reduce((s, t) => s + Number(t.importe), 0));
+            document.getElementById('valSaldo').textContent     = fmt(u.saldo);
+
+            // Gastos por motivo
+            const motivosRaw = JSON.parse(localStorage.getItem('tuo_transferencias_' + u.cbu) || '[]');
+            const motivoMap  = {};
+            motivosRaw.forEach(m => {
+                const key = m.motivo || 'Sin motivo';
+                if (!motivoMap[key]) motivoMap[key] = { count: 0, total: 0 };
+                motivoMap[key].count++;
+                motivoMap[key].total += Number(m.importe);
+            });
+            document.getElementById('tbodyMotivos').innerHTML = Object.entries(motivoMap).length
+                ? Object.entries(motivoMap).sort((a, b) => b[1].total - a[1].total)
+                    .map(([m, v]) => `<tr><td>${m}</td><td class="center">${v.count}</td><td class="right">${fmt(v.total)}</td></tr>`).join('')
+                : `<tr><td class="muted" colspan="3">Sin transferencias con motivo registradas</td></tr>`;
+
+            // Ingresos/gastos por mes
+            const meses  = last6Months();
+            const ingMes = {}, gasMes = {};
+            meses.forEach(m => { ingMes[m.key] = 0; gasMes[m.key] = 0; });
+            ingresos.forEach(t => { const k = (t.createdAt || t.created_at || '').slice(0,7); if (ingMes[k] !== undefined) ingMes[k] += Number(t.importe); });
+            gastos.forEach(t => { const k = (t.createdAt || t.created_at || '').slice(0,7); if (gasMes[k] !== undefined) gasMes[k] += Number(t.importe); });
+            document.getElementById('tbodyMeses').innerHTML = meses.map(m =>
+                `<tr><td>${m.label}</td><td class="green">${fmt(ingMes[m.key])}</td><td class="red">${fmt(gasMes[m.key])}</td></tr>`
+            ).join('');
+
+            // Depósitos
+            document.getElementById('tbodyDepositos').innerHTML = depositos.length
+                ? depositos.map(t =>
+                    `<tr><td>${fmtFecha(t.createdAt || t.created_at)}</td><td class="green">${fmt(t.importe)}</td></tr>`
+                  ).join('')
+                : `<tr><td class="muted" colspan="2">Sin depósitos registrados</td></tr>`;
+        }
+
+        // ── INIT ──
+        document.addEventListener('DOMContentLoaded', () => {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!u) { window.location.href = 'login.html'; return; }
+
+            const txs = JSON.parse(localStorage.getItem('tuo_txs_cache') || '[]');
+
+            renderDatosGenerales(txs, u);
+
+            if (typeof Chart !== 'undefined') {
+                inicializarGraficos(txs, u);
+            } else {
+                const wait = setInterval(() => {
+                    if (typeof Chart !== 'undefined') {
+                        clearInterval(wait);
+                        inicializarGraficos(txs, u);
+                    }
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

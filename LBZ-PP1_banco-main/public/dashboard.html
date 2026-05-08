@@ -1,0 +1,2451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Inicio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9;
+            --text: #1A1A1B;
+            --accent: #0052FF;
+            --muted: #6B6B6B;
+            --border: #E5E5E5;
+            --white: #FFFFFF;
+            --card-dark: #1A1A1B;
+            --skeleton-base: #EBEBEB;
+            --skeleton-shine: #F5F5F5;
+        }
+
+        [data-theme="dark"] {
+            --bg: #111113;
+            --text: #F0F0F0;
+            --muted: #8E8E8E;
+            --border: #2C2C2E;
+            --white: #1C1C1E;
+            --card-dark: #2A2A2C;
+            --skeleton-base: #2C2C2E;
+            --skeleton-shine: #3A3A3C;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            height: 64px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .header-logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.05em; color: var(--text); }
+
+        .header-user { display: flex; align-items: center; gap: 14px; }
+
+        .header-name { font-size: 0.88rem; font-weight: 500; color: var(--muted); }
+
+        .avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: var(--accent); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+            flex-shrink: 0; user-select: none; cursor: pointer;
+            transition: opacity 0.15s, box-shadow 0.15s;
+        }
+        .avatar:hover { opacity: 0.88; box-shadow: 0 0 0 3px rgba(0,82,255,0.18); }
+
+        .avatar-wrap { position: relative; }
+
+        .header-dropdown {
+            position: absolute; top: calc(100% + 10px); right: 0;
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 14px; min-width: 220px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+            opacity: 0; transform: translateY(-6px) scale(0.97);
+            pointer-events: none; transition: opacity 0.15s, transform 0.15s;
+            z-index: 100; overflow: hidden;
+        }
+        .header-dropdown.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+
+        .dropdown-user-info { padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
+
+        .dropdown-avatar-lg {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--accent); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
+        }
+
+        .dropdown-user-name { font-size: 0.88rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+        .dropdown-user-email { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+
+        .dropdown-divider { height: 1px; background: var(--border); margin: 0; }
+
+        .dropdown-item {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 12px 18px;
+            background: none; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500;
+            color: var(--muted); transition: background 0.12s, color 0.12s; text-align: left;
+        }
+        .dropdown-item:hover { background: var(--bg); color: var(--text); }
+        .dropdown-item.danger { color: #B91C1C; }
+        .dropdown-item.danger:hover { background: #FEF2F2; color: #B91C1C; }
+
+        .hamburger-btn {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: none; border: 1px solid var(--border);
+            cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 5px;
+            transition: background 0.15s, border-color 0.15s; flex-shrink: 0; padding: 0;
+        }
+        .hamburger-btn span {
+            display: block; width: 16px; height: 1.5px;
+            background: var(--text); border-radius: 2px;
+            transition: background 0.15s;
+        }
+        .hamburger-btn:hover { background: var(--bg); border-color: #aaa; }
+
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        /* ── LAYOUT ── */
+        .main { max-width: 860px; margin: 36px auto; padding: 0 24px; display: flex; flex-direction: column; gap: 28px; }
+
+        /* ── TARJETA DE CUENTA ── */
+        .account-card {
+            background: var(--card-dark); color: white; border-radius: 20px;
+            padding: 36px; position: relative; overflow: hidden; transition: background 0.3s;
+        }
+        .account-card::before {
+            content: ''; position: absolute; top: -80px; right: -80px;
+            width: 300px; height: 300px; background: rgba(0,82,255,0.10);
+            border-radius: 50%; pointer-events: none;
+        }
+        .account-card::after {
+            content: ''; position: absolute; bottom: -60px; left: -40px;
+            width: 200px; height: 200px; background: rgba(255,255,255,0.03);
+            border-radius: 50%; pointer-events: none;
+        }
+        .account-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+        .account-card-brand { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.05em; color: white; }
+        .account-type { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.4); font-weight: 500; }
+
+        .balance-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .account-balance-label { font-size: 0.78rem; color: rgba(255,255,255,0.45); font-weight: 400; text-transform: uppercase; letter-spacing: 0.07em; }
+
+        .btn-eye { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.38); padding: 2px; display: flex; align-items: center; transition: color 0.15s; }
+        .btn-eye:hover { color: rgba(255,255,255,0.75); }
+
+        .account-balance { font-size: 3rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 36px; line-height: 1; transition: color 0.4s; }
+
+        @keyframes balanceFlash { 0% { color: white; } 25% { color: #4ADE80; } 100% { color: white; } }
+        .balance-flash { animation: balanceFlash 1.1s ease; }
+
+        .account-details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); }
+
+        .account-detail-item label { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.38); margin-bottom: 6px; font-weight: 500; }
+        .account-detail-item span { font-size: 0.88rem; font-weight: 500; word-break: break-all; color: rgba(255,255,255,0.88); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+        .copy-wrap { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; position: relative; user-select: none; }
+        .copy-wrap:hover span { color: white; }
+        .copy-wrap:hover .copy-icon { opacity: 0.7; }
+        .copy-icon { opacity: 0.3; transition: opacity 0.15s; }
+
+        .copy-tooltip {
+            position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+            background: rgba(255,255,255,0.92); color: #1A1A1B; font-size: 0.7rem; font-weight: 600;
+            padding: 4px 9px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+            opacity: 0; transition: opacity 0.15s; font-family: 'Inter', sans-serif;
+        }
+        .copy-tooltip.show { opacity: 1; }
+
+        /* ── SECTION TITLE ── */
+        .section-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 16px; }
+
+        /* ── ACCIONES RÁPIDAS ── */
+        .actions-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
+        .action-btn {
+            background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+            padding: 24px 12px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+            cursor: pointer; transition: border-color 0.15s, transform 0.15s, background 0.15s, box-shadow 0.15s;
+            font-family: 'Inter', sans-serif; position: relative; overflow: hidden;
+        }
+        .action-btn:hover { border-color: var(--accent); transform: translateY(-2px); background: #EEF3FF; box-shadow: 0 6px 20px rgba(0,82,255,0.1); }
+        [data-theme="dark"] .action-btn:hover { background: rgba(0,82,255,0.12); }
+        .action-btn:active { transform: translateY(0); }
+
+        .ripple { position: absolute; border-radius: 50%; background: rgba(0,82,255,0.15); transform: scale(0); animation: rippleAnim 0.55s linear; pointer-events: none; }
+        @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+        .action-btn::after {
+            content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%;
+            transform: translateX(-50%); background: #1A1A1B; color: white;
+            font-size: 0.7rem; font-weight: 500; padding: 5px 10px; border-radius: 7px;
+            white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; font-family: 'Inter', sans-serif;
+        }
+        .action-btn:hover::after { opacity: 1; }
+
+        .action-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+        .action-label { font-size: 0.8rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+
+        /* ── ÚLTIMOS MOVIMIENTOS ── */
+        .recent-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .recent-section-header .section-title { margin-bottom: 0; }
+
+        .btn-ver-todos { font-size: 0.78rem; font-weight: 600; color: var(--accent); background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; padding: 0; }
+        .btn-ver-todos:hover { text-decoration: underline; }
+
+        .recent-tx-section { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 8px 24px; transition: background 0.3s, border-color 0.3s; }
+
+        .recent-tx-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); animation: txFadeIn 0.3s ease both; }
+        .recent-tx-item:last-child { border-bottom: none; }
+
+        @keyframes txFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .tx-avatar-wrap { position: relative; flex-shrink: 0; }
+        .tx-avatar { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; color: white; flex-shrink: 0; letter-spacing: 0.02em; }
+        .tx-badge { position: absolute; bottom: -3px; right: -3px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--white); }
+
+        .tx-label { flex: 1; min-width: 0; }
+        .tx-name { font-size: 0.85rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tx-date { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+        .tx-amount { font-size: 0.92rem; font-weight: 700; flex-shrink: 0; letter-spacing: -0.02em; }
+
+        /* ── SKELETON ── */
+        .skeleton-tx-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+        .skeleton-tx-item:last-child { border-bottom: none; }
+
+        .sk { background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .sk-circle { border-radius: 10px; }
+        .sk-line { height: 11px; }
+        .sk-short { height: 9px; width: 55%; margin-top: 7px; }
+        .sk-amount { height: 14px; width: 64px; border-radius: 6px; }
+
+        /* ── EMPTY STATE ── */
+        .empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 0; }
+        .empty-icon { width: 56px; height: 56px; background: var(--bg); border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+        .empty-state p { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+
+        /* ── DATE SEPARATOR ── */
+        .date-sep { display: flex; align-items: center; gap: 10px; padding: 10px 0 4px; }
+        .date-sep-line { flex: 1; height: 1px; background: var(--border); }
+        .date-sep-label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+
+        /* ── ESTADÍSTICAS ── */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+        .stats-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 20px; transition: background 0.3s, border-color 0.3s; }
+
+        .stats-card-title { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 14px; }
+
+        .chart-container { position: relative; height: 200px; }
+
+        .chart-empty { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; text-align: center; }
+        .chart-empty svg { opacity: 0.35; }
+        .chart-empty p { font-size: 0.78rem; color: var(--muted); font-weight: 400; max-width: 160px; line-height: 1.5; }
+
+        /* ── FAVORITES ── */
+        .fav-section { margin-top: 14px; }
+        .fav-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+        .fav-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+        .fav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+        .fav-item:hover { background: rgba(0,82,255,0.05); border-color: rgba(0,82,255,0.25); }
+        .fav-avatar-sm { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; color: white; flex-shrink: 0; }
+        .fav-name { flex: 1; font-size: 0.86rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .fav-cbu { font-size: 0.71rem; color: var(--muted); }
+        .fav-del { background: none; border: none; cursor: pointer; color: var(--muted); padding: 3px 5px; border-radius: 5px; transition: color 0.15s; display: flex; align-items: center; flex-shrink: 0; }
+        .fav-del:hover { color: #B91C1C; }
+
+        /* ── HISTORIAL FILTERS ── */
+        .historial-filters { padding: 12px 18px; display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border); background: var(--white); }
+        .filter-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+        .filter-chip { padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 0.74rem; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+        .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .filter-monto-wrap { display: flex; align-items: center; gap: 6px; }
+        .filter-monto-input { width: 82px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.74rem; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
+        .filter-monto-input:focus { border-color: var(--accent); }
+
+        /* ── CONFIRM LOGOUT MODAL ── */
+        .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(3px); }
+        .confirm-box { background: var(--white); border-radius: 20px; padding: 28px 28px 22px; max-width: 300px; width: 88%; box-shadow: 0 20px 60px rgba(0,0,0,0.18); text-align: center; }
+        .confirm-icon { width: 50px; height: 50px; background: #FEF2F2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+        .confirm-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 7px; }
+        .confirm-desc { font-size: 0.83rem; color: var(--muted); margin-bottom: 20px; line-height: 1.55; }
+        .confirm-actions { display: flex; gap: 10px; }
+        .confirm-btn-cancel { flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 10px; background: none; color: var(--text); font-size: 0.86rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.15s; }
+        .confirm-btn-cancel:hover { background: var(--bg); }
+        .confirm-btn-danger { flex: 1; padding: 10px; border: none; border-radius: 10px; background: #B91C1C; color: white; font-size: 0.86rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; }
+        .confirm-btn-danger:hover { opacity: 0.88; }
+
+        /* ── TOAST ── */
+        .toast-container { position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { padding: 12px 18px; border-radius: 10px; font-size: 0.84rem; font-weight: 500; font-family: 'Inter', sans-serif; max-width: 300px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); display: flex; align-items: center; gap: 10px; animation: toastIn 0.25s ease; pointer-events: auto; line-height: 1.4; }
+        .toast.success { background: #1A1A1B; color: white; }
+        .toast.error   { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+        .toast.info    { background: #EEF3FF; color: #0052FF; border: 1px solid #C7D9FF; }
+        .toast.removing { animation: toastOut 0.2s ease forwards; }
+        @keyframes toastIn  { from { opacity:0; transform:translateY(12px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(8px) scale(0.95); } }
+
+        /* ── MODAL CONTACTOS ── */
+        .contact-modal-list { max-height: 420px; overflow-y: auto; }
+        .contact-modal-item { display: flex; align-items: center; gap: 12px; padding: 13px 24px; border-bottom: 1px solid var(--border); transition: background 0.12s; }
+        .contact-modal-item:last-child { border-bottom: none; }
+        .contact-modal-item:hover { background: rgba(0,82,255,0.03); }
+        .contact-modal-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.76rem; font-weight: 700; color: white; flex-shrink: 0; }
+        .contact-modal-name { font-size: 0.9rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .contact-modal-cbu { font-size: 0.71rem; color: var(--muted); margin-top: 1px; }
+        .contact-modal-empty { padding: 44px 24px; text-align: center; color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
+        .btn-transferir-contacto { padding: 7px 14px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; flex-shrink: 0; transition: opacity 0.15s; }
+        .btn-transferir-contacto:hover { opacity: 0.85; }
+        .btn-eliminar-contacto { background: none; border: none; cursor: pointer; color: var(--muted); padding: 6px; border-radius: 7px; display: flex; align-items: center; flex-shrink: 0; transition: color 0.15s, background 0.15s; }
+        .btn-eliminar-contacto:hover { color: #B91C1C; background: rgba(185,28,28,0.07); }
+
+        /* ── MODAL BASE ── */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-panel { background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.18); width: 100%; }
+        .modal-header { background: #1A1A1B; color: white; padding: 22px 28px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        [data-theme="dark"] .modal-header { background: #000; }
+        .modal-header-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; font-family: 'Inter', sans-serif; }
+        .modal-close-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 0.9rem; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .modal-close-btn:hover { background: rgba(255,255,255,0.18); }
+
+        /* ── STEPPER ── */
+        .modal-stepper { display: flex; align-items: center; padding: 22px 36px 0; }
+        .stepper-step { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .stepper-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; border: 2px solid var(--border); color: var(--muted); transition: all 0.25s; font-family: 'Inter', sans-serif; }
+        .stepper-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
+        .stepper-dot.done   { background: #15803D; border-color: #15803D; color: white; }
+        .stepper-label { font-size: 0.62rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap; font-family: 'Inter', sans-serif; }
+        .stepper-dot.active ~ .stepper-label, .stepper-dot.done ~ .stepper-label { color: var(--text); }
+        .stepper-line { flex: 1; height: 2px; background: var(--border); margin: 0 6px; margin-bottom: 22px; transition: background 0.25s; }
+        .stepper-line.done { background: #15803D; }
+
+        /* ── MODAL BODY ── */
+        .modal-body { padding: 24px 28px 28px; }
+        .paso { animation: stepSlideIn 0.22s ease; }
+        .paso.back { animation: stepSlideBack 0.22s ease; }
+        @keyframes stepSlideIn   { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes stepSlideBack { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:translateX(0); } }
+
+        .modal-desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; font-family: 'Inter', sans-serif; }
+        .modal-desc strong { color: var(--text); }
+
+        .input-modal { width: 100%; padding: 12px 0; border: none; border-bottom: 1.5px solid var(--border); font-size: 0.95rem; font-family: 'Inter', sans-serif; color: var(--text); background: transparent; outline: none; box-sizing: border-box; transition: border-color 0.2s; }
+        .input-modal:focus { border-bottom-color: var(--accent); }
+        .input-modal::placeholder { color: var(--muted); }
+
+        .modal-error { color: #B91C1C; font-size: 0.8rem; margin-top: 10px; display: none; font-family: 'Inter', sans-serif; }
+
+        .modal-btn-primary { width: 100%; padding: 13px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 0.92rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; letter-spacing: -0.01em; margin-top: 22px; }
+        .modal-btn-primary:hover { opacity: 0.88; }
+        .modal-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        /* Paso 2 */
+        .dest-box { background: var(--bg); border-radius: 12px; padding: 18px; margin-bottom: 22px; border: 1px solid var(--border); }
+        .dest-box-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 6px; font-family: 'Inter', sans-serif; font-weight: 500; }
+        .dest-name { font-size: 1rem; font-weight: 700; color: var(--text); font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        .dest-cbu { font-size: 0.78rem; color: var(--muted); margin-top: 3px; word-break: break-all; font-family: 'Inter', sans-serif; }
+
+        .importe-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px; font-family: 'Inter', sans-serif; font-weight: 500; }
+        .importe-input-wrap { position: relative; }
+        .importe-symbol { position: absolute; left: 0; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--muted); font-weight: 500; font-family: 'Inter', sans-serif; }
+        .importe-preview { font-size: 1.7rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; text-align: center; margin-top: 12px; min-height: 2rem; transition: opacity 0.15s; font-family: 'Inter', sans-serif; }
+
+        /* Selector de motivo */
+        .motivo-section { margin-top: 14px; }
+        .btn-motivo-selector { width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px; background:var(--bg); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; font-family:'Inter',sans-serif; color:var(--muted); font-size:0.86rem; transition:border-color 0.15s, color 0.15s; }
+        .btn-motivo-selector .motivo-selector-text { flex:1; text-align:left; }
+        .btn-motivo-selector.has-motivo { color:var(--text); border-color:var(--accent); }
+        .motivo-list { padding:6px 0; }
+        .motivo-list-item { width:100%; display:flex; align-items:center; gap:14px; padding:13px 20px; background:none; border:none; border-bottom:1px solid var(--border); cursor:pointer; font-family:'Inter',sans-serif; font-size:0.9rem; color:var(--text); text-align:left; transition:background 0.12s; }
+        .motivo-list-item:hover { background:rgba(0,82,255,0.04); }
+        .motivo-list-item.active { color:var(--accent); font-weight:600; background:rgba(0,82,255,0.04); }
+        .motivo-list-item:last-child { border-bottom:none; }
+
+        .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+        .btn-volver { flex: 1; padding: 12px; background: var(--white); color: var(--text); border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: border-color 0.15s; }
+        .btn-volver:hover { border-color: #aaa; }
+        .btn-confirmar { flex: 2; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; letter-spacing: -0.01em; }
+        .btn-confirmar:hover { opacity: 0.88; }
+        .btn-confirmar:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        /* Paso 3 */
+        .result-wrap { text-align: center; padding: 12px 0; }
+        .result-icon { width: 56px; height: 56px; background: #F0FDF4; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        .result-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        .result-msg { font-size: 0.88rem; color: var(--muted); margin-bottom: 24px; font-family: 'Inter', sans-serif; line-height: 1.5; }
+        .result-saldo-box { background: var(--bg); border-radius: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid var(--border); }
+        .result-saldo-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; font-family: 'Inter', sans-serif; font-weight: 500; }
+        .result-saldo-val { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-top: 6px; font-family: 'Inter', sans-serif; letter-spacing: -0.03em; }
+        .btn-cerrar-result { padding: 12px 40px; background: #1A1A1B; color: white; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; letter-spacing: -0.01em; }
+        [data-theme="dark"] .btn-cerrar-result { background: var(--accent); }
+        .btn-cerrar-result:hover { opacity: 0.85; }
+
+        /* ── HISTORIAL MODAL ── */
+        .historial-panel { max-height: 90vh; display: flex; flex-direction: column; }
+        .historial-body { padding: 8px 20px; overflow-y: auto; flex: 1; font-family: 'Inter', sans-serif; }
+        .historial-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); animation: txFadeIn 0.3s ease both; cursor: pointer; border-radius: 8px; transition: background 0.12s; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+        .historial-item:last-child { border-bottom: none; }
+        .historial-item:hover { background: rgba(0,82,255,0.04); }
+        .historial-avatar { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; font-weight: 700; color: white; letter-spacing: 0.02em; position: relative; }
+        .historial-badge { position: absolute; bottom: -3px; right: -3px; width: 15px; height: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--white); }
+        .historial-info { flex: 1; min-width: 0; }
+        .historial-name { font-size: 0.85rem; font-weight: 600; color: var(--text); font-family: 'Inter', sans-serif; }
+        .historial-date { font-size: 0.73rem; color: var(--muted); margin-top: 2px; font-family: 'Inter', sans-serif; }
+        .historial-estado { display: inline-block; font-size: 0.69rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; font-family: 'Inter', sans-serif; margin-top: 5px; }
+        .historial-amount { font-size: 1rem; font-weight: 700; flex-shrink: 0; font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+
+        /* ── DETALLE TRANSACCIÓN ── */
+        .modal-back-btn { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 0.82rem; font-weight: 600; padding: 0; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 4px; }
+        .modal-back-btn:hover { opacity: 0.75; }
+        .detalle-tx-hero { text-align: center; padding: 8px 0 20px; }
+        .detalle-tx-avatar { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; color: white; margin: 0 auto 10px; }
+        .detalle-tx-role { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+        .detalle-tx-nombre { font-size: 1.05rem; font-weight: 700; color: var(--text); margin-top: 3px; }
+        .detalle-tx-amount { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; text-align: center; margin: 6px 0 20px; }
+        .detalle-tx-section { border: 1px solid var(--border); border-radius: 12px; padding: 4px 16px; margin-bottom: 12px; }
+        .detalle-tx-section-title { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 12px 0 6px; }
+        .detalle-tx-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.83rem; gap: 16px; }
+        .detalle-tx-row:last-child { border-bottom: none; }
+        .detalle-tx-label { color: var(--muted); flex-shrink: 0; }
+        .detalle-tx-value { font-weight: 600; color: var(--text); text-align: right; word-break: break-all; }
+        .detalle-tx-body { padding: 4px 24px 24px; overflow-y: auto; max-height: calc(90vh - 60px); }
+
+        /* ── DATOS PERSONALES MODAL ── */
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .info-item label { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+        .info-item span { font-size: 0.97rem; font-weight: 600; color: var(--text); }
+
+        /* ── ALIAS EDIT ── */
+        #aliasError { color: #ff8080; font-size: 0.75rem; margin-top: 6px; display: none; }
+
+        /* ── RESPONSIVE ── */
+
+        /* Tablet landscape (≤ 860px) */
+        @media (max-width: 860px) {
+            .main { padding: 0 16px; }
+        }
+
+        /* Tablet portrait (≤ 768px) */
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .account-card { padding: 28px; }
+            .account-balance { font-size: 2.5rem; }
+            .action-btn { padding: 20px 10px; }
+        }
+
+        /* Phone (≤ 600px) */
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; height: 56px; }
+            .header-name { display: none; }
+            .main { margin: 14px auto; gap: 14px; padding: 0 12px; }
+
+            /* Account card */
+            .account-card { padding: 22px; border-radius: 16px; }
+            .account-card-top { margin-bottom: 18px; }
+            .account-balance { font-size: 2.2rem; margin-bottom: 22px; }
+            .account-details { grid-template-columns: 1fr; gap: 14px; padding-top: 18px; }
+
+            /* Actions */
+            .actions-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .action-btn { padding: 18px 8px; gap: 8px; border-radius: 12px; }
+            .action-icon { width: 38px; height: 38px; }
+            .action-label { font-size: 0.72rem; }
+
+            /* Stats & charts */
+            .stats-grid { grid-template-columns: 1fr; }
+            .chart-container { height: 160px; }
+
+            /* Recent TX */
+            .recent-tx-section { padding: 4px 14px; }
+            .tx-name { font-size: 0.82rem; }
+            .tx-amount { font-size: 0.88rem; }
+
+            /* Datos personales */
+            .info-grid { grid-template-columns: 1fr; gap: 16px; }
+
+            /* Toast */
+            .toast-container { bottom: 16px; right: 12px; left: 12px; }
+            .toast { max-width: none; font-size: 0.82rem; }
+
+            /* Modals — bottom sheet on phone */
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal-panel { border-radius: 22px 22px 0 0; max-height: 93vh; }
+            .historial-panel { max-height: 93vh; }
+            .modal-header { padding: 18px 20px; }
+            .modal-header-title { font-size: 0.95rem; }
+            .modal-stepper { padding: 16px 18px 0; }
+            .modal-body { padding: 18px 18px 24px; }
+            .modal-desc { font-size: 0.82rem; }
+
+            /* Transfer step 2 */
+            .dest-box { padding: 14px; }
+            .importe-preview { font-size: 1.5rem; }
+            .btn-row { gap: 8px; }
+
+            /* Historial filters */
+            .historial-filters { padding: 10px 14px; gap: 6px; flex-direction: column; }
+            .filter-chips { flex-wrap: wrap; }
+            .filter-monto-wrap { width: 100%; }
+            .filter-monto-input { flex: 1; width: auto; min-width: 0; }
+            .historial-body { padding: 6px 14px; }
+            .historial-name { font-size: 0.82rem; }
+            .historial-amount { font-size: 0.92rem; }
+
+            /* Detail TX */
+            .detalle-tx-body { padding: 4px 16px 24px; }
+            .detalle-tx-amount { font-size: 1.7rem; }
+            .detalle-tx-row { font-size: 0.8rem; }
+
+            /* Contact modal */
+            .contact-modal-item { padding: 12px 16px; gap: 10px; }
+            .contact-modal-list { max-height: 70vh; }
+
+            /* Motivo modal */
+            .motivo-list-item { padding: 12px 16px; font-size: 0.86rem; }
+        }
+
+        /* Small phone (≤ 420px) */
+        @media (max-width: 420px) {
+            .account-card { padding: 18px; }
+            .account-balance { font-size: 1.95rem; }
+            .account-card-brand { font-size: 1.1rem; }
+            .actions-grid { gap: 6px; }
+            .action-btn { padding: 14px 5px; }
+            .action-label { font-size: 0.67rem; }
+            .historial-amount { font-size: 0.86rem; }
+            .tx-amount { font-size: 0.84rem; }
+            .modal-header-title { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-logo">tuo</div>
+        <div class="header-user">
+            <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema"></button>
+            <span class="header-name" id="headerNombre">Cargando...</span>
+            <div class="avatar-wrap" id="avatarWrap">
+                <button class="hamburger-btn" id="avatarEl" onclick="toggleDropdown()" title="Menú">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="header-dropdown" id="headerDropdown">
+                    <div class="dropdown-user-info">
+                        <div class="dropdown-avatar-lg" id="dropdownAvatarLg">--</div>
+                        <div>
+                            <div class="dropdown-user-name" id="dropdownUserName">-</div>
+                            <div class="dropdown-user-email" id="dropdownUserEmail">-</div>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="abrirDatosPersonales()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Datos personales
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="abrirEstadisticas()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        Estadísticas
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item danger" onclick="pedirConfirmLogout()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Cerrar sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+
+        <!-- Tarjeta de cuenta -->
+        <div class="account-card">
+            <div class="account-card-top">
+                <span class="account-card-brand">tuo</span>
+                <span class="account-type" id="tipoCuenta">Caja de Ahorro</span>
+            </div>
+            <div class="balance-row">
+                <div class="account-balance-label">Saldo disponible</div>
+                <button class="btn-eye" id="btnEye" onclick="toggleSaldo()" title="Mostrar/ocultar saldo"></button>
+            </div>
+            <div class="account-balance" id="saldo">$ 0,00</div>
+            <div class="account-details">
+                <div class="account-detail-item">
+                    <label>CBU</label>
+                    <div class="copy-wrap" onclick="copiarAlPortapapeles('cbu')" title="Copiar CBU">
+                        <span id="cbu">-</span>
+                        <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <div class="copy-tooltip" id="tooltipCbu">¡Copiado!</div>
+                    </div>
+                </div>
+                <div class="account-detail-item">
+                    <label>Alias</label>
+                    <div id="aliasDisplay" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <div class="copy-wrap" onclick="copiarAlPortapapeles('alias')" title="Copiar alias">
+                            <span id="alias">-</span>
+                            <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            <div class="copy-tooltip" id="tooltipAlias">¡Copiado!</div>
+                        </div>
+                        <button id="btnEditAlias" onclick="mostrarEditAlias()" title="Editar alias"
+                            style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.18); border-radius:6px; padding:3px 8px; cursor:pointer; color:rgba(255,255,255,0.65); font-size:0.75rem; transition:background 0.15s;">✏️</button>
+                    </div>
+                    <div id="editAliasForm" style="display:none; margin-top:10px;">
+                        <input id="inputAlias" type="text" placeholder="nuevo.alias"
+                            style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); color:white; font-size:0.85rem; width:152px; font-family:'Inter',sans-serif; outline:none;">
+                        <button onclick="guardarAlias()" style="padding:6px 12px; background:#0052FF; color:white; border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:6px; font-family:'Inter',sans-serif; font-weight:600;">✓</button>
+                        <button onclick="cancelarEditAlias()" style="padding:6px 8px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.65); border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:3px; font-family:'Inter',sans-serif;">✕</button>
+                        <div id="aliasError"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div>
+            <div class="section-title">Acciones rápidas</div>
+            <div class="actions-grid">
+                <button class="action-btn" onclick="abrirModalTransferencia()" data-tooltip="Transferir dinero">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+                    <span class="action-label">Transferir</span>
+                </button>
+                <button class="action-btn" onclick="abrirModalDeposito()" data-tooltip="Ingresá fondos">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+                    <span class="action-label">Depositar</span>
+                </button>
+                <button class="action-btn" data-tooltip="Retirá efectivo">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+                    <span class="action-label">Extraer</span>
+                </button>
+                <button class="action-btn" onclick="abrirHistorial()" data-tooltip="Ver todos los movimientos">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div>
+                    <span class="action-label">Historial</span>
+                </button>
+                <button class="action-btn" onclick="abrirModalContactos()" data-tooltip="Tus contactos guardados">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                    <span class="action-label">Contactos</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Últimos movimientos -->
+        <div>
+            <div class="recent-section-header">
+                <div class="section-title">Últimos movimientos</div>
+                <button class="btn-ver-todos" onclick="abrirHistorial()">Ver todos →</button>
+            </div>
+            <div class="recent-tx-section">
+                <div id="recentTxList"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── MODAL HISTORIAL ── -->
+    <div id="modalHistorial" class="modal-overlay">
+        <div class="modal-panel historial-panel" style="max-width:520px;">
+            <div class="modal-header">
+                <span class="modal-header-title">Historial de movimientos</span>
+                <button class="modal-close-btn" onclick="document.getElementById('modalHistorial').style.display='none'">✕</button>
+            </div>
+            <div class="historial-filters">
+                <div class="filter-chips" id="filtroTipoChips">
+                    <button class="filter-chip active" data-tipo="todos" onclick="setFiltroTipo(this)">Todos</button>
+                    <button class="filter-chip" data-tipo="enviados" onclick="setFiltroTipo(this)">Enviados</button>
+                    <button class="filter-chip" data-tipo="recibidos" onclick="setFiltroTipo(this)">Recibidos</button>
+                </div>
+                <div class="filter-chips" id="filtroFechaChips">
+                    <button class="filter-chip active" data-fecha="todos" onclick="setFiltroFecha(this)">Todo</button>
+                    <button class="filter-chip" data-fecha="24h" onclick="setFiltroFecha(this)">24hs</button>
+                    <button class="filter-chip" data-fecha="7d" onclick="setFiltroFecha(this)">7 días</button>
+                    <button class="filter-chip" data-fecha="15d" onclick="setFiltroFecha(this)">15 días</button>
+                    <button class="filter-chip" data-fecha="mes" onclick="setFiltroFecha(this)">Este mes</button>
+                </div>
+                <div class="filter-monto-wrap">
+                    <input class="filter-monto-input" id="filtroMontoMin" type="number" placeholder="$ Mín" min="0" oninput="renderHistorialFiltrado()">
+                    <span style="color:var(--muted);font-size:0.75rem;">—</span>
+                    <input class="filter-monto-input" id="filtroMontoMax" type="number" placeholder="$ Máx" min="0" oninput="renderHistorialFiltrado()">
+                </div>
+            </div>
+            <div id="historialCuerpo" class="historial-body"></div>
+        </div>
+    </div>
+
+    <!-- ── MODAL TRANSFERENCIA ── -->
+    <div id="modalTransferencia" class="modal-overlay">
+        <div class="modal-panel" style="max-width:440px;">
+            <div class="modal-header">
+                <span class="modal-header-title">Transferir dinero</span>
+                <button class="modal-close-btn" onclick="cerrarModal()">✕</button>
+            </div>
+            <div class="modal-stepper">
+                <div class="stepper-step">
+                    <div class="stepper-dot active" id="stepDot1">1</div>
+                    <div class="stepper-label">Destinatario</div>
+                </div>
+                <div class="stepper-line" id="stepLine1"></div>
+                <div class="stepper-step">
+                    <div class="stepper-dot" id="stepDot2">2</div>
+                    <div class="stepper-label">Importe</div>
+                </div>
+                <div class="stepper-line" id="stepLine2"></div>
+                <div class="stepper-step">
+                    <div class="stepper-dot" id="stepDot3">3</div>
+                    <div class="stepper-label">Listo</div>
+                </div>
+            </div>
+            <div class="modal-body">
+
+                <!-- PASO 1 -->
+                <div id="paso1" class="paso">
+                    <p class="modal-desc">Ingresá el <strong>alias</strong> o el <strong>CBU</strong> del destinatario.</p>
+                    <input id="inputBusqueda" class="input-modal" type="text" placeholder="Ej: sol.luna.rio  ó  CBU de 22 dígitos" onkeydown="if(event.key==='Enter') buscarDestinatario()">
+                    <div id="errorBusqueda" class="modal-error"></div>
+                    <button onclick="buscarDestinatario()" id="btnBuscar" class="modal-btn-primary">Buscar</button>
+                    <div class="fav-section" id="favSection" style="display:none;">
+                        <div class="fav-section-title">Favoritos</div>
+                        <div class="fav-list" id="favList"></div>
+                    </div>
+                </div>
+
+                <!-- PASO 2 -->
+                <div id="paso2" class="paso" style="display:none;">
+                    <div class="dest-box">
+                        <div class="dest-box-label">Destinatario</div>
+                        <div id="destinatarioNombre" class="dest-name"></div>
+                        <div id="destinatarioCbu" class="dest-cbu"></div>
+                    </div>
+                    <div class="importe-label">Importe a transferir</div>
+                    <div class="importe-input-wrap">
+                        <span class="importe-symbol">$</span>
+                        <input id="inputImporte" class="input-modal" type="number" min="1" placeholder="0,00" style="padding-left:18px;" oninput="actualizarImportePreview(this.value)">
+                    </div>
+                    <div id="importePreview" class="importe-preview"></div>
+
+                    <!-- Motivo -->
+                    <div class="motivo-section">
+                        <button id="btnAbrirMotivo" class="btn-motivo-selector" onclick="abrirModalMotivo()">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                            <span id="motivoLabel" class="motivo-selector-text">Motivo (opcional)</span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+
+                    <div id="errorTransferencia" class="modal-error"></div>
+                    <div class="btn-row">
+                        <button onclick="volverPaso1()" class="btn-volver">← Volver</button>
+                        <button onclick="confirmarTransferencia()" id="btnConfirmar" class="btn-confirmar">Confirmar</button>
+                    </div>
+                </div>
+
+                <!-- PASO 3 -->
+                <div id="paso3" class="paso" style="display:none;">
+                    <div class="result-wrap">
+                        <div class="result-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <div class="result-title">Transferencia exitosa</div>
+                        <div id="mensajeResultado" class="result-msg"></div>
+                        <div class="result-saldo-box">
+                            <div class="result-saldo-label">Nuevo saldo</div>
+                            <div id="nuevoSaldoDisplay" class="result-saldo-val"></div>
+                        </div>
+                        <button onclick="cerrarModal()" class="btn-cerrar-result">Cerrar</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL DEPOSITO ── -->
+    <div id="modalDeposito" class="modal-overlay" style="display:none;">
+        <div class="modal-panel" style="max-width:400px;">
+            <div class="modal-header">
+                <span class="modal-header-title">Depositar fondos</span>
+                <button class="modal-close-btn" onclick="cerrarModalDeposito()">✕</button>
+            </div>
+            <div id="depositoPaso1" style="padding:28px;">
+                <div class="importe-label">Importe a depositar</div>
+                <div class="importe-input-wrap">
+                    <span class="importe-symbol">$</span>
+                    <input id="importeDeposito" class="input-modal" type="number" min="1" max="1000000"
+                        placeholder="0,00" style="padding-left:18px;"
+                        oninput="previsualizarDeposito()"
+                        onkeydown="if(event.key==='Enter') confirmarDeposito()">
+                </div>
+                <div id="depositoPreview" class="importe-preview" style="opacity:0;"></div>
+                <div id="errorDeposito" class="modal-error"></div>
+                <button class="modal-btn-primary" id="btnConfirmarDeposito" onclick="confirmarDeposito()" disabled>Depositar</button>
+            </div>
+            <div id="depositoPaso2" style="display:none;padding:28px;">
+                <div class="result-wrap">
+                    <div class="result-icon">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="result-title">¡Depósito exitoso!</div>
+                    <div class="result-msg">El dinero fue acreditado en tu cuenta</div>
+                    <div class="result-saldo-box">
+                        <div class="result-saldo-label">Nuevo saldo</div>
+                        <div class="result-saldo-val" id="depositoNuevoSaldo"></div>
+                    </div>
+                    <button class="btn-cerrar-result" onclick="cerrarModalDeposito()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL DATOS PERSONALES ── -->
+    <div id="modalDatosPersonales" class="modal-overlay">
+        <div class="modal-panel" style="max-width:480px;">
+            <div class="modal-header">
+                <span class="modal-header-title">Datos personales</span>
+                <button class="modal-close-btn" onclick="cerrarDatosPersonales()">✕</button>
+            </div>
+            <div class="modal-body" style="padding:28px;">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Nombre completo</label>
+                        <span id="modalNombreCompleto">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>DNI</label>
+                        <span id="modalDni">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Email</label>
+                        <span id="modalEmail">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Teléfono</label>
+                        <span id="modalTelefono">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL MOTIVO ── -->
+    <div id="modalMotivo" class="modal-overlay">
+        <div class="modal-panel" style="max-width:380px;">
+            <div class="modal-header">
+                <span class="modal-header-title">Seleccioná un motivo</span>
+                <button class="modal-close-btn" onclick="cerrarModalMotivo()">✕</button>
+            </div>
+            <div class="motivo-list">
+                <button class="motivo-list-item" data-motivo="Alimentación" onclick="seleccionarMotivoModal(this)">🍔&nbsp;&nbsp;Alimentación</button>
+                <button class="motivo-list-item" data-motivo="Alquiler" onclick="seleccionarMotivoModal(this)">🏠&nbsp;&nbsp;Alquiler</button>
+                <button class="motivo-list-item" data-motivo="Servicios" onclick="seleccionarMotivoModal(this)">⚡&nbsp;&nbsp;Servicios</button>
+                <button class="motivo-list-item" data-motivo="Salud" onclick="seleccionarMotivoModal(this)">🏥&nbsp;&nbsp;Salud</button>
+                <button class="motivo-list-item" data-motivo="Educación" onclick="seleccionarMotivoModal(this)">📚&nbsp;&nbsp;Educación</button>
+                <button class="motivo-list-item" data-motivo="Transporte" onclick="seleccionarMotivoModal(this)">🚗&nbsp;&nbsp;Transporte</button>
+                <button class="motivo-list-item" data-motivo="Entretenimiento" onclick="seleccionarMotivoModal(this)">🎬&nbsp;&nbsp;Entretenimiento</button>
+                <button class="motivo-list-item" data-motivo="Otros motivos" onclick="seleccionarMotivoModal(this)">💬&nbsp;&nbsp;Otros motivos</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL AGREGAR CONTACTO ── -->
+    <div id="modalAgregarContacto" class="modal-overlay">
+        <div class="modal-panel" style="max-width:340px;">
+            <div class="modal-header">
+                <span class="modal-header-title">¿Agregar a contactos?</span>
+                <button class="modal-close-btn" onclick="cerrarModalContacto()">✕</button>
+            </div>
+            <div style="padding:20px 24px 24px;">
+                <div id="contactoAvatarRow"></div>
+                <p style="font-size:0.84rem;color:var(--muted);margin:12px 0 20px;line-height:1.5;">Guardá este contacto para transferirle más rápido la próxima vez.</p>
+                <div style="display:flex;gap:10px;">
+                    <button class="confirm-btn-cancel" onclick="cerrarModalContacto()">Ahora no</button>
+                    <button style="flex:1;padding:10px;background:var(--accent);color:white;border:none;border-radius:10px;font-size:0.86rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'" onclick="confirmarContacto()">Agregar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL CONTACTOS ── -->
+    <div id="modalContactos" class="modal-overlay">
+        <div class="modal-panel" style="max-width:420px;">
+            <div class="modal-header">
+                <span class="modal-header-title">Contactos</span>
+                <button class="modal-close-btn" onclick="cerrarModalContactos()">✕</button>
+            </div>
+            <div id="contactosList" class="contact-modal-list"></div>
+        </div>
+    </div>
+
+    <!-- ── MODAL DETALLE TRANSACCIÓN ── -->
+    <div id="modalDetalleTx" class="modal-overlay" style="z-index:1050;">
+        <div class="modal-panel" style="max-width:440px;">
+            <div class="modal-header">
+                <button class="modal-back-btn" onclick="cerrarDetalleTx()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                    Volver
+                </button>
+                <span class="modal-header-title">Detalle</span>
+                <button class="modal-close-btn" onclick="cerrarDetalleTx()">✕</button>
+            </div>
+            <div id="detalleTxCuerpo" class="detalle-tx-body"></div>
+        </div>
+    </div>
+
+    <!-- ── CONFIRM ELIMINAR CONTACTO ── -->
+    <div id="confirmEliminarContacto" class="confirm-overlay" style="z-index:1200;">
+        <div class="confirm-box">
+            <div class="confirm-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </div>
+            <div class="confirm-title" id="confirmEliminarNombre">¿Eliminar contacto?</div>
+            <div class="confirm-desc">Esta acción no se puede deshacer.</div>
+            <div class="confirm-actions">
+                <button class="confirm-btn-cancel" onclick="cancelarEliminarContacto()">Cancelar</button>
+                <button class="confirm-btn-danger" onclick="confirmarEliminarContacto()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CONFIRM LOGOUT MODAL ── -->
+    <div id="modalConfirmLogout" class="confirm-overlay">
+        <div class="confirm-box">
+            <div class="confirm-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
+            <div class="confirm-title">¿Cerrar sesión?</div>
+            <div class="confirm-desc">Vas a salir de tu cuenta. Podés volver a ingresar cuando quieras.</div>
+            <div class="confirm-actions">
+                <button class="confirm-btn-cancel" onclick="document.getElementById('modalConfirmLogout').style.display='none'">Cancelar</button>
+                <button class="confirm-btn-danger" onclick="cerrarSesion()">Sí, salir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── PDF RECEIPT TEMPLATE (off-screen) ── -->
+    <div id="pdfTpl" style="position:fixed;left:-9999px;top:0;visibility:hidden;width:440px;background:#ffffff;padding:36px 32px;font-family:'Inter',-apple-system,sans-serif;color:#1A1A1B;line-height:1.5;">
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:18px;border-bottom:2.5px solid #1A1A1B;">
+            <div style="font-size:1.9rem;font-weight:800;letter-spacing:-0.06em;color:#1A1A1B;">tuo</div>
+            <div id="pdf-estado-badge"></div>
+        </div>
+        <!-- Title -->
+        <div style="margin-bottom:4px;font-size:0.95rem;font-weight:700;color:#1A1A1B;">Comprobante de transferencia</div>
+        <div style="font-size:0.75rem;color:#6B6B6B;margin-bottom:22px;" id="pdf-dir"></div>
+        <!-- Big amount -->
+        <div style="text-align:center;padding:22px 16px;background:#F4F4F4;border-radius:14px;margin-bottom:22px;">
+            <div style="font-size:0.65rem;font-weight:700;color:#6B6B6B;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;" id="pdf-dir-label"></div>
+            <div style="font-size:2.4rem;font-weight:800;letter-spacing:-0.03em;" id="pdf-amount"></div>
+        </div>
+        <!-- Persona section -->
+        <div style="margin-bottom:16px;">
+            <div style="font-size:0.63rem;font-weight:700;color:#6B6B6B;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;" id="pdf-persona-title">Destinatario</div>
+            <div id="pdf-persona" style="border:1px solid #E5E5E5;border-radius:10px;overflow:hidden;"></div>
+        </div>
+        <!-- TX section -->
+        <div style="margin-bottom:26px;">
+            <div style="font-size:0.63rem;font-weight:700;color:#6B6B6B;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Transacción</div>
+            <div id="pdf-tx" style="border:1px solid #E5E5E5;border-radius:10px;overflow:hidden;"></div>
+        </div>
+        <!-- Footer -->
+        <div style="border-top:1px solid #E5E5E5;padding-top:14px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.66rem;color:#6B6B6B;">Documento generado digitalmente</div>
+            <div style="font-size:0.68rem;font-weight:700;color:#1A1A1B;">tuo · Sistema Bancario</div>
+        </div>
+    </div>
+
+    <!-- ── TOAST CONTAINER ── -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ── DARK MODE ────────────────────────────────────────────────────
+        const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+        const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            document.getElementById('btnTheme').innerHTML = t === 'dark' ? SUN : MOON;
+            if (window._txsCache) inicializarGraficos(window._txsCache);
+        }
+
+        function toggleTheme() {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('tuo-theme', next);
+            applyTheme(next);
+        }
+
+        applyTheme(localStorage.getItem('tuo-theme') || 'light');
+
+        // ── TOAST ────────────────────────────────────────────────────────
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            const icons = {
+                success: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+                error:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+                info:    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`
+            };
+            el.innerHTML = (icons[type] || icons.info) + message;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.classList.add('removing');
+                el.addEventListener('animationend', () => el.remove(), { once: true });
+            }, 3200);
+        }
+
+        // ── AVATAR UTILS ─────────────────────────────────────────────────
+        const AVATAR_COLORS = ['#4338CA','#D97706','#059669','#DB2777','#0284C7','#7C3AED','#DC2626','#10B981','#F59E0B','#0891B2'];
+
+        function avatarColor(name) {
+            let h = 0;
+            for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+            return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+        }
+
+        function initials(nameStr) {
+            if (!nameStr || nameStr.startsWith('CBU ')) return '?';
+            const p = nameStr.trim().split(' ').filter(Boolean);
+            return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : (p[0]?.[0] || '?').toUpperCase();
+        }
+
+        // ── CBU FORMAT ───────────────────────────────────────────────────
+        function formatCbu(cbu) {
+            if (!cbu || cbu.length !== 22) return cbu;
+            return `${cbu.slice(0,4)} ${cbu.slice(4,8)} ${cbu.slice(8,12)} ${cbu.slice(12,16)} ${cbu.slice(16,20)} ${cbu.slice(20)}`;
+        }
+
+        // ── NOMBRE CACHE ─────────────────────────────────────────────────
+        function guardarNombreCbu(cbu, nombre) {
+            const cache = JSON.parse(localStorage.getItem('tuo_nombres') || '{}');
+            cache[cbu] = nombre;
+            localStorage.setItem('tuo_nombres', JSON.stringify(cache));
+        }
+
+        function getNombrePorCbu(cbu) {
+            const cache = JSON.parse(localStorage.getItem('tuo_nombres') || '{}');
+            return cache[cbu] || null;
+        }
+
+        async function resolverNombresCbu(cbus) {
+            const cache = JSON.parse(localStorage.getItem('tuo_nombres') || '{}');
+            const faltantes = [...new Set(cbus)].filter(c => c && !cache[c]);
+            if (faltantes.length === 0) return;
+            await Promise.all(faltantes.map(async cbu => {
+                try {
+                    const res = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbu)}`);
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.nombre) guardarNombreCbu(cbu, `${d.nombre} ${d.apellido}`);
+                        if (d.dni)    guardarDniCbu(cbu, d.dni);
+                    }
+                } catch {}
+            }));
+        }
+
+        // ── DNI CACHE ────────────────────────────────────────────────────
+        function guardarDniCbu(cbu, dni) {
+            if (!cbu || !dni) return;
+            const c = JSON.parse(localStorage.getItem('tuo_dni_cache') || '{}');
+            c[cbu] = dni;
+            localStorage.setItem('tuo_dni_cache', JSON.stringify(c));
+        }
+        function getDniPorCbu(cbu) {
+            return JSON.parse(localStorage.getItem('tuo_dni_cache') || '{}')[cbu] || null;
+        }
+
+        // ── BANCO CACHE ──────────────────────────────────────────────────
+        async function getNombreBanco(code) {
+            if (!code) return null;
+            const c = JSON.parse(localStorage.getItem('tuo_bancos') || '{}');
+            if (c[code]) return c[code];
+            try {
+                const r = await fetch(`/api/banco/${code}`);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d.name) {
+                        c[code] = d.name;
+                        localStorage.setItem('tuo_bancos', JSON.stringify(c));
+                        return d.name;
+                    }
+                }
+            } catch {}
+            return null;
+        }
+
+        // ── EYE ICONS ────────────────────────────────────────────────────
+        const EYE_OPEN   = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        const EYE_CLOSED = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+        document.getElementById('btnEye').innerHTML = EYE_OPEN;
+
+        let saldoVisible = true;
+        let saldoReal = 0;
+        let _lastVisitChecked = false;
+        let _txsVistas = new Set();
+        let _pollingInterval = null;
+
+        function toggleSaldo() {
+            saldoVisible = !saldoVisible;
+            document.getElementById('btnEye').innerHTML = saldoVisible ? EYE_OPEN : EYE_CLOSED;
+            document.getElementById('saldo').textContent = saldoVisible
+                ? '$ ' + saldoReal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : '$ ••••••';
+        }
+
+        // ── COUNT UP ─────────────────────────────────────────────────────
+        function countUp(from, to, duration, el) {
+            const start = performance.now();
+            function step(now) {
+                const p = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - p, 3);
+                const val = from + (to - from) * eased;
+                el.textContent = '$ ' + val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                if (p < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        function actualizarSaldoDisplay(nuevoValor, animar = false) {
+            const el = document.getElementById('saldo');
+            const viejo = saldoReal;
+            saldoReal = nuevoValor;
+            if (!saldoVisible) return;
+            if (animar && viejo !== nuevoValor) {
+                countUp(viejo, nuevoValor, 700, el);
+                el.classList.remove('balance-flash');
+                setTimeout(() => {
+                    el.classList.add('balance-flash');
+                    el.addEventListener('animationend', () => el.classList.remove('balance-flash'), { once: true });
+                }, 720);
+            } else {
+                el.textContent = '$ ' + nuevoValor.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        }
+
+        // ── COPY TO CLIPBOARD ────────────────────────────────────────────
+        async function copiarAlPortapapeles(campo) {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            const valor = campo === 'cbu' ? u.cbu : u.alias;
+            const tooltipId = campo === 'cbu' ? 'tooltipCbu' : 'tooltipAlias';
+            if (!valor || valor === '-') return;
+            try {
+                await navigator.clipboard.writeText(valor);
+                const tt = document.getElementById(tooltipId);
+                tt.classList.add('show');
+                setTimeout(() => tt.classList.remove('show'), 1600);
+            } catch {
+                showToast('No se pudo copiar al portapapeles', 'error');
+            }
+        }
+
+        // ── RIPPLE ───────────────────────────────────────────────────────
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const circle = document.createElement('span');
+                const d = Math.max(this.clientWidth, this.clientHeight);
+                const r = d / 2;
+                const rect = this.getBoundingClientRect();
+                circle.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-rect.left-r}px;top:${e.clientY-rect.top-r}px;`;
+                circle.classList.add('ripple');
+                this.querySelector('.ripple')?.remove();
+                this.appendChild(circle);
+            });
+        });
+
+        // ── HEADER DROPDOWN ──────────────────────────────────────────────
+        function toggleDropdown() {
+            document.getElementById('headerDropdown').classList.toggle('open');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!document.getElementById('avatarWrap').contains(e.target))
+                document.getElementById('headerDropdown').classList.remove('open');
+        });
+
+        // ── SKELETON ─────────────────────────────────────────────────────
+        function mostrarSkeleton(container, count = 3) {
+            container.innerHTML = Array.from({ length: count }, () => `
+                <div class="skeleton-tx-item">
+                    <div class="sk sk-circle" style="width:38px;height:38px;flex-shrink:0;"></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sk sk-line" style="width:65%;"></div>
+                        <div class="sk sk-short"></div>
+                    </div>
+                    <div class="sk sk-amount"></div>
+                </div>`).join('');
+        }
+
+        // ── INIT ─────────────────────────────────────────────────────────
+        const userData = localStorage.getItem('usuarioLogueado');
+
+        if (!userData) {
+            window.location.href = 'login.html';
+        } else {
+            const u = JSON.parse(userData);
+            const ini = ((u.nombre?.[0] || '') + (u.apellido?.[0] || '')).toUpperCase();
+            document.getElementById('dropdownAvatarLg').textContent = ini;
+            document.getElementById('headerNombre').textContent = `${u.nombre} ${u.apellido}`;
+            document.getElementById('dropdownUserName').textContent = `${u.nombre} ${u.apellido}`;
+            document.getElementById('dropdownUserEmail').textContent = u.email || '';
+            document.getElementById('cbu').textContent = formatCbu(u.cbu) || '-';
+            document.getElementById('alias').textContent = u.alias || '-';
+            document.getElementById('tipoCuenta').textContent = (u.tipo_producto || 'CAJA_AHORRO').replace(/_/g, ' ');
+            // Modal datos personales
+            document.getElementById('modalNombreCompleto').textContent = `${u.nombre} ${u.apellido}`;
+            document.getElementById('modalDni').textContent = u.dni || '-';
+            document.getElementById('modalEmail').textContent = u.email || '-';
+            document.getElementById('modalTelefono').textContent = u.telefono || '-';
+
+            actualizarSaldoDisplay(parseFloat(u.saldo) || 0);
+            mostrarSkeleton(document.getElementById('recentTxList'));
+            cargarRecentTx();
+        }
+
+        function pedirConfirmLogout() {
+            document.getElementById('headerDropdown').classList.remove('open');
+            document.getElementById('modalConfirmLogout').style.display = 'flex';
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('usuarioLogueado');
+            window.location.href = 'login.html';
+        }
+
+        // ── FAVORITES ────────────────────────────────────────────────────
+        function _favKey() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            return u ? 'tuo_favoritos_' + u.cbu : 'tuo_favoritos';
+        }
+        function getFavoritos() {
+            return JSON.parse(localStorage.getItem(_favKey()) || '[]');
+        }
+        function guardarFavorito(cbu, nombre) {
+            const lista = getFavoritos();
+            if (!lista.find(f => f.cbu === cbu)) {
+                lista.push({ cbu, nombre });
+                localStorage.setItem(_favKey(), JSON.stringify(lista));
+            }
+        }
+        function eliminarFavorito(cbu) {
+            localStorage.setItem(_favKey(), JSON.stringify(getFavoritos().filter(f => f.cbu !== cbu)));
+        }
+        function esFavorito(cbu) {
+            return getFavoritos().some(f => f.cbu === cbu);
+        }
+        function renderizarFavoritos() {
+            const lista    = getFavoritos();
+            const section  = document.getElementById('favSection');
+            const listEl   = document.getElementById('favList');
+            if (!section) return;
+            if (lista.length === 0) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+            listEl.innerHTML = lista.map(f => {
+                const safeNombre = f.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const safeCbu    = f.cbu.replace(/'/g, "\\'");
+                return `<div class="fav-item" onclick="seleccionarFavorito('${safeCbu}','${safeNombre}')">
+                    <div class="fav-avatar-sm" style="background:${avatarColor(f.nombre)};">${initials(f.nombre)}</div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="fav-name">${f.nombre}</div>
+                        <div class="fav-cbu">CBU ...${f.cbu.slice(-6)}</div>
+                    </div>
+                    <button class="fav-del" onclick="event.stopPropagation();eliminarFavoritoUI('${safeCbu}')" title="Eliminar favorito">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>`;
+            }).join('');
+        }
+        function seleccionarFavorito(cbu, nombre) {
+            document.getElementById('inputBusqueda').value = cbu;
+            buscarDestinatario();
+        }
+        function eliminarFavoritoUI(cbu) {
+            eliminarContactoModal(cbu);
+        }
+
+        // ── CONTACTOS ────────────────────────────────────────────────────
+        let _cbuPendienteContacto = null, _nombrePendienteContacto = null;
+
+        function cerrarModalContacto() {
+            document.getElementById('modalAgregarContacto').style.display = 'none';
+        }
+        function confirmarContacto() {
+            guardarFavorito(_cbuPendienteContacto, _nombrePendienteContacto);
+            cerrarModalContacto();
+            showToast(`${_nombrePendienteContacto} agregado a contactos`);
+            renderizarFavoritos();
+        }
+
+        function abrirModalContactos() {
+            document.getElementById('modalContactos').style.display = 'flex';
+            renderizarModalContactos();
+        }
+        function cerrarModalContactos() {
+            document.getElementById('modalContactos').style.display = 'none';
+        }
+        function renderizarModalContactos() {
+            const lista = getFavoritos();
+            const el    = document.getElementById('contactosList');
+            if (lista.length === 0) {
+                el.innerHTML = `<div class="contact-modal-empty">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <p>No tenés contactos guardados.<br>Se agregan automáticamente después de una transferencia.</p>
+                </div>`;
+                return;
+            }
+            el.innerHTML = lista.map(f => {
+                const safeNombre = f.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const safeCbu    = f.cbu.replace(/'/g, "\\'");
+                return `<div class="contact-modal-item">
+                    <div class="contact-modal-avatar" style="background:${avatarColor(f.nombre)};">${initials(f.nombre)}</div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="contact-modal-name">${f.nombre}</div>
+                        <div class="contact-modal-cbu">CBU ...${f.cbu.slice(-6)}</div>
+                    </div>
+                    <button class="btn-eliminar-contacto" onclick="eliminarContactoModal('${safeCbu}')" title="Eliminar contacto">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                    <button class="btn-transferir-contacto" onclick="transferirAContacto('${safeCbu}','${safeNombre}')">Transferir</button>
+                </div>`;
+            }).join('');
+        }
+        let _cbuPendienteEliminar = null;
+        function eliminarContactoModal(cbu) {
+            const lista  = getFavoritos();
+            const f      = lista.find(x => x.cbu === cbu);
+            _cbuPendienteEliminar = cbu;
+            document.getElementById('confirmEliminarNombre').textContent =
+                f ? `¿Eliminar a ${f.nombre}?` : '¿Eliminar contacto?';
+            document.getElementById('confirmEliminarContacto').style.display = 'flex';
+        }
+        function cancelarEliminarContacto() {
+            document.getElementById('confirmEliminarContacto').style.display = 'none';
+            _cbuPendienteEliminar = null;
+        }
+        function confirmarEliminarContacto() {
+            if (!_cbuPendienteEliminar) return;
+            eliminarFavorito(_cbuPendienteEliminar);
+            _cbuPendienteEliminar = null;
+            document.getElementById('confirmEliminarContacto').style.display = 'none';
+            renderizarModalContactos();
+            renderizarFavoritos();
+            showToast('Contacto eliminado');
+        }
+        function transferirAContacto(cbu, nombre) {
+            cerrarModalContactos();
+            abrirModalTransferencia();
+            document.getElementById('inputBusqueda').value = cbu;
+            buscarDestinatario();
+        }
+
+        // ── SOUNDS ───────────────────────────────────────────────────────
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (type === 'ingreso') {
+                    // Coins landing / rising arpeggio
+                    [1318, 1568, 1760, 2093, 2637].forEach((freq, i) => {
+                        const osc  = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+                        osc.connect(gain); gain.connect(ctx.destination);
+                        const t = ctx.currentTime + i * 0.075;
+                        gain.gain.setValueAtTime(0, t);
+                        gain.gain.linearRampToValueAtTime(0.16, t + 0.004);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+                        osc.start(t); osc.stop(t + 0.28);
+                    });
+                } else {
+                    // Coin leaving — descending swoosh + soft click
+                    const osc  = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(1200, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.25);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    gain.gain.setValueAtTime(0, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.14, ctx.currentTime + 0.006);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
+                }
+            } catch {}
+        }
+
+        // ── HISTORIAL FILTERS ────────────────────────────────────────────
+        let _filtroTipo  = 'todos';
+        let _filtroFecha = 'todos';
+        let _todasPropias = [];
+        let _usuarioHist  = null;
+        let _txMap        = {};
+
+        function setFiltroTipo(btn) {
+            _filtroTipo = btn.dataset.tipo;
+            document.querySelectorAll('#filtroTipoChips .filter-chip').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderHistorialFiltrado();
+        }
+        function setFiltroFecha(btn) {
+            _filtroFecha = btn.dataset.fecha;
+            document.querySelectorAll('#filtroFechaChips .filter-chip').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderHistorialFiltrado();
+        }
+        function getFechaLimite() {
+            const ahora = new Date();
+            if (_filtroFecha === '24h')  return new Date(ahora - 86400000);
+            if (_filtroFecha === '7d')   return new Date(ahora - 7*86400000);
+            if (_filtroFecha === '15d')  return new Date(ahora - 15*86400000);
+            if (_filtroFecha === 'mes')  return new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+            return null;
+        }
+        function aplicarFiltros(txs) {
+            const u = _usuarioHist;
+            if (!u) return txs;
+            let r = txs;
+            if (_filtroTipo === 'enviados')   r = r.filter(t => t.cbuOrigen === u.cbu);
+            if (_filtroTipo === 'recibidos')  r = r.filter(t => t.cbuDestino === u.cbu);
+            const limite = getFechaLimite();
+            if (limite) r = r.filter(t => new Date(t.fecha || t.createdAt || t.timestamp || t.created_at) >= limite);
+            const montoMin = parseFloat(document.getElementById('filtroMontoMin')?.value);
+            const montoMax = parseFloat(document.getElementById('filtroMontoMax')?.value);
+            if (!isNaN(montoMin) && montoMin > 0) r = r.filter(t => Number(t.importe) >= montoMin);
+            if (!isNaN(montoMax) && montoMax > 0) r = r.filter(t => Number(t.importe) <= montoMax);
+            return r;
+        }
+        function renderHistorialFiltrado() {
+            const cuerpo = document.getElementById('historialCuerpo');
+            const u      = _usuarioHist;
+            if (!u || _todasPropias.length === 0) return;
+            const filtradas = aplicarFiltros(_todasPropias);
+            if (filtradas.length === 0) {
+                cuerpo.innerHTML = emptyState('Sin movimientos para este filtro.');
+                return;
+            }
+            _txMap = {};
+            filtradas.forEach(t => { if (t._id) _txMap[t._id] = t; });
+            const grupos = groupByDate(filtradas);
+            let html = '', globalIdx = 0;
+            Object.entries(grupos).forEach(([fecha, txs]) => {
+                html += `<div class="date-sep"><div class="date-sep-line"></div><span class="date-sep-label">${fecha}</span><div class="date-sep-line"></div></div>`;
+                txs.forEach(t => {
+                    const esDeposito  = t.cbuOrigen === 'DEPOSITO';
+                    const esEnvio     = !esDeposito && t.cbuOrigen === u.cbu;
+                    const contraparte = esDeposito
+                        ? 'Depósito en efectivo'
+                        : (esEnvio
+                            ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || t.cbuDestino)
+                            : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || t.cbuOrigen));
+                    const colorAmt    = esEnvio ? '#B91C1C' : '#15803D';
+                    const signo       = esEnvio ? '−' : '+';
+                    const etiqueta    = esDeposito ? 'Depósito' : (esEnvio ? 'Enviado a' : 'Recibido de');
+                    const badgeBg     = esEnvio ? '#FEF2F2' : '#F0FDF4';
+                    const badgeFg     = esEnvio ? '#B91C1C' : '#15803D';
+                    const estadoOk    = t.estado === 'aprobada' || t.estado === 'approved';
+                    const estadoStyle = estadoOk
+                        ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;'
+                        : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;';
+                    const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                    const fechaStr = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+                    const bg  = esDeposito ? '#0052FF' : avatarColor(contraparte || '');
+                    const ini = esDeposito
+                        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`
+                        : initials(contraparte || '');
+                    const arrowSvg = esEnvio
+                        ? `<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`
+                        : `<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
+                    const txId = (t._id || '').replace(/'/g, '');
+                    html += `<div class="historial-item" style="animation-delay:${globalIdx * 0.04}s;" onclick="abrirDetalleTx('${txId}')">
+                        <div class="historial-avatar" style="background:${bg};">${ini}<div class="historial-badge" style="background:${badgeBg};">${arrowSvg}</div></div>
+                        <div class="historial-info">
+                            <div class="historial-name">${etiqueta}: ${contraparte}</div>
+                            ${fechaStr ? `<div class="historial-date">${fechaStr}</div>` : ''}
+                            <span class="historial-estado" style="${estadoStyle}">${estadoOk ? 'Aprobada' : 'Rechazada'}</span>
+                        </div>
+                        <div class="historial-amount" style="color:${colorAmt};">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:4px;"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>`;
+                    globalIdx++;
+                });
+            });
+            cuerpo.innerHTML = html;
+        }
+
+        // ── DETALLE TRANSACCIÓN ──────────────────────────────────────────
+        async function abrirDetalleTx(id) {
+            const t = _txMap[id];
+            if (!t) return;
+            const u          = _usuarioHist;
+            const esDeposito = t.cbuOrigen === 'DEPOSITO';
+            const esEnvio    = !esDeposito && t.cbuOrigen === u.cbu;
+
+            if (esDeposito) {
+                const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                const fechaHora = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+                const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('detalleTxCuerpo').innerHTML = `
+                    <div class="detalle-tx-hero">
+                        <div class="detalle-tx-avatar" style="background:#0052FF;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                        </div>
+                        <div class="detalle-tx-amount" style="color:#15803D;">+ ${fmt(t.importe)}</div>
+                        <div class="detalle-tx-label">Depósito en efectivo</div>
+                        <span class="historial-estado" style="background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;">Aprobada</span>
+                    </div>
+                    <div class="detalle-tx-section">
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Fecha</span><span class="detalle-tx-value">${fechaHora}</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Importe</span><span class="detalle-tx-value">${fmt(t.importe)}</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Tipo</span><span class="detalle-tx-value">Depósito en efectivo</span></div>
+                    </div>`;
+                document.getElementById('modalDetalleTx').style.display = 'flex';
+                return;
+            }
+
+            const persona        = esEnvio ? t.personaDestino : t.personaOrigen;
+            const cbuContraparte = esEnvio ? t.cbuDestino      : t.cbuOrigen;
+            const labelRole      = esEnvio ? 'Destinatario'    : 'Emisor';
+            const labelDir       = esEnvio ? 'Enviaste a'      : 'Recibiste de';
+
+            const nombre  = persona ? `${persona.nombre} ${persona.apellido}` : (getNombrePorCbu(cbuContraparte) || 'Desconocido');
+            const dni     = persona?.dni || getDniPorCbu(cbuContraparte) || '—';
+            const alias   = persona?.alias || '—';
+            const cbu     = persona?.cbu   || cbuContraparte || '—';
+
+            const bankCodeContraparte = esEnvio ? t.bankCodeDestino : t.bankCodeOrigen;
+            const nombreBanco = await getNombreBanco(bankCodeContraparte);
+
+            const estadoOk  = t.estado === 'aprobada' || t.estado === 'approved';
+            const colorAmt  = esEnvio ? '#B91C1C' : '#15803D';
+            const signo     = esEnvio ? '−' : '+';
+            const rawFecha  = t.fecha || t.createdAt || t.timestamp || t.created_at;
+            const fechaHora = rawFecha
+                ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                : '—';
+            const bg  = avatarColor(nombre);
+            const ini = initials(nombre);
+
+            document.getElementById('detalleTxCuerpo').innerHTML = `
+                <div class="detalle-tx-hero">
+                    <div class="detalle-tx-avatar" style="background:${bg};">${ini}</div>
+                    <div class="detalle-tx-role">${labelDir}</div>
+                    <div class="detalle-tx-nombre">${nombre}</div>
+                </div>
+                <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+
+                <div class="detalle-tx-section">
+                    <div class="detalle-tx-section-title">${labelRole}</div>
+                    <div class="detalle-tx-row">
+                        <span class="detalle-tx-label">Nombre completo</span>
+                        <span class="detalle-tx-value">${nombre}</span>
+                    </div>
+                    <div class="detalle-tx-row">
+                        <span class="detalle-tx-label">DNI</span>
+                        <span class="detalle-tx-value">${dni}</span>
+                    </div>
+                    <div class="detalle-tx-row">
+                        <span class="detalle-tx-label">CBU</span>
+                        <span class="detalle-tx-value" style="font-size:0.75rem;">${cbu}</span>
+                    </div>
+                    <div class="detalle-tx-row">
+                        <span class="detalle-tx-label">Alias</span>
+                        <span class="detalle-tx-value">${alias}</span>
+                    </div>
+                    ${nombreBanco ? `<div class="detalle-tx-row">
+                        <span class="detalle-tx-label">Banco</span>
+                        <span class="detalle-tx-value">${nombreBanco}</span>
+                    </div>` : ''}
+                </div>
+
+                <div class="detalle-tx-section">
+                    <div class="detalle-tx-section-title">Transacción</div>
+                    <div class="detalle-tx-row">
+                        <span class="detalle-tx-label">Fecha y hora</span>
+                        <span class="detalle-tx-value">${fechaHora}</span>
+                    </div>
+                    <div class="detalle-tx-row">
+                        <span class="detalle-tx-label">Monto</span>
+                        <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="detalle-tx-row">
+                        <span class="detalle-tx-label">Estado</span>
+                        <span class="detalle-tx-value">
+                            <span style="font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:600;${estadoOk ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;' : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;'}">${estadoOk ? 'Aprobada' : 'Rechazada'}</span>
+                        </span>
+                    </div>
+                    ${t._id ? `<div class="detalle-tx-row">
+                        <span class="detalle-tx-label">ID</span>
+                        <span class="detalle-tx-value" style="font-size:0.68rem;color:var(--muted);">${t._id}</span>
+                    </div>` : ''}
+                </div>
+
+                <button id="btnDescargarPdf" onclick="descargarComprobante('${id}')"
+                    style="width:100%;padding:13px;background:#1A1A1B;color:white;border:none;border-radius:12px;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Descargar comprobante
+                </button>`;
+
+            document.getElementById('modalDetalleTx').style.display = 'flex';
+        }
+
+        function cerrarDetalleTx() {
+            document.getElementById('modalDetalleTx').style.display = 'none';
+        }
+
+        document.getElementById('modalDetalleTx').addEventListener('click', function(e) {
+            if (e.target === this) cerrarDetalleTx();
+        });
+
+        async function descargarComprobante(id) {
+            const t = _txMap[id];
+            if (!t) return;
+            if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                showToast('Las librerías aún están cargando. Intentá en un momento.', 'error');
+                return;
+            }
+            const u      = _usuarioHist;
+            const btn    = document.getElementById('btnDescargarPdf');
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.querySelector('span') && (btn.querySelector('span').textContent = 'Generando...'); }
+
+            const esEnvio       = t.cbuOrigen === u.cbu;
+            const persona       = esEnvio ? t.personaDestino : t.personaOrigen;
+            const cbuContra     = esEnvio ? t.cbuDestino : t.cbuOrigen;
+            const labelRole     = esEnvio ? 'Destinatario' : 'Emisor';
+            const labelDir      = esEnvio ? 'Enviaste a' : 'Recibiste de';
+            const nombre        = persona ? `${persona.nombre} ${persona.apellido}` : (getNombrePorCbu(cbuContra) || 'Desconocido');
+            const dni           = persona?.dni || getDniPorCbu(cbuContra) || '—';
+            const alias         = persona?.alias || '—';
+            const cbu           = persona?.cbu   || cbuContra || '—';
+            const bankCodeContra = esEnvio ? t.bankCodeDestino : t.bankCodeOrigen;
+            const nombreBanco   = await getNombreBanco(bankCodeContra);
+            const estadoOk      = t.estado === 'aprobada' || t.estado === 'approved';
+            const colorAmt      = esEnvio ? '#B91C1C' : '#15803D';
+            const signo         = esEnvio ? '−' : '+';
+            const rawFecha      = t.fecha || t.createdAt || t.timestamp || t.created_at;
+            const fechaHora     = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+            const amtFmt        = `${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+
+            const row = (label, value, vs = '') =>
+                `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;border-bottom:1px solid #E5E5E5;font-size:0.81rem;gap:14px;background:#fff;">
+                    <span style="color:#6B6B6B;flex-shrink:0;">${label}</span>
+                    <span style="font-weight:600;text-align:right;word-break:break-all;color:#1A1A1B;${vs}">${value}</span>
+                </div>`;
+            const rowLast = (label, value, vs = '') =>
+                `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;font-size:0.81rem;gap:14px;background:#fff;">
+                    <span style="color:#6B6B6B;flex-shrink:0;">${label}</span>
+                    <span style="font-weight:600;text-align:right;word-break:break-all;color:#1A1A1B;${vs}">${value}</span>
+                </div>`;
+
+            // Populate PDF template
+            document.getElementById('pdf-estado-badge').innerHTML =
+                `<span style="font-size:0.72rem;padding:5px 12px;border-radius:20px;font-weight:700;${estadoOk ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;' : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;'}">${estadoOk ? '✓ Aprobada' : '✗ Rechazada'}</span>`;
+            document.getElementById('pdf-dir').textContent = `${labelDir} · ${fechaHora}`;
+            document.getElementById('pdf-dir-label').textContent = labelDir;
+            document.getElementById('pdf-amount').style.color = colorAmt;
+            document.getElementById('pdf-amount').textContent = amtFmt;
+            document.getElementById('pdf-persona-title').textContent = labelRole;
+            document.getElementById('pdf-persona').innerHTML =
+                row('Nombre', nombre) +
+                row('DNI', dni) +
+                row('CBU', cbu, 'font-size:0.72rem;') +
+                (nombreBanco ? row('Alias', alias) + rowLast('Banco', nombreBanco) : rowLast('Alias', alias));
+            document.getElementById('pdf-tx').innerHTML =
+                row('Monto', amtFmt, `color:${colorAmt};font-weight:700;`) +
+                row('Fecha y hora', fechaHora) +
+                row('Estado', estadoOk ? 'Aprobada' : 'Rechazada', `color:${estadoOk ? '#15803D' : '#B91C1C'};`) +
+                (t._id ? rowLast('ID', t._id, 'font-size:0.7rem;color:#6B6B6B;') : rowLast('', ''));
+
+            const tpl = document.getElementById('pdfTpl');
+            tpl.style.visibility = 'visible';
+
+            try {
+                const canvas = await html2canvas(tpl, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+                tpl.style.visibility = 'hidden';
+
+                const { jsPDF } = window.jspdf;
+                const imgW  = canvas.width  / 2;
+                const imgH  = canvas.height / 2;
+                const pdf   = new jsPDF({ orientation: 'portrait', unit: 'px', format: [imgW, imgH] });
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, imgH);
+                const blob    = pdf.output('blob');
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                showToast('Comprobante abierto en nueva pestaña');
+            } catch (err) {
+                tpl.style.visibility = 'hidden';
+                showToast('No se pudo generar el PDF', 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+            }
+        }
+
+        // ── DATOS PERSONALES ─────────────────────────────────────────────
+        function abrirDatosPersonales() {
+            document.getElementById('headerDropdown').classList.remove('open');
+            document.getElementById('modalDatosPersonales').style.display = 'flex';
+        }
+
+        function cerrarDatosPersonales() {
+            document.getElementById('modalDatosPersonales').style.display = 'none';
+        }
+
+        document.getElementById('modalDatosPersonales').addEventListener('click', function(e) {
+            if (e.target === this) cerrarDatosPersonales();
+        });
+
+        // ── DATE UTILS ───────────────────────────────────────────────────
+        function etiquetaFecha(fechaStr) {
+            if (!fechaStr) return null;
+            const d = new Date(fechaStr);
+            const hoy  = new Date();
+            const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+            const sameDay = (a, b) => a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+            if (sameDay(d, hoy))  return 'Hoy';
+            if (sameDay(d, ayer)) return 'Ayer';
+            return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+
+        function groupByDate(txs) {
+            const groups = {};
+            txs.forEach(t => {
+                const raw = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                const key = etiquetaFecha(raw) || 'Sin fecha';
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(t);
+            });
+            return groups;
+        }
+
+        // ── CHART UTILS ──────────────────────────────────────────────────
+        let chartMotivosInst = null, chartIngresosInst = null, chartGastosInst = null;
+
+        function destroyCharts() {
+            chartMotivosInst?.destroy();
+            chartIngresosInst?.destroy();
+            chartGastosInst?.destroy();
+            chartMotivosInst = chartIngresosInst = chartGastosInst = null;
+        }
+
+        function groupByMonth(txs) {
+            const m = {};
+            txs.forEach(t => {
+                const f = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                if (!f) return;
+                const d   = new Date(f);
+                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                m[key] = (m[key] || 0) + Number(t.importe || 0);
+            });
+            return m;
+        }
+
+        function last6Months() {
+            const result = [];
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                const label = d.toLocaleDateString('es-AR', { month: 'short' }).replace('.','') + " '" + String(d.getFullYear()).slice(2);
+                result.push({ key, label });
+            }
+            return result;
+        }
+
+        function inicializarGraficos(todasLasTx) {
+            if (typeof Chart === 'undefined') return;
+            const u     = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!u) return;
+            const dark  = document.documentElement.getAttribute('data-theme') === 'dark';
+            const clr   = dark
+                ? { grid: '#2C2C2E', text: '#8E8E8E', barIn: '#3B82F6', barOut: '#EF4444' }
+                : { grid: '#E5E5E5', text: '#6B6B6B', barIn: '#0052FF', barOut: '#B91C1C' };
+
+            destroyCharts();
+
+            // Pie — motivos from localStorage (scoped per user so other accounts don't pollute)
+            const motivosRaw = JSON.parse(localStorage.getItem('tuo_transferencias_' + u.cbu) || '[]');
+            const mTotals    = {};
+            motivosRaw.forEach(m => { mTotals[m.motivo] = (mTotals[m.motivo] || 0) + Number(m.importe); });
+            const pieLabels  = Object.keys(mTotals);
+            const pieVals    = Object.values(mTotals);
+            const ctxPie     = document.getElementById('chartMotivos');
+            const emptyDiv   = document.getElementById('chartMotivosEmpty');
+
+            if (pieLabels.length === 0) {
+                ctxPie.style.display = 'none';
+                emptyDiv.style.display = 'flex';
+            } else {
+                ctxPie.style.display = 'block';
+                emptyDiv.style.display = 'none';
+                const PIE_COLORS = ['#0052FF','#7C3AED','#059669','#D97706','#DB2777','#0284C7','#DC2626','#10B981','#F59E0B','#0891B2'];
+                chartMotivosInst = new Chart(ctxPie, {
+                    type: 'doughnut',
+                    data: {
+                        labels: pieLabels,
+                        datasets: [{ data: pieVals, backgroundColor: PIE_COLORS.slice(0, pieLabels.length), borderWidth: 0 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: clr.text, font: { family: 'Inter', size: 10 }, padding: 10, boxWidth: 12 } },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
+                        }
+                    }
+                });
+            }
+
+            // Bar charts — API data
+            const recibidas = todasLasTx.filter(t => t.cbuDestino === u.cbu);
+            const enviadas  = todasLasTx.filter(t => t.cbuOrigen  === u.cbu);
+            const meses     = last6Months();
+            const labels    = meses.map(m => m.label);
+            const grpIn     = groupByMonth(recibidas);
+            const grpOut    = groupByMonth(enviadas);
+            const dataIn    = meses.map(m => grpIn[m.key]  || 0);
+            const dataOut   = meses.map(m => grpOut[m.key] || 0);
+
+            const barOpts = (color) => ({
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
+                },
+                scales: {
+                    x: { grid: { color: clr.grid }, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, autoSkip: false, maxRotation: 0 } },
+                    y: { grid: { color: clr.grid }, beginAtZero: true, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, callback: v => '$' + v.toLocaleString('es-AR') } }
+                }
+            });
+
+            chartIngresosInst = new Chart(document.getElementById('chartIngresos'), {
+                type: 'bar',
+                data: { labels, datasets: [{ data: dataIn, backgroundColor: dark ? 'rgba(59,130,246,0.25)' : 'rgba(0,82,255,0.15)', borderColor: clr.barIn, borderWidth: 2, borderRadius: 6 }] },
+                options: barOpts(clr.barIn)
+            });
+
+            chartGastosInst = new Chart(document.getElementById('chartGastos'), {
+                type: 'bar',
+                data: { labels, datasets: [{ data: dataOut, backgroundColor: dark ? 'rgba(239,68,68,0.25)' : 'rgba(185,28,28,0.12)', borderColor: clr.barOut, borderWidth: 2, borderRadius: 6 }] },
+                options: barOpts(clr.barOut)
+            });
+        }
+
+        // ── RECENT TRANSACTIONS ──────────────────────────────────────────
+        async function cargarRecentTx() {
+            const container = document.getElementById('recentTxList');
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            // Only read and update lastVisit on the first load of the session
+            let lastVisit = 0;
+            if (!_lastVisitChecked) {
+                lastVisit = parseInt(localStorage.getItem('tuo_last_visit') || '0');
+                localStorage.setItem('tuo_last_visit', Date.now().toString());
+                _lastVisitChecked = true;
+            }
+            try {
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 15000);
+                const res  = await fetch('/api/historial?minutos=1440', { signal: ctrl.signal });
+                clearTimeout(tid);
+                const data = await res.json();
+                if (!res.ok) {
+                    container.innerHTML = emptyState('Sin movimientos disponibles.');
+                    try { inicializarGraficos([]); } catch { /* charts are optional */ }
+                    return;
+                }
+                const all    = Array.isArray(data) ? data : (data.transactions || data.data || []);
+                window._txsCache = all;
+                // Registrar todas como vistas para el polling
+                all.forEach(t => t._id && _txsVistas.add(t._id));
+                iniciarPolling();
+                if (typeof Chart !== 'undefined') {
+                    try { inicializarGraficos(all); } catch { /* charts are optional */ }
+                } else {
+                    // Chart.js CDN aún no cargó — reintenta cuando esté listo
+                    const waitChart = setInterval(() => {
+                        if (typeof Chart !== 'undefined') {
+                            clearInterval(waitChart);
+                            try { inicializarGraficos(window._txsCache || []); } catch { /* ok */ }
+                        }
+                    }, 200);
+                    setTimeout(() => clearInterval(waitChart), 10000);
+                }
+
+                const propias = all.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu);
+                // Pre-populate name cache from BC transaction data
+                propias.forEach(t => {
+                    if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
+                    if (t.personaDestino?.nombre) guardarNombreCbu(t.cbuDestino, `${t.personaDestino.nombre} ${t.personaDestino.apellido}`);
+                });
+                // Play sound and sync saldo if there are new approved incoming transfers since last visit
+                if (lastVisit > 0) {
+                    const nuevasEntradas = propias.filter(t => {
+                        if (t.cbuDestino !== u.cbu) return false;
+                        if (t.estado && t.estado !== 'aprobada') return false;
+                        const ts = new Date(t.fecha || t.createdAt || t.timestamp || t.created_at).getTime();
+                        return ts > lastVisit;
+                    });
+                    if (nuevasEntradas.length > 0) {
+                        const totalIngresado = nuevasEntradas.reduce((sum, t) => sum + Number(t.importe), 0);
+                        const nuevoSaldo = saldoReal + totalIngresado;
+                        const uActual = JSON.parse(localStorage.getItem('usuarioLogueado'));
+                        uActual.saldo = nuevoSaldo;
+                        localStorage.setItem('usuarioLogueado', JSON.stringify(uActual));
+                        actualizarSaldoDisplay(nuevoSaldo, true);
+                        playSound('ingreso');
+                        fetch('/api/sincronizar-saldo', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ cbu: u.cbu, nuevoSaldo })
+                        }).catch(() => {});
+                        // Notificar cada transferencia recibida mientras estaba fuera
+                        nuevasEntradas.forEach(t => {
+                            const nombre = (t.personaOrigen?.nombre && t.personaOrigen?.apellido)
+                                ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`
+                                : (getNombrePorCbu(t.cbuOrigen) || 'Alguien');
+                            const monto = Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+                            showToast(`+ $${monto} recibido de ${nombre}`);
+                        });
+                    }
+                }
+                if (propias.length === 0) {
+                    container.innerHTML = emptyState('No tenés movimientos aún.');
+                    return;
+                }
+                await resolverNombresCbu(propias.slice(0, 3).map(t => t.cbuOrigen === u.cbu ? t.cbuDestino : t.cbuOrigen));
+                container.innerHTML = propias.slice(0, 3).map((t, idx) => {
+                    const esEnvio     = t.cbuOrigen === u.cbu;
+                    const contraparte = esEnvio
+                        ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || 'CBU ' + (t.cbuDestino || '').slice(-6))
+                        : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || 'CBU ' + (t.cbuOrigen  || '').slice(-6));
+                    const colorAmt = esEnvio ? '#B91C1C' : '#15803D';
+                    const signo    = esEnvio ? '−' : '+';
+                    const etiqueta = esEnvio ? 'Enviado a' : 'Recibido de';
+                    const fecha    = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                    const fechaStr = fecha ? new Date(fecha).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
+                    const bg       = avatarColor(contraparte);
+                    const ini      = initials(contraparte);
+                    const badgeBg  = esEnvio ? '#FEF2F2' : '#F0FDF4';
+                    const badgeFg  = esEnvio ? '#B91C1C' : '#15803D';
+                    const arrowSvg = esEnvio
+                        ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`
+                        : `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
+                    return `
+                        <div class="recent-tx-item" style="animation-delay:${idx * 0.06}s;">
+                            <div class="tx-avatar-wrap">
+                                <div class="tx-avatar" style="background:${bg};">${ini}</div>
+                                <div class="tx-badge" style="background:${badgeBg};">${arrowSvg}</div>
+                            </div>
+                            <div class="tx-label">
+                                <div class="tx-name">${etiqueta}: ${contraparte}</div>
+                                ${fechaStr ? `<div class="tx-date">${fechaStr}</div>` : ''}
+                            </div>
+                            <div class="tx-amount" style="color:${colorAmt};">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        </div>`;
+                }).join('');
+            } catch (err) {
+                const msg = err?.name === 'AbortError'
+                    ? 'El servidor tardó demasiado. Verificá que esté corriendo.'
+                    : 'No se pudo cargar. Verificá que el servidor esté activo.';
+                container.innerHTML = emptyState(msg);
+                try { inicializarGraficos([]); } catch { /* charts are optional */ }
+            }
+        }
+
+        function emptyState(msg) {
+            return `<div class="empty-state">
+                <div class="empty-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <p>${msg}</p>
+            </div>`;
+        }
+
+        // ── POLLING: detección de transferencias en tiempo real ───────────
+        function iniciarPolling() {
+            if (_pollingInterval) return;
+            _pollingInterval = setInterval(verificarNuevasTransferencias, 30000);
+        }
+
+        function detenerPolling() {
+            clearInterval(_pollingInterval);
+            _pollingInterval = null;
+        }
+
+        // Pausa cuando el usuario cambia de pestaña; retoma al volver
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                detenerPolling();
+            } else {
+                verificarNuevasTransferencias();
+                iniciarPolling();
+            }
+        });
+
+        async function verificarNuevasTransferencias() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!u) return;
+            try {
+                const res = await fetch('/api/historial?minutos=1440');
+                if (!res.ok) return;
+                const data = await res.json();
+                const all  = Array.isArray(data) ? data : (data.transactions || data.data || []);
+
+                // Buscar transferencias recibidas que no hayamos visto aún
+                const nuevas = all.filter(t =>
+                    t.cbuDestino === u.cbu &&
+                    (t.estado === 'aprobada' || t.estado === 'approved') &&
+                    t._id && !_txsVistas.has(t._id)
+                );
+
+                // Marcar todas como vistas
+                all.forEach(t => t._id && _txsVistas.add(t._id));
+
+                if (nuevas.length === 0) return;
+
+                // Actualizar saldo
+                const totalIngresado = nuevas.reduce((sum, t) => sum + Number(t.importe), 0);
+                const nuevoSaldo = saldoReal + totalIngresado;
+                const uActual = JSON.parse(localStorage.getItem('usuarioLogueado'));
+                uActual.saldo = nuevoSaldo;
+                localStorage.setItem('usuarioLogueado', JSON.stringify(uActual));
+                actualizarSaldoDisplay(nuevoSaldo, true);
+
+                fetch('/api/sincronizar-saldo', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbu: u.cbu, nuevoSaldo })
+                }).catch(() => {});
+
+                // Sonido y notificación por cada transferencia nueva
+                playSound('ingreso');
+                nuevas.forEach(t => {
+                    const nombre = (t.personaOrigen?.nombre && t.personaOrigen?.apellido)
+                        ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`
+                        : (getNombrePorCbu(t.cbuOrigen) || 'Alguien');
+                    const monto = Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+                    showToast(`+ $${monto} recibido de ${nombre}`);
+                    if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
+                });
+
+                // Refrescar lista de movimientos recientes y caché
+                window._txsCache = all;
+                cargarRecentTx();
+
+                // Si el historial está abierto, actualizarlo también
+                const mh = document.getElementById('modalHistorial');
+                if (mh && mh.style.display === 'flex') {
+                    _todasPropias = all.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu);
+                    renderHistorialFiltrado();
+                }
+            } catch {}
+        }
+
+        // ── HISTORIAL ─────────────────────────────────────────────────────
+        async function abrirHistorial() {
+            const modal  = document.getElementById('modalHistorial');
+            const cuerpo = document.getElementById('historialCuerpo');
+            modal.style.display = 'flex';
+            mostrarSkeleton(cuerpo, 5);
+            _usuarioHist = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            const u = _usuarioHist;
+            // Reset filters UI
+            _filtroTipo  = 'todos';
+            _filtroFecha = 'todos';
+            document.querySelectorAll('#filtroTipoChips .filter-chip').forEach((b, i) => b.classList.toggle('active', i === 0));
+            document.querySelectorAll('#filtroFechaChips .filter-chip').forEach((b, i) => b.classList.toggle('active', i === 0));
+            const minEl = document.getElementById('filtroMontoMin');
+            const maxEl = document.getElementById('filtroMontoMax');
+            if (minEl) minEl.value = '';
+            if (maxEl) maxEl.value = '';
+            try {
+                const res  = await fetch('/api/historial?minutos=1440');
+                const data = await res.json();
+                if (!res.ok) {
+                    cuerpo.innerHTML = `<p style="color:#B91C1C;text-align:center;font-size:0.88rem;padding:20px 0;">${data.error || 'Error al cargar'}</p>`;
+                    return;
+                }
+                const all    = Array.isArray(data) ? data : (data.transactions || data.data || []);
+                const propias = all.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu);
+                if (propias.length === 0) {
+                    cuerpo.innerHTML = emptyState('No tenés movimientos aún.');
+                    return;
+                }
+                propias.forEach(t => {
+                    if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
+                    if (t.personaDestino?.nombre) guardarNombreCbu(t.cbuDestino, `${t.personaDestino.nombre} ${t.personaDestino.apellido}`);
+                });
+                await resolverNombresCbu(propias.map(t => t.cbuOrigen === u.cbu ? t.cbuDestino : t.cbuOrigen));
+                _todasPropias = propias;
+                renderHistorialFiltrado();
+            } catch (err) {
+                cuerpo.innerHTML = `<p style="color:#B91C1C;text-align:center;font-size:0.88rem;padding:20px 0;">Error de conexión: ${err.message}</p>`;
+            }
+        }
+
+        document.getElementById('modalContactos').addEventListener('click', function(e) {
+            if (e.target === this) cerrarModalContactos();
+        });
+
+        document.getElementById('modalHistorial').addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+
+        // ── MODAL TRANSFERENCIA ───────────────────────────────────────────
+        let destinatarioCbuSeleccionado = null;
+        let motivoSeleccionado = null;
+
+        function abrirModalMotivo() {
+            document.getElementById('modalMotivo').style.display = 'flex';
+            document.querySelectorAll('.motivo-list-item').forEach(b => {
+                b.classList.toggle('active', b.dataset.motivo === motivoSeleccionado);
+            });
+        }
+        function cerrarModalMotivo() {
+            document.getElementById('modalMotivo').style.display = 'none';
+        }
+        function seleccionarMotivoModal(btn) {
+            motivoSeleccionado = btn.dataset.motivo;
+            document.getElementById('motivoLabel').textContent = motivoSeleccionado;
+            document.getElementById('btnAbrirMotivo').classList.add('has-motivo');
+            cerrarModalMotivo();
+        }
+
+        function abrirModalTransferencia() {
+            document.getElementById('modalTransferencia').style.display = 'flex';
+            mostrarPaso(1);
+            document.getElementById('inputBusqueda').value = '';
+            document.getElementById('inputImporte').value = '';
+            document.getElementById('importePreview').textContent = '';
+            document.getElementById('errorBusqueda').style.display = 'none';
+            document.getElementById('errorTransferencia').style.display = 'none';
+            destinatarioCbuSeleccionado = null;
+            _cbuPendienteContacto = null;
+            motivoSeleccionado = null;
+            document.getElementById('motivoLabel').textContent = 'Motivo (opcional)';
+            document.getElementById('btnAbrirMotivo').classList.remove('has-motivo');
+            renderizarFavoritos();
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalTransferencia').style.display = 'none';
+        }
+
+        function abrirEstadisticas() {
+            document.getElementById('headerDropdown').classList.remove('open');
+            if (window._txsCache) {
+                localStorage.setItem('tuo_txs_cache', JSON.stringify(window._txsCache));
+            }
+            window.location.href = 'estadisticas.html';
+        }
+
+        function abrirModalDeposito() {
+            document.getElementById('importeDeposito').value = '';
+            document.getElementById('errorDeposito').style.display = 'none';
+            document.getElementById('btnConfirmarDeposito').disabled = true;
+            document.getElementById('depositoPaso1').style.display = 'block';
+            document.getElementById('depositoPaso2').style.display = 'none';
+            document.getElementById('modalDeposito').style.display = 'flex';
+            setTimeout(() => document.getElementById('importeDeposito').focus(), 100);
+        }
+
+        function cerrarModalDeposito() {
+            document.getElementById('modalDeposito').style.display = 'none';
+        }
+
+        function previsualizarDeposito() {
+            const val = Number(document.getElementById('importeDeposito').value);
+            const btn = document.getElementById('btnConfirmarDeposito');
+            const err = document.getElementById('errorDeposito');
+            const preview = document.getElementById('depositoPreview');
+            err.style.display = 'none';
+            if (val > 0) {
+                preview.textContent = '$ ' + val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                preview.style.opacity = '1';
+            } else {
+                preview.textContent = '';
+                preview.style.opacity = '0';
+            }
+            btn.disabled = !val || val <= 0 || val > 1000000;
+        }
+
+        async function confirmarDeposito() {
+            const importe = Number(document.getElementById('importeDeposito').value);
+            const err = document.getElementById('errorDeposito');
+            const btn = document.getElementById('btnConfirmarDeposito');
+            err.style.display = 'none';
+
+            if (!importe || importe <= 0) { err.textContent = 'Ingresá un importe válido'; err.style.display = 'block'; return; }
+            if (importe > 1000000) { err.textContent = 'El importe no puede superar $1.000.000'; err.style.display = 'block'; return; }
+
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!u) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
+
+            try {
+                const res = await fetch('/api/depositar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbu: u.cbu, importe })
+                });
+                const data = await res.json();
+                if (!res.ok) { err.textContent = data.error || 'Error al procesar el depósito'; err.style.display = 'block'; return; }
+
+                u.saldo = data.nuevoSaldo;
+                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+                actualizarSaldoDisplay(data.nuevoSaldo, true);
+
+                document.getElementById('depositoNuevoSaldo').textContent =
+                    '$ ' + data.nuevoSaldo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                document.getElementById('depositoPaso1').style.display = 'none';
+                document.getElementById('depositoPaso2').style.display = 'block';
+
+                showToast('Depósito acreditado exitosamente');
+                cargarRecentTx();
+            } catch {
+                err.textContent = 'Error de conexión. Intentá de nuevo.';
+                err.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Depositar';
+            }
+        }
+
+        function updateStepper(active) {
+            for (let i = 1; i <= 3; i++) {
+                const dot  = document.getElementById('stepDot' + i);
+                const line = document.getElementById('stepLine' + i);
+                dot.className = 'stepper-dot' + (i < active ? ' done' : i === active ? ' active' : '');
+                if (line) line.className = 'stepper-line' + (i < active ? ' done' : '');
+            }
+        }
+
+        function mostrarPaso(n, dir = 'fwd') {
+            if (n === 3) {
+                [1,2,3].forEach(i => {
+                    document.getElementById('stepDot'+i).className = 'stepper-dot done';
+                    const l = document.getElementById('stepLine'+i);
+                    if (l) l.className = 'stepper-line done';
+                });
+            } else {
+                updateStepper(n);
+            }
+            [1, 2, 3].forEach(i => {
+                const el = document.getElementById('paso' + i);
+                if (i === n) {
+                    el.style.display = 'block';
+                    el.classList.remove('back');
+                    void el.offsetWidth;
+                    if (dir === 'back') el.classList.add('back');
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        }
+
+        function volverPaso1() {
+            mostrarPaso(1, 'back');
+            document.getElementById('errorBusqueda').style.display = 'none';
+        }
+
+        function actualizarImportePreview(val) {
+            const n  = parseFloat(val);
+            const el = document.getElementById('importePreview');
+            if (n > 0) {
+                el.textContent = '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                el.style.opacity = '1';
+            } else {
+                el.textContent = '';
+                el.style.opacity = '0';
+            }
+        }
+
+        async function buscarDestinatario() {
+            const valor = document.getElementById('inputBusqueda').value.trim();
+            const errEl = document.getElementById('errorBusqueda');
+            const btn   = document.getElementById('btnBuscar');
+            if (!valor) { errEl.textContent = 'Ingresá un alias o CBU'; errEl.style.display = 'block'; return; }
+            const tipo = /^\d{22}$/.test(valor) ? 'cbu' : 'alias';
+            btn.disabled = true; btn.textContent = 'Buscando...';
+            errEl.style.display = 'none';
+            try {
+                const res  = await fetch(`/api/buscar-persona?tipo=${tipo}&valor=${encodeURIComponent(valor)}`);
+                const data = await res.json();
+                if (!res.ok) {
+                    errEl.textContent = res.status === 404
+                        ? 'No se encontró ninguna persona con ese ' + (tipo === 'cbu' ? 'CBU' : 'alias')
+                        : (data.error || 'Error al buscar');
+                    errEl.style.display = 'block';
+                    return;
+                }
+                const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+                if (data.cbu === u.cbu) {
+                    errEl.textContent = 'No podés transferirte a tu propia cuenta';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                // Cache name and DNI for history display
+                guardarNombreCbu(data.cbu, `${data.nombre} ${data.apellido}`);
+                guardarDniCbu(data.cbu, data.dni);
+                destinatarioCbuSeleccionado = data.cbu;
+                document.getElementById('destinatarioNombre').textContent = `${data.nombre} ${data.apellido}`;
+                document.getElementById('destinatarioCbu').textContent = `CBU: ${formatCbu(data.cbu)}`;
+                document.getElementById('errorTransferencia').style.display = 'none';
+                mostrarPaso(2);
+            } catch (err) {
+                errEl.textContent = 'Error de conexión: ' + err.message;
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Buscar';
+            }
+        }
+
+        async function confirmarTransferencia() {
+            const importe = parseFloat(document.getElementById('inputImporte').value);
+            const errEl   = document.getElementById('errorTransferencia');
+            const btn     = document.getElementById('btnConfirmar');
+            if (!importe || importe <= 0) {
+                errEl.textContent = 'Ingresá un importe válido mayor a 0';
+                errEl.style.display = 'block';
+                return;
+            }
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            btn.disabled = true; btn.textContent = 'Procesando...';
+            errEl.style.display = 'none';
+            try {
+                const res  = await fetch('/api/transferencia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbuOrigen: u.cbu, cbuDestino: destinatarioCbuSeleccionado, importe })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errEl.textContent = data.error || 'Error al procesar la transferencia';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                // Save motivo to localStorage scoped by sender CBU
+                const registro = { motivo: motivoSeleccionado || 'Otros motivos', importe, fecha: new Date().toISOString() };
+                const txKey = 'tuo_transferencias_' + u.cbu;
+                const lista = JSON.parse(localStorage.getItem(txKey) || '[]');
+                lista.push(registro);
+                localStorage.setItem(txKey, JSON.stringify(lista));
+
+                u.saldo = data.nuevoSaldo;
+                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+                actualizarSaldoDisplay(data.nuevoSaldo, true);
+                const fmt        = '$ ' + data.nuevoSaldo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const nombreDest = document.getElementById('destinatarioNombre').textContent;
+                document.getElementById('mensajeResultado').textContent =
+                    `Enviaste $ ${importe.toLocaleString('es-AR', { minimumFractionDigits: 2 })} a ${nombreDest}`;
+                document.getElementById('nuevoSaldoDisplay').textContent = fmt;
+                playSound('egreso');
+                mostrarPaso(3);
+                // Show add-to-contacts modal only if not already saved
+                if (!esFavorito(destinatarioCbuSeleccionado)) {
+                    _cbuPendienteContacto    = destinatarioCbuSeleccionado;
+                    _nombrePendienteContacto = nombreDest;
+                    setTimeout(() => {
+                        const bg  = avatarColor(nombreDest);
+                        const ini = initials(nombreDest);
+                        document.getElementById('contactoAvatarRow').innerHTML =
+                            `<div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:40px;height:40px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:700;color:white;">${ini}</div>
+                                <div style="font-size:0.92rem;font-weight:700;color:var(--text);">${nombreDest}</div>
+                            </div>`;
+                        document.getElementById('modalAgregarContacto').style.display = 'flex';
+                    }, 600);
+                }
+                cargarRecentTx();
+                showToast(`Transferencia a ${nombreDest} completada`);
+            } catch (err) {
+                errEl.textContent = 'Error de conexión: ' + err.message;
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Confirmar';
+            }
+        }
+
+        document.getElementById('modalTransferencia').addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal();
+        });
+
+        // ── EDICIÓN DE ALIAS ──────────────────────────────────────────────
+        function mostrarEditAlias() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            document.getElementById('inputAlias').value = u.alias || '';
+            document.getElementById('editAliasForm').style.display = 'block';
+            document.getElementById('btnEditAlias').style.display = 'none';
+            document.getElementById('aliasError').style.display = 'none';
+            document.getElementById('inputAlias').focus();
+        }
+
+        function cancelarEditAlias() {
+            document.getElementById('editAliasForm').style.display = 'none';
+            document.getElementById('btnEditAlias').style.display = 'inline-block';
+        }
+
+        async function guardarAlias() {
+            const nuevoAlias = document.getElementById('inputAlias').value.trim();
+            const errEl = document.getElementById('aliasError');
+            if (!nuevoAlias) { errEl.textContent = 'El alias no puede estar vacío'; errEl.style.display = 'block'; return; }
+            if (!/^[a-zA-Z0-9.\-]+$/.test(nuevoAlias)) { errEl.textContent = 'Solo letras, números, puntos y guiones'; errEl.style.display = 'block'; return; }
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            try {
+                const res  = await fetch('/api/actualizar-alias', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbu: u.cbu, alias: nuevoAlias })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errEl.textContent = res.status === 409
+                        ? 'Ese alias ya está en uso, elegí otro'
+                        : (data.error || 'Error al actualizar el alias');
+                    errEl.style.display = 'block';
+                    return;
+                }
+                u.alias = nuevoAlias;
+                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+                document.getElementById('alias').textContent = nuevoAlias;
+                cancelarEditAlias();
+                showToast('Alias actualizado correctamente');
+            } catch (err) {
+                errEl.textContent = 'Error de conexión: ' + err.message;
+                errEl.style.display = 'block';
+            }
+        }
+    </script>
+
+</body>
+</html>
