@@ -71,7 +71,7 @@ const Persona = {
   getByCbu: async (cbu) => {
     const query = `
       SELECT cb.id_cuenta, cb.saldo, cb.alias, cb.cbu,
-             p.nombre, p.apellido, p.id AS id_persona
+             p.nombre, p.apellido, p.id AS id_persona, p.dni
       FROM Cuentas_Bancarias cb
       JOIN Productos pr ON cb.id_producto = pr.id_producto
       JOIN Personas p ON pr.id_persona = p.id

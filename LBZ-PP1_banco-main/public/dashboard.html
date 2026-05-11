@@ -291,6 +291,62 @@
         .filter-monto-wrap { display: flex; align-items: center; gap: 6px; }
         .filter-monto-input { width: 82px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.74rem; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
         .filter-monto-input:focus { border-color: var(--accent); }
+        .historial-search-wrap { width: 100%; position: relative; }
+        .historial-search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        .historial-search { width: 100%; padding: 7px 10px 7px 32px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
+        .historial-search:focus { border-color: var(--accent); }
+        .historial-search::placeholder { color: var(--muted); }
+
+        /* ── ONBOARDING ── */
+        #onboardingOverlay {
+            position: fixed; inset: 0; z-index: 9000;
+            display: none; align-items: flex-end; justify-content: center;
+            padding-bottom: 32px;
+        }
+        #onboardingOverlay.open { display: flex; }
+        .ob-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.0);
+            transition: background 0.35s;
+            pointer-events: none;
+        }
+        .ob-backdrop.dim { background: rgba(0,0,0,0.6); pointer-events: all; }
+        .ob-spotlight {
+            position: fixed; border-radius: 14px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+            transition: top 0.35s cubic-bezier(0.4,0,0.2,1), left 0.35s cubic-bezier(0.4,0,0.2,1),
+                        width 0.35s cubic-bezier(0.4,0,0.2,1), height 0.35s cubic-bezier(0.4,0,0.2,1),
+                        border-radius 0.35s, opacity 0.25s;
+            pointer-events: none; z-index: 9001; opacity: 0;
+        }
+        .ob-spotlight.visible { opacity: 1; }
+        .ob-card {
+            position: relative; z-index: 9002;
+            background: var(--white); border-radius: 20px;
+            padding: 24px 24px 20px; width: 100%; max-width: 360px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+            animation: obCardIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        @keyframes obCardIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        .ob-step-badge {
+            font-size: 0.68rem; font-weight: 600; color: var(--accent);
+            background: #EEF3FF; padding: 3px 10px; border-radius: 20px;
+            display: inline-block; margin-bottom: 12px; letter-spacing: 0.04em;
+        }
+        .ob-title { font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; }
+        .ob-desc  { font-size: 0.84rem; color: var(--muted); line-height: 1.55; margin-bottom: 20px; }
+        .ob-dots  { display: flex; gap: 5px; margin-bottom: 16px; }
+        .ob-dot   { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.2s, width 0.2s; }
+        .ob-dot.active { background: var(--accent); width: 18px; border-radius: 3px; }
+        .ob-actions { display: flex; justify-content: space-between; align-items: center; }
+        .ob-btn-skip { background: none; border: none; font-size: 0.82rem; color: var(--muted); cursor: pointer; font-family: 'Inter', sans-serif; padding: 4px 0; }
+        .ob-btn-skip:hover { color: var(--text); }
+        .ob-btn-next {
+            padding: 9px 22px; background: var(--accent); color: white;
+            border: none; border-radius: 10px; font-size: 0.86rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+        }
+        .ob-btn-next:hover { opacity: 0.88; }
 
         /* ── CONFIRM LOGOUT MODAL ── */
         .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(3px); }
@@ -554,6 +610,14 @@
         @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
         body { animation: pageIn 0.3s ease both; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+
+        .btn-comprobante-hist {
+            width: 100%; padding: 13px; background: #0052FF; color: white;
+            border: none; border-radius: 10px; font-family: 'Inter', sans-serif;
+            font-size: 0.88rem; font-weight: 600; cursor: pointer; margin-top: 20px;
+            letter-spacing: -0.01em; transition: opacity 0.15s;
+        }
+        .btn-comprobante-hist:hover { opacity: 0.85; }
     </style>
 </head>
 <body>
@@ -689,6 +753,10 @@
                 <button class="modal-close-btn" onclick="document.getElementById('modalHistorial').style.display='none'">✕</button>
             </div>
             <div class="historial-filters">
+                <div class="historial-search-wrap">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input class="historial-search" id="filtroTextoInput" type="text" placeholder="Buscar por nombre o CBU..." oninput="setFiltroTexto(this.value)">
+                </div>
                 <div class="filter-chips" id="filtroTipoChips">
                     <button class="filter-chip active" data-tipo="todos" onclick="setFiltroTipo(this)">Todos</button>
                     <button class="filter-chip" data-tipo="enviados" onclick="setFiltroTipo(this)">Enviados</button>
@@ -829,6 +897,10 @@
                         <span id="modalTelefono">-</span>
                     </div>
                 </div>
+                <div style="margin-top:24px;">
+                    <div style="font-size:0.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:12px;">Accesos recientes</div>
+                    <div id="actividadLog" style="display:flex;flex-direction:column;gap:8px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -945,6 +1017,22 @@
         <div style="border-top:1px solid #E5E5E5;padding-top:14px;display:flex;justify-content:space-between;align-items:center;">
             <div style="font-size:0.66rem;color:#6B6B6B;">Documento generado digitalmente</div>
             <div style="font-size:0.68rem;font-weight:700;color:#1A1A1B;">tuo · Sistema Bancario</div>
+        </div>
+    </div>
+
+    <!-- ── ONBOARDING ── -->
+    <div id="onboardingOverlay">
+        <div class="ob-backdrop" id="obBackdrop"></div>
+        <div class="ob-spotlight" id="obSpotlight"></div>
+        <div class="ob-card" id="obCard">
+            <div class="ob-step-badge" id="obBadge">Paso 1 de 4</div>
+            <div class="ob-title" id="obTitle"></div>
+            <div class="ob-desc"  id="obDesc"></div>
+            <div class="ob-dots" id="obDots"></div>
+            <div class="ob-actions">
+                <button class="ob-btn-skip" onclick="finalizarOnboarding()">Saltar tour</button>
+                <button class="ob-btn-next" id="obBtnNext" onclick="onboardingNext()">Siguiente →</button>
+            </div>
         </div>
     </div>
 
@@ -1191,8 +1279,23 @@
             document.getElementById('modalTelefono').textContent = u.telefono || '-';
 
             actualizarSaldoDisplay(parseFloat(u.saldo) || 0);
+
+            // Detect pending deposit from depositar.html and animate saldo
+            const _pendingDepKey = 'tuo_pending_deposit_' + u.cbu;
+            const _pendingDep = JSON.parse(localStorage.getItem(_pendingDepKey) || 'null');
+            if (_pendingDep) {
+                localStorage.removeItem(_pendingDepKey);
+                setTimeout(() => {
+                    actualizarSaldoDisplay(_pendingDep.nuevoSaldo, true);
+                    playSound('ingreso');
+                    const uActual = JSON.parse(localStorage.getItem('usuarioLogueado'));
+                    if (uActual) { uActual.saldo = _pendingDep.nuevoSaldo; localStorage.setItem('usuarioLogueado', JSON.stringify(uActual)); }
+                }, 900);
+            }
+
             mostrarSkeleton(document.getElementById('recentTxList'));
             cargarRecentTx();
+            setTimeout(iniciarOnboarding, 800);
 
             // Abrir transferencia pre-cargada si viene desde contactos.html
             const params = new URLSearchParams(window.location.search);
@@ -1340,11 +1443,17 @@
         }
 
         // ── HISTORIAL FILTERS ────────────────────────────────────────────
-        let _filtroTipo  = 'todos';
-        let _filtroFecha = 'todos';
+        let _filtroTipo   = 'todos';
+        let _filtroFecha  = 'todos';
+        let _filtroTexto  = '';
         let _todasPropias = [];
         let _usuarioHist  = null;
         let _txMap        = {};
+
+        function setFiltroTexto(val) {
+            _filtroTexto = val;
+            renderHistorialFiltrado();
+        }
 
         function setFiltroTipo(btn) {
             _filtroTipo = btn.dataset.tipo;
@@ -1370,7 +1479,7 @@
             const u = _usuarioHist;
             if (!u) return txs;
             let r = txs;
-            if (_filtroTipo === 'enviados')   r = r.filter(t => t.cbuOrigen === u.cbu);
+            if (_filtroTipo === 'enviados')   r = r.filter(t => t.cbuOrigen === u.cbu && t.cbuOrigen !== 'DEPOSITO');
             if (_filtroTipo === 'recibidos')  r = r.filter(t => t.cbuDestino === u.cbu);
             const limite = getFechaLimite();
             if (limite) r = r.filter(t => new Date(t.fecha || t.createdAt || t.timestamp || t.created_at) >= limite);
@@ -1378,6 +1487,19 @@
             const montoMax = parseFloat(document.getElementById('filtroMontoMax')?.value);
             if (!isNaN(montoMin) && montoMin > 0) r = r.filter(t => Number(t.importe) >= montoMin);
             if (!isNaN(montoMax) && montoMax > 0) r = r.filter(t => Number(t.importe) <= montoMax);
+            const txt = _filtroTexto.toLowerCase().trim();
+            if (txt) {
+                r = r.filter(t => {
+                    if (t.cbuOrigen === 'DEPOSITO') return 'depósito deposito'.includes(txt);
+                    const esEnvio = t.cbuOrigen === u.cbu;
+                    const cbuContra = esEnvio ? t.cbuDestino : t.cbuOrigen;
+                    const nombre = (esEnvio
+                        ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : '')
+                        : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : '')
+                    ) || getNombrePorCbu(cbuContra) || '';
+                    return nombre.toLowerCase().includes(txt) || (cbuContra || '').includes(txt);
+                });
+            }
             return r;
         }
         function renderHistorialFiltrado() {
@@ -1438,6 +1560,61 @@
             cuerpo.innerHTML = html;
         }
 
+        function imprimirComprobanteDeposito(txId) {
+            const t = txId ? _txMap[txId] : null;
+            if (!t) return;
+            if (typeof window.jspdf === 'undefined') { showToast('Librería PDF no disponible, intentá en unos segundos.', 'error'); return; }
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const ahora = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
+            const fechaStr = rawFecha
+                ? new Date(rawFecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : ahora;
+            const L = 30, R = 180;
+            let y = 28;
+
+            doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 82, 255);
+            doc.text('tuo', L, y); y += 12;
+
+            doc.setFontSize(14); doc.setTextColor(26, 26, 27);
+            doc.text('Comprobante de deposito', L, y); y += 7;
+
+            doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text(fechaStr, L, y); y += 14;
+
+            doc.setFontSize(26); doc.setFont('helvetica', 'bold'); doc.setTextColor(21, 128, 61);
+            doc.text(fmt(t.importe), L, y); y += 12;
+
+            doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(L, y, R, y); y += 10;
+
+            const rows = [
+                ['Tipo', 'Deposito en efectivo'],
+                ['Estado', 'Acreditado'],
+                ['CBU', u?.cbu || '-'],
+                ['Titular', u ? (u.nombre + ' ' + u.apellido) : '-'],
+            ];
+            doc.setFontSize(9);
+            rows.forEach(([lbl, val]) => {
+                doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107); doc.text(lbl, L, y);
+                doc.setFont('helvetica', 'bold'); doc.setTextColor(26, 26, 27); doc.text(val, R, y, { align: 'right' });
+                y += 9;
+            });
+            y += 8; doc.setDrawColor(220, 220, 220); doc.line(L, y, R, y); y += 8;
+            doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text('tuo - Banco digital - Comprobante generado el ' + ahora, 105, y, { align: 'center' });
+
+            const pdfBlob = doc.output('blob');
+            const pdfUrl  = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, '_blank');
+            const a = document.createElement('a');
+            a.href = pdfUrl; a.download = 'comprobante-deposito.pdf';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
+        }
+
         // ── DETALLE TRANSACCIÓN ──────────────────────────────────────────
         async function abrirDetalleTx(id) {
             const t = _txMap[id];
@@ -1450,6 +1627,7 @@
                 const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
                 const fechaHora = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
                 const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const txId = t._id || '';
                 document.getElementById('detalleTxCuerpo').innerHTML = `
                     <div class="detalle-tx-hero">
                         <div class="detalle-tx-avatar" style="background:#0052FF;">
@@ -1463,7 +1641,11 @@
                         <div class="detalle-tx-row"><span class="detalle-tx-label">Fecha</span><span class="detalle-tx-value">${fechaHora}</span></div>
                         <div class="detalle-tx-row"><span class="detalle-tx-label">Importe</span><span class="detalle-tx-value">${fmt(t.importe)}</span></div>
                         <div class="detalle-tx-row"><span class="detalle-tx-label">Tipo</span><span class="detalle-tx-value">Depósito en efectivo</span></div>
-                    </div>`;
+                    </div>
+                    <button class="btn-comprobante-hist" onclick="imprimirComprobanteDeposito('${txId}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Descargar comprobante
+                    </button>`;
                 document.getElementById('modalDetalleTx').style.display = 'flex';
                 return;
             }
@@ -1476,10 +1658,30 @@
             const personaCache = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}');
             const cachedPersona = personaCache[cbuContraparte] || null;
 
-            const nombre  = persona ? `${persona.nombre} ${persona.apellido}` : (cachedPersona ? `${cachedPersona.nombre} ${cachedPersona.apellido}` : (getNombrePorCbu(cbuContraparte) || 'Desconocido'));
-            const dni     = persona?.dni || getDniPorCbu(cbuContraparte) || cachedPersona?.dni || '—';
-            const alias   = persona?.alias || cachedPersona?.alias || '—';
-            const cbu     = persona?.cbu   || cbuContraparte || '—';
+            let nombre  = persona ? `${persona.nombre} ${persona.apellido}` : (cachedPersona ? `${cachedPersona.nombre} ${cachedPersona.apellido}` : (getNombrePorCbu(cbuContraparte) || 'Desconocido'));
+            let dni     = persona?.dni || getDniPorCbu(cbuContraparte) || cachedPersona?.dni || null;
+            let alias   = persona?.alias || cachedPersona?.alias || persona?.alias || null;
+            const cbu   = persona?.cbu   || cbuContraparte || '—';
+
+            // Si todavía no tenemos DNI, buscarlo en la API (enriquecida con DB local)
+            if (!dni && cbuContraparte && cbuContraparte !== 'DEPOSITO') {
+                try {
+                    const r = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbuContraparte)}`);
+                    if (r.ok) {
+                        const p = await r.json();
+                        if (p.dni) { dni = p.dni; guardarDniCbu(cbuContraparte, p.dni); }
+                        if (p.alias && !alias) alias = p.alias;
+                        if (p.nombre && nombre === 'Desconocido') nombre = `${p.nombre} ${p.apellido}`;
+                        // Actualizar cache completo
+                        const pc = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}');
+                        pc[cbuContraparte] = { nombre: p.nombre, apellido: p.apellido, dni: p.dni, alias: p.alias, cbu: p.cbu };
+                        localStorage.setItem('tuo_persona_cache', JSON.stringify(pc));
+                    }
+                } catch {}
+            }
+
+            const dniDisplay   = dni   || '—';
+            const aliasDisplay = alias || '—';
 
             const bankCodeContraparte = esEnvio ? t.bankCodeDestino : t.bankCodeOrigen;
             const nombreBanco = await getNombreBanco(bankCodeContraparte);
@@ -1510,7 +1712,7 @@
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">DNI</span>
-                        <span class="detalle-tx-value">${dni}</span>
+                        <span class="detalle-tx-value">${dniDisplay}</span>
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">CBU</span>
@@ -1518,7 +1720,7 @@
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">Alias</span>
-                        <span class="detalle-tx-value">${alias}</span>
+                        <span class="detalle-tx-value">${aliasDisplay}</span>
                     </div>
                     ${nombreBanco ? `<div class="detalle-tx-row">
                         <span class="detalle-tx-label">Banco</span>
@@ -1581,9 +1783,10 @@
             const cbuContra     = esEnvio ? t.cbuDestino : t.cbuOrigen;
             const labelRole     = esEnvio ? 'Destinatario' : 'Emisor';
             const labelDir      = esEnvio ? 'Enviaste a' : 'Recibiste de';
-            const nombre        = persona ? `${persona.nombre} ${persona.apellido}` : (getNombrePorCbu(cbuContra) || 'Desconocido');
-            const dni           = persona?.dni || getDniPorCbu(cbuContra) || '—';
-            const alias         = persona?.alias || '—';
+            const _pdfCache     = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}')[cbuContra] || null;
+            const nombre        = persona ? `${persona.nombre} ${persona.apellido}` : (_pdfCache ? `${_pdfCache.nombre} ${_pdfCache.apellido}` : (getNombrePorCbu(cbuContra) || 'Desconocido'));
+            const dni           = persona?.dni || getDniPorCbu(cbuContra) || _pdfCache?.dni || '—';
+            const alias         = persona?.alias || _pdfCache?.alias || '—';
             const cbu           = persona?.cbu   || cbuContra || '—';
             const bankCodeContra = esEnvio ? t.bankCodeDestino : t.bankCodeOrigen;
             const nombreBanco   = await getNombreBanco(bankCodeContra);
@@ -1652,6 +1855,31 @@
         // ── DATOS PERSONALES ─────────────────────────────────────────────
         function abrirDatosPersonales() {
             document.getElementById('headerDropdown').classList.remove('open');
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            // Renderizar log de actividad
+            const actLog = JSON.parse(localStorage.getItem('tuo_activity_' + (u?.cbu || '')) || '[]');
+            const logEl  = document.getElementById('actividadLog');
+            if (actLog.length === 0) {
+                logEl.innerHTML = `<span style="font-size:0.8rem;color:var(--muted);">Sin registros disponibles.</span>`;
+            } else {
+                logEl.innerHTML = actLog.slice(0, 6).map((e, i) => {
+                    const d   = new Date(e.ts);
+                    const dia = d.toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric' });
+                    const hr  = d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width:28px;height:28px;border-radius:8px;background:${i === 0 ? '#EEF3FF' : 'var(--border)'};display:flex;align-items:center;justify-content:center;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${i === 0 ? '#0052FF' : 'var(--muted)'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                            </div>
+                            <div>
+                                <div style="font-size:0.8rem;font-weight:600;color:var(--text);">Inicio de sesión${i === 0 ? ' <span style="font-size:0.68rem;background:#EEF3FF;color:#0052FF;padding:1px 6px;border-radius:10px;font-weight:500;">Actual</span>' : ''}</div>
+                                <div style="font-size:0.72rem;color:var(--muted);">${dia}</div>
+                            </div>
+                        </div>
+                        <span style="font-size:0.78rem;font-weight:600;color:var(--text);">${hr}</span>
+                    </div>`;
+                }).join('');
+            }
             document.getElementById('modalDatosPersonales').style.display = 'flex';
         }
 
@@ -1848,6 +2076,7 @@
                 if (lastVisit > 0) {
                     const nuevasEntradas = propias.filter(t => {
                         if (t.cbuDestino !== u.cbu) return false;
+                        if (t.cbuOrigen === 'DEPOSITO') return false;
                         if (t.estado && t.estado !== 'aprobada') return false;
                         const ts = new Date(t.fecha || t.createdAt || t.timestamp || t.created_at).getTime();
                         return ts > lastVisit;
@@ -2024,12 +2253,15 @@
             // Reset filters UI
             _filtroTipo  = 'todos';
             _filtroFecha = 'todos';
+            _filtroTexto = '';
             document.querySelectorAll('#filtroTipoChips .filter-chip').forEach((b, i) => b.classList.toggle('active', i === 0));
             document.querySelectorAll('#filtroFechaChips .filter-chip').forEach((b, i) => b.classList.toggle('active', i === 0));
             const minEl = document.getElementById('filtroMontoMin');
             const maxEl = document.getElementById('filtroMontoMax');
+            const txtEl = document.getElementById('filtroTextoInput');
             if (minEl) minEl.value = '';
             if (maxEl) maxEl.value = '';
+            if (txtEl) txtEl.value = '';
             try {
                 const res  = await fetch('/api/historial?minutos=1440');
                 const data = await res.json();
@@ -2342,15 +2574,107 @@
             document.body.classList.add('leaving');
             setTimeout(() => { window.location.href = url; }, 230);
         }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
+
+        // ── ONBOARDING ──────────────────────────────────────────────────
+        const OB_STEPS = [
+            {
+                title: '¡Bienvenido/a a tuo!',
+                desc:  'Te hacemos un recorrido rápido por las funciones principales de tu cuenta. Son solo 4 pasos.',
+                target: null
+            },
+            {
+                title: 'Tu tarjeta de cuenta',
+                desc:  'Acá ves tu saldo disponible, podés copiar tu CBU o alias para recibir dinero, y editar el alias cuando quieras.',
+                target: '.account-card'
+            },
+            {
+                title: 'Acciones rápidas',
+                desc:  'Desde estos botones transferís dinero, depositás fondos y accedés al historial completo de movimientos.',
+                target: '.actions-grid'
+            },
+            {
+                title: 'Menú de opciones',
+                desc:  'Desde el menú hamburguesa accedés a tus datos personales, contactos, estadísticas y podés cerrar sesión.',
+                target: '#avatarEl'
+            }
+        ];
+        let _obStep = 0;
+
+        function iniciarOnboarding() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!u) return;
+            const key = 'tuo_onboarding_' + u.cbu;
+            if (localStorage.getItem(key)) return;
+            _obStep = 0;
+            document.getElementById('onboardingOverlay').classList.add('open');
+            renderObStep();
+        }
+
+        function renderObStep() {
+            const step = OB_STEPS[_obStep];
+            const total = OB_STEPS.length;
+            document.getElementById('obBadge').textContent = `Paso ${_obStep + 1} de ${total}`;
+            document.getElementById('obTitle').textContent = step.title;
+            document.getElementById('obDesc').textContent  = step.desc;
+            document.getElementById('obBtnNext').textContent = _obStep === total - 1 ? '¡Listo! ✓' : 'Siguiente →';
+            // Dots
+            document.getElementById('obDots').innerHTML = OB_STEPS.map((_, i) =>
+                `<div class="ob-dot${i === _obStep ? ' active' : ''}"></div>`
+            ).join('');
+            // Spotlight
+            const spotlight = document.getElementById('obSpotlight');
+            const backdrop  = document.getElementById('obBackdrop');
+            if (step.target) {
+                const el  = document.querySelector(step.target);
+                if (el) {
+                    const r   = el.getBoundingClientRect();
+                    const pad = 10;
+                    spotlight.style.top    = (r.top  - pad) + 'px';
+                    spotlight.style.left   = (r.left - pad) + 'px';
+                    spotlight.style.width  = (r.width  + pad * 2) + 'px';
+                    spotlight.style.height = (r.height + pad * 2) + 'px';
+                    spotlight.style.borderRadius = step.target === '#avatarEl' ? '12px' : '16px';
+                    spotlight.classList.add('visible');
+                    backdrop.classList.remove('dim');
+                } else {
+                    spotlight.classList.remove('visible');
+                    backdrop.classList.add('dim');
+                }
+            } else {
+                spotlight.classList.remove('visible');
+                backdrop.classList.add('dim');
+            }
+        }
+
+        function onboardingNext() {
+            _obStep++;
+            if (_obStep >= OB_STEPS.length) { finalizarOnboarding(); return; }
+            renderObStep();
+        }
+
+        function finalizarOnboarding() {
+            document.getElementById('onboardingOverlay').classList.remove('open');
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (u) localStorage.setItem('tuo_onboarding_' + u.cbu, '1');
+        }
         document.addEventListener('click', e => {
             const a = e.target.closest('a[href]');
             if (!a) return;
             const href = a.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('blob:')) return;
             e.preventDefault();
             navTo(href);
         });
     </script>
+
 
 </body>
 </html>

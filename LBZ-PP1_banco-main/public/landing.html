@@ -426,9 +426,64 @@
             .features-grid { grid-template-columns: 1fr; }
             footer { flex-direction: column; gap: 16px; padding: 32px 24px; }
         }
+
+        /* ── SPLASH ── */
+        #splash {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #0052FF;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 18px;
+            transition: opacity 0.5s ease;
+        }
+        #splash.out { opacity: 0; pointer-events: none; }
+
+        .splash-logo {
+            font-size: 4rem; font-weight: 800;
+            letter-spacing: -0.06em; color: white;
+            animation: splashLogoIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .splash-sub {
+            font-size: 0.85rem; font-weight: 400;
+            color: rgba(255,255,255,0.6); letter-spacing: 0.01em;
+            animation: splashLogoIn 0.55s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .splash-dots {
+            display: flex; gap: 7px; margin-top: 12px;
+            animation: splashLogoIn 0.4s 0.25s ease both;
+        }
+        .splash-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.35);
+            animation: splashDot 1.1s ease-in-out infinite;
+        }
+        .splash-dot:nth-child(2) { animation-delay: 0.18s; }
+        .splash-dot:nth-child(3) { animation-delay: 0.36s; }
+
+        @keyframes splashLogoIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes splashDot {
+            0%, 100% { background: rgba(255,255,255,0.25); transform: scale(0.75); }
+            50%       { background: rgba(255,255,255,0.9);  transform: scale(1); }
+        }
+
+        body { animation: pageIn 0.4s 0.05s ease both; }
+        @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
+
+    <!-- Splash screen -->
+    <div id="splash">
+        <div class="splash-logo">tuo</div>
+        <div class="splash-sub">Tu banco, realmente tuyo.</div>
+        <div class="splash-dots">
+            <div class="splash-dot"></div>
+            <div class="splash-dot"></div>
+            <div class="splash-dot"></div>
+        </div>
+    </div>
 
     <header>
         <a href="/" class="logo">tuo</a>
@@ -514,9 +569,22 @@
     </footer>
 
     <script>
-        // Si ya está logueado, ir directo al dashboard
-        if (localStorage.getItem('usuarioLogueado')) {
-            window.location.href = 'dashboard.html';
+        const splash = document.getElementById('splash');
+        const yaLogueado = !!localStorage.getItem('usuarioLogueado');
+
+        function ocultarSplash(callback) {
+            splash.classList.add('out');
+            setTimeout(() => { splash.remove(); if (callback) callback(); }, 500);
+        }
+
+        if (yaLogueado) {
+            // Mostrar splash brevemente y redirigir al dashboard
+            setTimeout(() => {
+                ocultarSplash(() => { window.location.href = 'dashboard.html'; });
+            }, 1400);
+        } else {
+            // Mostrar splash y luego revelar la landing
+            setTimeout(() => ocultarSplash(), 1600);
         }
     </script>
 </body>

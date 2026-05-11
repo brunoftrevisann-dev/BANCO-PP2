@@ -14,12 +14,17 @@
             --accent: #0052FF;
             --muted: #6B6B6B;
             --border: #E8E8E8;
+            --white: #FFFFFF;
             --error-bg: #FEF2F2;
             --error-text: #B91C1C;
             --error-border: #FECACA;
             --success-bg: #F0FDF4;
             --success-text: #15803D;
             --success-border: #BBF7D0;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E;
         }
 
         body {
@@ -60,6 +65,7 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 44px;
+            position: relative;
         }
 
         .logo {
@@ -70,6 +76,14 @@
             text-decoration: none;
             margin-bottom: 36px;
         }
+
+        .btn-theme-reg {
+            position: absolute; top: 40px; right: 0;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s;
+        }
+        .btn-theme-reg:hover { color: var(--text); border-color: #aaa; }
 
         .page-heading h1 {
             font-size: 1.75rem;
@@ -334,6 +348,11 @@
 
     <div class="page-header">
         <a href="/" class="logo">tuo</a>
+        <button class="btn-theme-reg" id="btnThemeReg" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
         <div class="page-heading">
             <h1>Creá tu cuenta</h1>
             <p>Completá tus datos para empezar</p>
@@ -425,6 +444,17 @@
     </div>
 
     <script>
+        // ── THEME ──
+        (function() {
+            const t = localStorage.getItem('tuo-theme') || 'light';
+            if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        })();
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
+        }
+
         let _emailPendiente = null;
         let _timerInterval = null;
 
@@ -690,6 +720,14 @@
             document.body.classList.add('leaving');
             setTimeout(() => { window.location.href = url; }, 230);
         }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
         document.addEventListener('click', e => {
             const a = e.target.closest('a[href]');
             if (!a) return;

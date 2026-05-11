@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Depositar</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -112,6 +113,16 @@
         [data-theme="dark"] .btn-volver { background: var(--accent); }
         .btn-volver:hover { opacity: 0.85; }
 
+        .btn-comprobante {
+            width: 100%; padding: 13px; background: var(--bg); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin-bottom: 12px; letter-spacing: -0.01em;
+        }
+        .btn-comprobante:hover { opacity: 0.8; }
+
+
         @media (max-width: 600px) {
             .header { padding: 0 16px; }
             .main { padding: 24px 16px 60px; }
@@ -175,23 +186,83 @@
                     <div class="result-saldo-label">Nuevo saldo</div>
                     <div class="result-saldo-val" id="nuevoSaldo">—</div>
                 </div>
+                <button class="btn-comprobante" onclick="imprimirComprobante()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Descargar comprobante
+                </button>
                 <button class="btn-volver" onclick="navTo('dashboard.html')">Volver al inicio</button>
             </div>
 
         </div>
     </main>
 
+
+
     <script>
-        const savedTheme = localStorage.getItem('tuo_theme') || 'light';
+        const savedTheme = localStorage.getItem('tuo-theme') || 'light';
         if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         function toggleTheme() {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';
             document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
-            localStorage.setItem('tuo_theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
         }
 
         const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-        if (!u) { window.location.href = 'login.html'; }
+        if (!u) { navTo('login.html'); }
+
+        let _ultimoDeposito = { importe: 0, nuevoSaldo: 0, fecha: null };
+
+        function imprimirComprobante() {
+            if (typeof window.jspdf === 'undefined') { alert('Librería PDF no disponible, intentá de nuevo en unos segundos.'); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const ahora = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const fechaStr = _ultimoDeposito.fecha
+                ? new Date(_ultimoDeposito.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : ahora;
+            const L = 30, R = 180;
+            let y = 28;
+
+            doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 82, 255);
+            doc.text('tuo', L, y); y += 12;
+
+            doc.setFontSize(14); doc.setTextColor(26, 26, 27);
+            doc.text('Comprobante de deposito', L, y); y += 7;
+
+            doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text(fechaStr, L, y); y += 14;
+
+            doc.setFontSize(26); doc.setFont('helvetica', 'bold'); doc.setTextColor(21, 128, 61);
+            doc.text(fmt(_ultimoDeposito.importe), L, y); y += 12;
+
+            doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(L, y, R, y); y += 10;
+
+            const rows = [
+                ['Tipo', 'Deposito en efectivo'],
+                ['Estado', 'Acreditado'],
+                ['CBU', u.cbu || '-'],
+                ['Titular', (u.nombre || '') + ' ' + (u.apellido || '')],
+                ['Nuevo saldo', fmt(_ultimoDeposito.nuevoSaldo)],
+            ];
+            doc.setFontSize(9);
+            rows.forEach(([lbl, val]) => {
+                doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107); doc.text(lbl, L, y);
+                doc.setFont('helvetica', 'bold'); doc.setTextColor(26, 26, 27); doc.text(val, R, y, { align: 'right' });
+                y += 9;
+            });
+            y += 8; doc.setDrawColor(220, 220, 220); doc.line(L, y, R, y); y += 8;
+            doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text('tuo - Banco digital - Comprobante generado el ' + ahora, 105, y, { align: 'center' });
+
+            const pdfBlob = doc.output('blob');
+            const pdfUrl  = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, '_blank');
+            const a = document.createElement('a');
+            a.href = pdfUrl; a.download = 'comprobante-deposito.pdf';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
+        }
 
         function previsualizar() {
             const val = Number(document.getElementById('importeDeposito').value);
@@ -229,8 +300,9 @@
                 const data = await res.json();
                 if (!res.ok) { err.textContent = data.error || 'Error al procesar el depósito'; err.style.display = 'block'; return; }
 
-                u.saldo = data.nuevoSaldo;
-                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+                // Signal dashboard to animate from old saldo to new saldo on return
+                localStorage.setItem('tuo_pending_deposit_' + u.cbu, JSON.stringify({ amount: importe, nuevoSaldo: data.nuevoSaldo }));
+                _ultimoDeposito = { importe, nuevoSaldo: data.nuevoSaldo, fecha: new Date().toISOString() };
 
                 document.getElementById('nuevoSaldo').textContent =
                     '$ ' + Number(data.nuevoSaldo).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -250,11 +322,19 @@
             document.body.classList.add('leaving');
             setTimeout(() => { window.location.href = url; }, 230);
         }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
         document.addEventListener('click', e => {
             const a = e.target.closest('a[href]');
             if (!a) return;
             const href = a.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('blob:')) return;
             e.preventDefault();
             navTo(href);
         });

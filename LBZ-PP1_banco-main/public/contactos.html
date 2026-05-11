@@ -192,16 +192,16 @@
     </div>
 
     <script>
-        const savedTheme = localStorage.getItem('tuo_theme') || 'light';
+        const savedTheme = localStorage.getItem('tuo-theme') || 'light';
         if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         function toggleTheme() {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';
             document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
-            localStorage.setItem('tuo_theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
         }
 
         const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-        if (!u) { window.location.href = 'login.html'; }
+        if (!u) { navTo('login.html'); }
 
         // ── FAVORITES UTILS ──
         const AVATAR_COLORS = ['#4338CA','#D97706','#059669','#DB2777','#0284C7','#7C3AED','#DC2626','#10B981','#F59E0B','#0891B2'];
@@ -294,6 +294,14 @@
             document.body.classList.add('leaving');
             setTimeout(() => { window.location.href = url; }, 230);
         }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
         document.addEventListener('click', e => {
             const a = e.target.closest('a[href]');
             if (!a) return;

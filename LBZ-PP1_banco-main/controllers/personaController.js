@@ -98,6 +98,14 @@ exports.buscarPersona = async (req, res) => {
       headers: { 'x-api-key': process.env.BANCO_TOKEN, 'x-environment': process.env.BANCO_ENV }
     });
     const data = await response.json();
+    // Si la BC API no devuelve DNI, enriquecer con datos de la base local
+    if (response.ok && data.cbu && !data.dni) {
+      try {
+        const local = await Persona.getByCbu(data.cbu);
+        if (local?.dni) data.dni = local.dni;
+        if (!data.alias && local?.alias) data.alias = local.alias;
+      } catch {}
+    }
     res.status(response.status).json(data);
   } catch (error) {
     const msg = error.name === 'AbortError' ? 'Timeout: la API externa tardó demasiado' : error.message;

@@ -336,6 +336,12 @@
                 }
 
                 localStorage.setItem('usuarioLogueado', JSON.stringify(result));
+                // Registrar acceso en el log de actividad
+                const actKey = 'tuo_activity_' + result.cbu;
+                const actLog = JSON.parse(localStorage.getItem(actKey) || '[]');
+                actLog.unshift({ ts: new Date().toISOString() });
+                if (actLog.length > 10) actLog.pop();
+                localStorage.setItem(actKey, JSON.stringify(actLog));
                 showMessage('¡Acceso exitoso! Redirigiendo...', 'success');
                 setTimeout(() => navTo('dashboard.html'), 670);
 
@@ -356,6 +362,14 @@
             document.body.classList.add('leaving');
             setTimeout(() => { window.location.href = url; }, 230);
         }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
         document.addEventListener('click', e => {
             const a = e.target.closest('a[href]');
             if (!a) return;
