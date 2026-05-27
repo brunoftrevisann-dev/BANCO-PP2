@@ -263,8 +263,6 @@ exports.sincronizarSaldo = async (req, res) => {
 
 exports.registrarPersona = async (req, res) => {
   try {
-    console.log('Datos recibidos en registrarPersona:', req.body);
-    
     const { nombre, apellido, dni, email, telefono, fecha_nac, domicilio, cbu, alias, password } = req.body;
 
     // Validar campos requeridos
@@ -280,7 +278,6 @@ exports.registrarPersona = async (req, res) => {
       if (!cbu) faltantes.push('cbu');
       if (!alias) faltantes.push('alias');
       if (!password) faltantes.push('password');
-      console.log('Campos faltantes:', faltantes);
       return res.status(400).json({ error: `Campos faltantes: ${faltantes.join(', ')}` });
     }
 

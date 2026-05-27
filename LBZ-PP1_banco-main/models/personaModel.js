@@ -97,6 +97,7 @@ const Persona = {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT (tx_id) DO UPDATE SET
          estado          = EXCLUDED.estado,
+         motivo_rechazo  = EXCLUDED.motivo_rechazo,
          persona_origen  = EXCLUDED.persona_origen,
          persona_destino = EXCLUDED.persona_destino`,
       [

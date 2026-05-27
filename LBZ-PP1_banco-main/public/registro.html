@@ -25,6 +25,8 @@
         [data-theme="dark"] {
             --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
             --border: #2C2C2E; --white: #1C1C1E;
+            --error-bg: #2D0A0A; --error-text: #FF6B6B; --error-border: #5C1A1A;
+            --success-bg: #0A2D18; --success-text: #4ADE80; --success-border: #166534;
         }
 
         body {
@@ -434,7 +436,7 @@
             <button type="submit" class="btn-primary" id="btnRegistrar">Crear cuenta</button>
         </form>
 
-        <p class="legal">
+        <p class="legal" id="legalTerms">
             Al crear tu cuenta aceptás los <a href="#">Términos y condiciones</a> y la <a href="#">Política de privacidad</a> de tuo.
         </p>
 
@@ -445,15 +447,20 @@
 
     <script>
         // ── THEME ──
-        (function() {
-            const t = localStorage.getItem('tuo-theme') || 'light';
-            if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        })();
+        const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+        const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+        function applyThemeReg(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            const btn = document.getElementById('btnThemeReg');
+            if (btn) btn.innerHTML = t === 'dark' ? SUN : MOON;
+        }
         function toggleTheme() {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
-            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
+            const next = dark ? 'light' : 'dark';
+            localStorage.setItem('tuo-theme', next);
+            applyThemeReg(next);
         }
+        applyThemeReg(localStorage.getItem('tuo-theme') || 'light');
 
         let _emailPendiente = null;
         let _timerInterval = null;
@@ -482,7 +489,7 @@
         function mostrarPasoVerificacion(email) {
             _emailPendiente = email;
             document.getElementById('registerForm').style.display = 'none';
-            document.querySelector('.legal').style.display = 'none';
+            document.getElementById('legalTerms').style.display = 'none';
             document.querySelector('.footer-login').style.display = 'none';
             document.querySelector('.page-heading h1').textContent = 'Verificá tu cuenta';
             document.querySelector('.page-heading p').textContent = 'Ingresá el código que te enviamos';
@@ -592,10 +599,10 @@
 
         function generarAlias() {
             const palabras = [
-                'sol', 'luna', 'estrella', 'rio', 'mar', 'montaña', 'cielo', 'tierra',
+                'sol', 'luna', 'estrella', 'rio', 'mar', 'montana', 'cielo', 'tierra',
                 'viento', 'fuego', 'agua', 'piedra', 'flor', 'arbol', 'verde', 'azul',
                 'oro', 'plata', 'brillo', 'luz', 'noche', 'dia', 'alba', 'amanecer',
-                'paz', 'vida', 'fuerza', 'valor', 'sueño', 'esperanza', 'feliz', 'nuevo'
+                'paz', 'vida', 'fuerza', 'valor', 'sueno', 'esperanza', 'feliz', 'nuevo'
             ];
             const shuffled = palabras.sort(() => 0.5 - Math.random());
             return `${shuffled[0]}.${shuffled[1]}.${shuffled[2]}`;
@@ -685,9 +692,6 @@
 
                 if (!localResponse.ok) {
                     const errorData = await localResponse.json();
-                    if (localResponse.status === 409 || errorData.error.includes('ya está registrado')) {
-                        throw new Error('El DNI ya está registrado en el sistema');
-                    }
                     throw new Error(errorData.error || 'Error al guardar en la base de datos');
                 }
 

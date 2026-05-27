@@ -1111,7 +1111,7 @@
 
         async function resolverNombresCbu(cbus) {
             const cache = JSON.parse(localStorage.getItem('tuo_nombres') || '{}');
-            const faltantes = [...new Set(cbus)].filter(c => c && !cache[c]);
+            const faltantes = [...new Set(cbus)].filter(c => c && c.length === 22 && !cache[c]);
             if (faltantes.length === 0) return;
             await Promise.all(faltantes.map(async cbu => {
                 try {
