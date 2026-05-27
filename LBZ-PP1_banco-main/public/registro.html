@@ -660,7 +660,9 @@
                     throw new Error(apiResult.error || 'Error al registrar en el Banco Central');
                 }
 
-                const alias = generarAlias();
+                // Use the alias assigned by BC API so both systems stay in sync.
+                // Fall back to a generated alias only if BC API didn't return one.
+                const alias = apiResult.alias || generarAlias();
 
                 const localResponse = await fetch('/api/personas/registrar', {
                     method: 'POST',
