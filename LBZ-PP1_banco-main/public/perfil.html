@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Mi perfil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9; --text: #1A1A1B; --accent: #0052FF;
+            --muted: #6B6B6B; --border: #E5E5E5; --white: #FFFFFF;
+            --error-bg: #FEF2F2; --error-text: #DC2626; --error-border: #FECACA;
+            --success-bg: #F0FDF4; --success-text: #16a34a; --success-border: #BBF7D0;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E;
+            --error-bg: #2D0A0A; --error-text: #f87171; --error-border: #5C1A1A;
+            --success-bg: #0A2D18; --success-text: #4ade80; --success-border: #166634;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 40px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .btn-back {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 12px; cursor: pointer; color: var(--muted);
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
+        .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+        .page-title { font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        .main {
+            max-width: 560px; margin: 0 auto;
+            padding: 36px 24px 72px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* ── AVATAR CARD ── */
+        .avatar-card {
+            background: var(--accent); border-radius: 20px; padding: 28px 24px;
+            display: flex; align-items: center; gap: 20px;
+            color: white; position: relative; overflow: hidden;
+        }
+        .avatar-card::before {
+            content: ''; position: absolute; top: -50px; right: -50px;
+            width: 180px; height: 180px; background: rgba(255,255,255,0.07);
+            border-radius: 50%; pointer-events: none;
+        }
+        .avatar-circle {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; font-weight: 700; flex-shrink: 0; letter-spacing: 0.02em;
+        }
+        .avatar-name { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 3px; }
+        .avatar-email { font-size: 0.82rem; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ── SECTION CARD ── */
+        .section-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .section-header {
+            padding: 15px 20px 14px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-icon {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: rgba(0,82,255,0.08); display: flex;
+            align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .section-title { font-size: 0.88rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+        /* ── INFO ROWS ── */
+        .info-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 13px 20px; border-bottom: 1px solid var(--border); gap: 12px;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); flex-shrink: 0; }
+        .info-value { font-size: 0.88rem; font-weight: 500; color: var(--text); text-align: right; word-break: break-all; }
+        .copy-btn { font-size: 0.7rem; color: var(--accent); cursor: pointer; font-weight: 600; flex-shrink: 0; background: none; border: none; font-family: 'Inter', sans-serif; padding: 0; }
+        .copy-btn:hover { text-decoration: underline; }
+
+        /* ── ALIAS ── */
+        .alias-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; gap: 12px;
+        }
+        .alias-current { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+        .btn-edit {
+            padding: 6px 14px; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 8px; font-size: 0.78rem; font-weight: 600; color: var(--muted);
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+        }
+        .btn-edit:hover { color: var(--accent); border-color: var(--accent); }
+        .form-inner { display: none; padding: 0 20px 18px; }
+        .field-input {
+            width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+            border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 0.9rem;
+            color: var(--text); background: var(--bg); outline: none; transition: border-color 0.2s;
+        }
+        .field-input:focus { border-color: var(--accent); }
+        .form-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-save {
+            flex: 1; padding: 10px; background: var(--accent); color: white;
+            border: none; border-radius: 9px; font-size: 0.86rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+        }
+        .btn-save:hover { opacity: 0.88; }
+        .btn-save:disabled { opacity: 0.45; cursor: not-allowed; }
+        .btn-cancel {
+            padding: 10px 16px; background: var(--bg); color: var(--muted);
+            border: 1px solid var(--border); border-radius: 9px; font-size: 0.86rem;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+        .field-err { font-size: 0.78rem; color: var(--error-text); margin-top: 6px; display: none; }
+
+        /* ── PASSWORD ── */
+        .pwd-body { padding: 16px 20px 20px; }
+        .pwd-group { margin-bottom: 16px; }
+        .pwd-label {
+            display: block; font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--muted); margin-bottom: 7px;
+        }
+        .pwd-wrap { position: relative; }
+        .pwd-input {
+            width: 100%; padding: 11px 40px 11px 12px; border: 1.5px solid var(--border);
+            border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 0.9rem;
+            color: var(--text); background: var(--bg); outline: none; transition: border-color 0.2s;
+        }
+        .pwd-input:focus { border-color: var(--accent); }
+        .btn-eye {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; color: var(--muted);
+            display: flex; align-items: center; padding: 2px;
+        }
+        .strength-bar { height: 3px; border-radius: 3px; background: var(--border); margin-top: 6px; overflow: hidden; }
+        .strength-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.3s, background 0.3s; }
+
+        .msg-box {
+            padding: 11px 14px; border-radius: 9px; font-size: 0.83rem;
+            font-weight: 500; display: none; margin-bottom: 14px; line-height: 1.4;
+        }
+        .msg-box.error   { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-border); display: block; }
+        .msg-box.success { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); display: block; }
+
+        .btn-primary {
+            width: 100%; padding: 12px; background: var(--accent); color: white;
+            border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .code-step { display: none; }
+        .code-hint { font-size: 0.82rem; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+        .code-input {
+            width: 100%; padding: 14px 12px; border: 1.5px solid var(--border);
+            border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 1.5rem;
+            font-weight: 700; color: var(--text); background: var(--bg); outline: none;
+            letter-spacing: 0.25em; text-align: center; transition: border-color 0.2s; margin-bottom: 12px;
+        }
+        .code-input:focus { border-color: var(--accent); }
+        .btn-secondary {
+            width: 100%; padding: 10px; background: var(--bg); color: var(--muted);
+            border: 1px solid var(--border); border-radius: 10px; font-size: 0.84rem;
+            font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; margin-top: 10px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
+
+        /* ── ACTIVITY ── */
+        .activity-list { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+        .activity-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border);
+        }
+        .activity-left { display: flex; align-items: center; gap: 10px; }
+        .activity-dot {
+            width: 28px; height: 28px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .activity-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+        .activity-date  { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+        .activity-time  { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+        .badge-current  { font-size: 0.65rem; background: rgba(0,82,255,0.1); color: var(--accent); padding: 1px 7px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+        .activity-empty { padding: 20px; text-align: center; font-size: 0.84rem; color: var(--muted); }
+
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; }
+            .main { padding: 20px 16px 60px; gap: 14px; }
+            .avatar-card { padding: 20px 18px; gap: 14px; }
+            .avatar-circle { width: 52px; height: 52px; font-size: 1.1rem; }
+        }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+            </button>
+            <span class="header-logo">tuo</span>
+        </div>
+        <span class="page-title">Mi perfil</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main">
+
+        <!-- Avatar -->
+        <div class="avatar-card">
+            <div class="avatar-circle" id="avatarCircle">--</div>
+            <div>
+                <div class="avatar-name" id="avatarName"></div>
+                <div class="avatar-email" id="avatarEmail"></div>
+            </div>
+        </div>
+
+        <!-- Datos personales -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <span class="section-title">Datos personales</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Nombre</span>
+                <span class="info-value" id="infoNombre">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">DNI</span>
+                <span class="info-value" id="infoDni">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value" id="infoEmail">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Teléfono</span>
+                <span class="info-value" id="infoTelefono">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">CBU</span>
+                <span class="info-value" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+                    <span id="infoCbu" style="font-size:0.75rem;">—</span>
+                    <button class="copy-btn" id="btnCopiarCbu" onclick="copiarCbu()">Copiar</button>
+                </span>
+            </div>
+        </div>
+
+        <!-- Alias -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                </div>
+                <span class="section-title">Alias</span>
+            </div>
+            <div class="alias-row">
+                <span class="alias-current" id="aliasDisplay">—</span>
+                <button class="btn-edit" id="btnEditAlias" onclick="mostrarFormAlias()">Editar</button>
+            </div>
+            <div class="form-inner" id="aliasForm">
+                <input type="text" class="field-input" id="inputAlias" placeholder="nuevo.alias" maxlength="40">
+                <div class="form-btns">
+                    <button class="btn-save" id="btnGuardarAlias" onclick="guardarAlias()">Guardar</button>
+                    <button class="btn-cancel" onclick="ocultarFormAlias()">Cancelar</button>
+                </div>
+                <div class="field-err" id="aliasErr"></div>
+            </div>
+        </div>
+
+        <!-- Cambiar contraseña -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <span class="section-title">Cambiar contraseña</span>
+            </div>
+            <div class="pwd-body">
+
+                <!-- Paso 1 -->
+                <div id="pwdStep1">
+                    <div class="msg-box" id="pwdMsg"></div>
+                    <div class="pwd-group">
+                        <label class="pwd-label">Contraseña actual</label>
+                        <div class="pwd-wrap">
+                            <input type="password" class="pwd-input" id="pwdActual" placeholder="Tu contraseña actual">
+                            <button type="button" class="btn-eye" onclick="toggleVer('pwdActual',this)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pwd-group">
+                        <label class="pwd-label">Nueva contraseña</label>
+                        <div class="pwd-wrap">
+                            <input type="password" class="pwd-input" id="pwdNueva" placeholder="Mínimo 8 caracteres" oninput="medirFuerza(this.value)">
+                            <button type="button" class="btn-eye" onclick="toggleVer('pwdNueva',this)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                        <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+                    </div>
+                    <div class="pwd-group">
+                        <label class="pwd-label">Confirmar nueva contraseña</label>
+                        <div class="pwd-wrap">
+                            <input type="password" class="pwd-input" id="pwdConfirm" placeholder="Repetí la nueva contraseña">
+                            <button type="button" class="btn-eye" onclick="toggleVer('pwdConfirm',this)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="btnEnviarCodigo" onclick="solicitarCodigo()">Enviar código por email</button>
+                </div>
+
+                <!-- Paso 2 -->
+                <div class="code-step" id="pwdStep2">
+                    <div class="msg-box" id="codeMsg"></div>
+                    <p class="code-hint" id="codeHint">Ingresá el código de 6 dígitos que te enviamos por email.</p>
+                    <input type="text" class="code-input" id="inputCodigo" maxlength="6" placeholder="000000"
+                        inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+                    <button class="btn-primary" id="btnConfirmarCodigo" onclick="confirmarCodigo()">Confirmar cambio</button>
+                    <button class="btn-secondary" onclick="reenviarCodigo()">Reenviar código</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Accesos recientes -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                </div>
+                <span class="section-title">Accesos recientes</span>
+            </div>
+            <div class="activity-list" id="activityList">
+                <div class="activity-empty">Sin registros disponibles.</div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const savedTheme = localStorage.getItem('tuo-theme') || 'light';
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
+        }
+
+        const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+        if (!u) { navTo('login.html'); }
+
+        // ── Poblar datos ──
+        const ini = ((u.nombre || '')[0] + (u.apellido || '')[0]).toUpperCase();
+        document.getElementById('avatarCircle').textContent  = ini || '--';
+        document.getElementById('avatarName').textContent    = `${u.nombre || ''} ${u.apellido || ''}`.trim();
+        document.getElementById('avatarEmail').textContent   = u.email || '';
+        document.getElementById('infoNombre').textContent    = `${u.nombre || ''} ${u.apellido || ''}`.trim();
+        document.getElementById('infoDni').textContent       = u.dni || '—';
+        document.getElementById('infoEmail').textContent     = u.email || '—';
+        document.getElementById('infoTelefono').textContent  = u.telefono || '—';
+        document.getElementById('infoCbu').textContent       = u.cbu || '—';
+        document.getElementById('aliasDisplay').textContent  = u.alias || '—';
+
+        // ── Actividad ──
+        const actLog = JSON.parse(localStorage.getItem('tuo_activity_' + (u.cbu || '')) || '[]');
+        const actEl  = document.getElementById('activityList');
+        if (actLog.length > 0) {
+            actEl.innerHTML = actLog.slice(0, 6).map((e, i) => {
+                const d   = new Date(e.ts);
+                const dia = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+                const hr  = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                const dotBg   = i === 0 ? 'rgba(0,82,255,0.1)' : 'var(--border)';
+                const dotClr  = i === 0 ? 'var(--accent)' : 'var(--muted)';
+                return `<div class="activity-item">
+                    <div class="activity-left">
+                        <div class="activity-dot" style="background:${dotBg}">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${dotClr}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        </div>
+                        <div>
+                            <div class="activity-label">Inicio de sesión${i === 0 ? '<span class="badge-current">Actual</span>' : ''}</div>
+                            <div class="activity-date">${dia}</div>
+                        </div>
+                    </div>
+                    <span class="activity-time">${hr}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ── Copiar CBU ──
+        function copiarCbu() {
+            if (!u.cbu) return;
+            navigator.clipboard.writeText(u.cbu).then(() => {
+                const btn = document.getElementById('btnCopiarCbu');
+                btn.textContent = '¡Copiado!';
+                setTimeout(() => { btn.textContent = 'Copiar'; }, 1800);
+            });
+        }
+
+        // ── Alias ──
+        function mostrarFormAlias() {
+            document.getElementById('inputAlias').value = u.alias || '';
+            document.getElementById('aliasForm').style.display = 'block';
+            document.getElementById('btnEditAlias').style.display = 'none';
+            document.getElementById('aliasErr').style.display = 'none';
+            document.getElementById('inputAlias').focus();
+        }
+        function ocultarFormAlias() {
+            document.getElementById('aliasForm').style.display = 'none';
+            document.getElementById('btnEditAlias').style.display = '';
+        }
+        async function guardarAlias() {
+            const nuevoAlias = document.getElementById('inputAlias').value.trim();
+            const errEl = document.getElementById('aliasErr');
+            errEl.style.display = 'none';
+            if (!nuevoAlias) { errEl.textContent = 'El alias no puede estar vacío'; errEl.style.display = 'block'; return; }
+            if (!/^[a-zA-Z0-9.\-]+$/.test(nuevoAlias)) { errEl.textContent = 'Solo letras, números, puntos y guiones'; errEl.style.display = 'block'; return; }
+            const btn = document.getElementById('btnGuardarAlias');
+            btn.disabled = true; btn.textContent = 'Guardando...';
+            try {
+                const res  = await fetch('/api/actualizar-alias', {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbu: u.cbu, alias: nuevoAlias })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errEl.textContent = res.status === 409 ? 'Ese alias ya está en uso' : (data.error || 'Error al actualizar');
+                    errEl.style.display = 'block';
+                    return;
+                }
+                u.alias = nuevoAlias;
+                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+                document.getElementById('aliasDisplay').textContent = nuevoAlias;
+                ocultarFormAlias();
+            } catch {
+                errEl.textContent = 'Error de conexión'; errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Guardar';
+            }
+        }
+
+        // ── Contraseña ──
+        function toggleVer(id, btn) {
+            const inp = document.getElementById(id);
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+            btn.style.opacity = inp.type === 'text' ? '0.45' : '1';
+        }
+        function medirFuerza(pwd) {
+            let s = 0;
+            if (pwd.length >= 8)  s++;
+            if (pwd.length >= 12) s++;
+            if (/[A-Z]/.test(pwd)) s++;
+            if (/[0-9]/.test(pwd)) s++;
+            if (/[^A-Za-z0-9]/.test(pwd)) s++;
+            const pct = [0,20,40,65,85,100][s];
+            const clr = ['#E5E5E5','#DC2626','#F59E0B','#F59E0B','#16a34a','#16a34a'][s];
+            const f = document.getElementById('strengthFill');
+            f.style.width = pct + '%'; f.style.background = clr;
+        }
+        function setMsg(id, txt, tipo) {
+            const el = document.getElementById(id);
+            el.textContent = txt; el.className = 'msg-box ' + tipo;
+        }
+        function hideMsg(id) {
+            const el = document.getElementById(id);
+            el.textContent = ''; el.className = 'msg-box';
+        }
+
+        let _emailPendiente = null;
+
+        async function solicitarCodigo() {
+            hideMsg('pwdMsg');
+            const actual  = document.getElementById('pwdActual').value;
+            const nueva   = document.getElementById('pwdNueva').value;
+            const confirm = document.getElementById('pwdConfirm').value;
+            if (!actual)           return setMsg('pwdMsg', 'Ingresá tu contraseña actual', 'error');
+            if (nueva.length < 8)  return setMsg('pwdMsg', 'La nueva contraseña debe tener al menos 8 caracteres', 'error');
+            if (nueva !== confirm) return setMsg('pwdMsg', 'Las contraseñas no coinciden', 'error');
+
+            const btn = document.getElementById('btnEnviarCodigo');
+            btn.disabled = true; btn.textContent = 'Enviando...';
+            try {
+                const res  = await fetch('/api/solicitar-cambio-password', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: u.email, passwordActual: actual })
+                });
+                const data = await res.json();
+                if (!res.ok) { setMsg('pwdMsg', data.error || 'Error al enviar el código', 'error'); return; }
+                _emailPendiente = u.email;
+                document.getElementById('pwdStep1').style.display = 'none';
+                document.getElementById('pwdStep2').style.display = 'block';
+                document.getElementById('codeHint').textContent =
+                    `Te enviamos un código a ${u.email}. Tenés 5 minutos para usarlo.`;
+                document.getElementById('inputCodigo').focus();
+            } catch {
+                setMsg('pwdMsg', 'Error de conexión. Intentá de nuevo.', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Enviar código por email';
+            }
+        }
+
+        async function confirmarCodigo() {
+            hideMsg('codeMsg');
+            const token  = document.getElementById('inputCodigo').value.trim();
+            const nueva  = document.getElementById('pwdNueva').value;
+            if (token.length !== 6) return setMsg('codeMsg', 'El código debe tener 6 dígitos', 'error');
+
+            const btn = document.getElementById('btnConfirmarCodigo');
+            btn.disabled = true; btn.textContent = 'Verificando...';
+            try {
+                const res  = await fetch('/api/confirmar-cambio-password', {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: _emailPendiente, token, nuevaPassword: nueva })
+                });
+                const data = await res.json();
+                if (!res.ok) { setMsg('codeMsg', data.error || 'Código incorrecto', 'error'); return; }
+
+                setMsg('codeMsg', '¡Contraseña actualizada correctamente!', 'success');
+                setTimeout(() => {
+                    document.getElementById('pwdStep2').style.display = 'none';
+                    document.getElementById('pwdStep1').style.display = 'block';
+                    document.getElementById('pwdActual').value = '';
+                    document.getElementById('pwdNueva').value = '';
+                    document.getElementById('pwdConfirm').value = '';
+                    document.getElementById('inputCodigo').value = '';
+                    document.getElementById('strengthFill').style.width = '0';
+                    hideMsg('codeMsg');
+                    _emailPendiente = null;
+                }, 2500);
+            } catch {
+                setMsg('codeMsg', 'Error de conexión. Intentá de nuevo.', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Confirmar cambio';
+            }
+        }
+
+        async function reenviarCodigo() {
+            if (!_emailPendiente) return;
+            hideMsg('codeMsg');
+            const actual = document.getElementById('pwdActual').value;
+            try {
+                const res  = await fetch('/api/solicitar-cambio-password', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: _emailPendiente, passwordActual: actual })
+                });
+                const data = await res.json();
+                if (res.ok) setMsg('codeMsg', 'Código reenviado a tu email', 'success');
+                else        setMsg('codeMsg', data.error || 'No se pudo reenviar', 'error');
+            } catch {
+                setMsg('codeMsg', 'Error de conexión', 'error');
+            }
+        }
+
+        // ── Nav ──
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+            e.preventDefault();
+            navTo(href);
+        });
+    </script>
+</body>
+</html>

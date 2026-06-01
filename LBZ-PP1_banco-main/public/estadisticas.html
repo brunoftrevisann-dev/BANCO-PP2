@@ -16,46 +16,35 @@
             --muted: #6B6B6B;
             --border: #E5E5E5;
             --white: #FFFFFF;
+            --green: #16a34a;
+            --red: #DC2626;
         }
-
         [data-theme="dark"] {
             --bg: #111113;
             --text: #F0F0F0;
             --muted: #8E8E8E;
             --border: #2C2C2E;
             --white: #1C1C1E;
+            --green: #4ade80;
+            --red: #f87171;
         }
 
         body {
             font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
             transition: background 0.3s, color 0.3s;
         }
 
         /* ── HEADER ── */
         .header {
-            background: var(--white);
-            border-bottom: 1px solid var(--border);
-            padding: 0 40px;
-            height: 62px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 50;
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 40px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
             transition: background 0.3s, border-color 0.3s;
         }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
+        .header-left { display: flex; align-items: center; gap: 16px; }
         .btn-back {
             display: flex; align-items: center; gap: 6px;
             background: none; border: 1px solid var(--border); border-radius: 8px;
@@ -64,13 +53,8 @@
             transition: color 0.15s, border-color 0.15s, background 0.15s;
         }
         .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
-
         .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
-
-        .page-title {
-            font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em;
-        }
-
+        .page-title { font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
         .btn-theme {
             background: none; border: 1px solid var(--border); border-radius: 8px;
             width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
@@ -78,99 +62,126 @@
         }
         .btn-theme:hover { color: var(--text); border-color: #aaa; }
 
-        /* ── MAIN ── */
+        /* ── LAYOUT ── */
         .main {
-            max-width: 860px;
-            margin: 0 auto;
-            padding: 32px 24px 60px;
+            max-width: 720px; margin: 0 auto;
+            padding: 32px 24px 64px;
+            display: flex; flex-direction: column; gap: 16px;
         }
 
-        .section-label {
+        /* ── HERO SALDO ── */
+        .hero-card {
+            background: var(--accent);
+            border-radius: 20px; padding: 28px 32px;
+            color: white; position: relative; overflow: hidden;
+        }
+        .hero-card::before {
+            content: ''; position: absolute; top: -60px; right: -60px;
+            width: 220px; height: 220px; background: rgba(255,255,255,0.07);
+            border-radius: 50%; pointer-events: none;
+        }
+        .hero-label {
             font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.07em; color: var(--muted);
-            margin-bottom: 14px; margin-top: 32px;
+            letter-spacing: 0.1em; color: rgba(255,255,255,0.65); margin-bottom: 8px;
         }
-        .section-label:first-child { margin-top: 0; }
-
-        /* ── CHARTS ── */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+        .hero-val {
+            font-size: 2.6rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+        }
+        .hero-name {
+            font-size: 0.84rem; color: rgba(255,255,255,0.55); margin-top: 10px; font-weight: 400;
         }
 
-        @media (max-width: 700px) {
-            .stats-grid { grid-template-columns: 1fr; }
-            .header { padding: 0 16px; }
-            .main { padding: 24px 16px 60px; }
-        }
+        /* ── KPI CARDS ── */
+        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
-        .stats-card {
+        .kpi-card {
             background: var(--white); border: 1px solid var(--border);
-            border-radius: 16px; padding: 20px;
+            border-radius: 16px; padding: 18px 20px;
+            display: flex; align-items: center; gap: 14px;
             transition: background 0.3s, border-color 0.3s;
         }
 
-        .stats-card-title {
-            font-size: 0.72rem; font-weight: 600; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 14px;
+        .kpi-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
         }
+        .kpi-icon.green { background: rgba(22,163,74,0.1); }
+        .kpi-icon.red   { background: rgba(220,38,38,0.1); }
+        .kpi-icon.blue  { background: rgba(0,82,255,0.1);  }
 
-        .chart-container { position: relative; height: 200px; }
+        .kpi-label {
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px;
+        }
+        .kpi-val { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
+        .kpi-val.green { color: var(--green); }
+        .kpi-val.red   { color: var(--red); }
+        .kpi-val.blue  { color: var(--accent); }
 
+        /* ── CHART CARD ── */
+        .chart-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 16px; padding: 22px 24px;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .chart-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .chart-card-title {
+            font-size: 0.88rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em;
+        }
+        .chart-legend {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.75rem; color: var(--muted); font-weight: 500;
+        }
+        .legend-dot {
+            display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; flex-shrink: 0;
+        }
+        .legend-sep { color: var(--border); margin: 0 2px; }
+
+        .chart-wrap { position: relative; height: 220px; }
+
+        /* ── MOTIVOS ── */
+        .motivos-layout {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center;
+        }
+        .chart-wrap-donut { position: relative; height: 180px; }
+
+        .motivo-list { display: flex; flex-direction: column; gap: 10px; }
+        .motivo-item {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .motivo-dot {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+        }
+        .motivo-name {
+            flex: 1; font-size: 0.83rem; color: var(--text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .motivo-amt { font-size: 0.83rem; font-weight: 600; color: var(--muted); flex-shrink: 0; }
+
+        /* ── EMPTY ── */
         .chart-empty {
-            position: absolute; inset: 0; display: none;
-            flex-direction: column; align-items: center; justify-content: center;
-            gap: 10px; color: var(--muted);
+            height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 8px;
+            color: var(--muted); text-align: center;
         }
-        .chart-empty p { font-size: 0.78rem; text-align: center; max-width: 160px; }
+        .chart-empty p { font-size: 0.8rem; max-width: 200px; line-height: 1.5; }
 
-        /* ── DATOS GENERALES ── */
-        .summary-cards {
-            display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px;
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; }
+            .main { padding: 20px 16px 60px; gap: 12px; }
+            .hero-card { padding: 22px 24px; }
+            .hero-val { font-size: 2rem; }
+            .kpi-row { grid-template-columns: 1fr; }
+            .kpi-card { padding: 14px 16px; }
+            .motivos-layout { grid-template-columns: 1fr; }
+            .chart-wrap-donut { height: 160px; }
         }
-
-        .summary-card {
-            background: var(--bg); border: 1px solid var(--border);
-            border-radius: 12px; padding: 16px 20px;
-            flex: 1; min-width: 140px;
-            transition: background 0.3s, border-color 0.3s;
-        }
-
-        .summary-card-label {
-            font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px;
-        }
-
-        .summary-card-val { font-size: 1.25rem; font-weight: 700; }
-
-        .table-wrap {
-            background: var(--white); border: 1px solid var(--border);
-            border-radius: 12px; overflow: hidden; margin-bottom: 4px;
-            transition: background 0.3s, border-color 0.3s;
-        }
-
-        table { width: 100%; border-collapse: collapse; }
-
-        th {
-            text-align: left; font-size: 0.68rem; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
-            padding: 10px 14px; border-bottom: 1px solid var(--border);
-        }
-        th.right { text-align: right; }
-        th.center { text-align: center; }
-
-        td {
-            padding: 10px 14px; border-bottom: 1px solid var(--border);
-            color: var(--text); font-size: 0.875rem;
-        }
-        td:last-child { border-bottom: none; }
-        tr:last-child td { border-bottom: none; }
-        td.right { text-align: right; }
-        td.center { text-align: center; }
-        td.green { color: #16a34a; text-align: right; }
-        td.red   { color: #dc2626; text-align: right; }
-        td.muted { color: var(--muted); text-align: center; padding: 16px; }
 
         @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
@@ -189,8 +200,8 @@
             <span class="header-logo">tuo</span>
         </div>
         <span class="page-title">Estadísticas</span>
-        <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema">
-            <svg id="iconTheme" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
         </button>
@@ -198,93 +209,86 @@
 
     <main class="main">
 
-        <div class="section-label">Gráficos</div>
-        <div class="stats-grid">
-            <div class="stats-card">
-                <div class="stats-card-title">Gastos por motivo</div>
-                <div class="chart-container">
+        <!-- Saldo actual -->
+        <div class="hero-card">
+            <div class="hero-label">Saldo actual</div>
+            <div class="hero-val" id="valSaldo">—</div>
+            <div class="hero-name" id="heroNombre"></div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-icon green">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                </div>
+                <div>
+                    <div class="kpi-label">Ingresos</div>
+                    <div class="kpi-val green" id="valIngresos">—</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon red">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                </div>
+                <div>
+                    <div class="kpi-label">Gastos</div>
+                    <div class="kpi-val red" id="valGastos">—</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon blue">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div>
+                    <div class="kpi-label">Depositado</div>
+                    <div class="kpi-val blue" id="valDepositos">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico combinado -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <span class="chart-card-title">Ingresos y gastos por mes</span>
+                <div class="chart-legend">
+                    <span class="legend-dot" style="background:#0052FF;"></span>
+                    <span>Ingresos</span>
+                    <span class="legend-sep">·</span>
+                    <span class="legend-dot" style="background:#DC2626;"></span>
+                    <span>Gastos</span>
+                </div>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="chartCombinado"></canvas>
+            </div>
+        </div>
+
+        <!-- Gastos por motivo (solo si hay datos) -->
+        <div class="chart-card" id="motivosCard" style="display:none;">
+            <div class="chart-card-header">
+                <span class="chart-card-title">Gastos por motivo</span>
+            </div>
+            <div class="motivos-layout">
+                <div class="chart-wrap-donut">
                     <canvas id="chartMotivos"></canvas>
-                    <div id="chartMotivosEmpty" class="chart-empty" style="display:flex;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                        <p>Realizá una transferencia con motivo para ver estadísticas</p>
-                    </div>
                 </div>
+                <div class="motivo-list" id="motivoList"></div>
             </div>
-            <div class="stats-card">
-                <div class="stats-card-title">Ingresos mensuales</div>
-                <div class="chart-container">
-                    <canvas id="chartIngresos"></canvas>
-                </div>
-            </div>
-            <div class="stats-card">
-                <div class="stats-card-title">Gastos mensuales</div>
-                <div class="chart-container">
-                    <canvas id="chartGastos"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="section-label" style="margin-top:36px;">Datos generales</div>
-
-        <div class="summary-cards">
-            <div class="summary-card">
-                <div class="summary-card-label">Total ingresos</div>
-                <div class="summary-card-val" id="valIngresos" style="color:#16a34a;">—</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-card-label">Total gastos</div>
-                <div class="summary-card-val" id="valGastos" style="color:#dc2626;">—</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-card-label">Total depositado</div>
-                <div class="summary-card-val" id="valDepositos" style="color:var(--accent);">—</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-card-label">Saldo actual</div>
-                <div class="summary-card-val" id="valSaldo" style="color:var(--text);">—</div>
-            </div>
-        </div>
-
-        <div class="section-label">Gastos por motivo</div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Motivo</th><th class="center">Veces</th><th class="right">Total</th></tr></thead>
-                <tbody id="tbodyMotivos"><tr><td class="muted" colspan="3">Cargando...</td></tr></tbody>
-            </table>
-        </div>
-
-        <div class="section-label">Ingresos y gastos por mes</div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Mes</th><th class="right">Ingresos</th><th class="right">Gastos</th></tr></thead>
-                <tbody id="tbodyMeses"><tr><td class="muted" colspan="3">Cargando...</td></tr></tbody>
-            </table>
-        </div>
-
-        <div class="section-label">Depósitos realizados</div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Fecha</th><th class="right">Importe</th></tr></thead>
-                <tbody id="tbodyDepositos"><tr><td class="muted" colspan="2">Cargando...</td></tr></tbody>
-            </table>
         </div>
 
     </main>
 
     <script>
-        // ── THEME ──
         const savedTheme = localStorage.getItem('tuo-theme') || 'light';
         if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-
         function toggleTheme() {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';
             document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
             localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
         }
 
-        // ── UTILS ──
-        const fmt      = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const fmtFecha = d => new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         function last6Months() {
             const result = [];
@@ -292,7 +296,7 @@
             for (let i = 5; i >= 0; i--) {
                 const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                const label = d.toLocaleDateString('es-AR', { month: 'short' }).replace('.','') + " '" + String(d.getFullYear()).slice(2);
+                const label = d.toLocaleDateString('es-AR', { month: 'short' }).replace('.','');
                 result.push({ key, label });
             }
             return result;
@@ -310,150 +314,115 @@
             return m;
         }
 
-        // ── CHARTS ──
-        let chartMotivosInst = null, chartIngresosInst = null, chartGastosInst = null;
+        let chartCombInst = null, chartMotivosInst = null;
 
-        function destroyCharts() {
-            chartMotivosInst?.destroy();
-            chartIngresosInst?.destroy();
-            chartGastosInst?.destroy();
-            chartMotivosInst = chartIngresosInst = chartGastosInst = null;
-        }
-
-        function inicializarGraficos(todasLasTx, u) {
-            if (typeof Chart === 'undefined') return;
+        function render(txs, u) {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';
             const clr  = dark
-                ? { grid: '#2C2C2E', text: '#8E8E8E', barIn: '#3B82F6', barOut: '#EF4444' }
-                : { grid: '#E5E5E5', text: '#6B6B6B', barIn: '#0052FF', barOut: '#B91C1C' };
+                ? { grid: '#2C2C2E', tick: '#8E8E8E', barIn: '#3B82F6', barOut: '#F87171' }
+                : { grid: '#F0F0F0', tick: '#9E9E9E', barIn: '#0052FF', barOut: '#DC2626' };
 
-            destroyCharts();
+            // ── KPIs ──
+            const depositos = txs.filter(t => t.cbuOrigen === 'DEPOSITO' && t.cbuDestino === u.cbu);
+            const ingresos  = txs.filter(t => t.cbuDestino === u.cbu && t.cbuOrigen !== 'DEPOSITO' && (t.estado === 'aprobada' || t.estado === 'approved'));
+            const gastos    = txs.filter(t => t.cbuOrigen  === u.cbu && (t.estado === 'aprobada' || t.estado === 'approved'));
 
+            document.getElementById('valSaldo').textContent    = fmt(u.saldo);
+            document.getElementById('heroNombre').textContent  = (u.nombre || '') + ' ' + (u.apellido || '');
+            document.getElementById('valIngresos').textContent = fmt(ingresos.reduce((s, t) => s + Number(t.importe), 0));
+            document.getElementById('valGastos').textContent   = fmt(gastos.reduce((s, t) => s + Number(t.importe), 0));
+            document.getElementById('valDepositos').textContent= fmt(depositos.reduce((s, t) => s + Number(t.importe), 0));
+
+            // ── GRÁFICO COMBINADO ──
+            const meses  = last6Months();
+            const labels = meses.map(m => m.label);
+            const grpIn  = groupByMonth(ingresos);
+            const grpOut = groupByMonth(gastos);
+            const dataIn  = meses.map(m => grpIn[m.key]  || 0);
+            const dataOut = meses.map(m => grpOut[m.key] || 0);
+
+            chartCombInst?.destroy();
+            chartCombInst = new Chart(document.getElementById('chartCombinado'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Ingresos',
+                            data: dataIn,
+                            backgroundColor: dark ? 'rgba(59,130,246,0.25)' : 'rgba(0,82,255,0.12)',
+                            borderColor: clr.barIn, borderWidth: 2, borderRadius: 5, borderSkipped: false
+                        },
+                        {
+                            label: 'Gastos',
+                            data: dataOut,
+                            backgroundColor: dark ? 'rgba(248,113,113,0.2)' : 'rgba(220,38,38,0.1)',
+                            borderColor: clr.barOut, borderWidth: 2, borderRadius: 5, borderSkipped: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: clr.tick, font: { family: 'Inter', size: 11 }, maxRotation: 0 } },
+                        y: { grid: { color: clr.grid }, beginAtZero: true, ticks: { color: clr.tick, font: { family: 'Inter', size: 11 }, callback: v => '$ ' + v.toLocaleString('es-AR') } }
+                    }
+                }
+            });
+
+            // ── MOTIVOS ──
+            const PIE_COLORS = ['#0052FF','#7C3AED','#059669','#D97706','#DB2777','#0284C7','#DC2626','#10B981'];
             const motivosRaw = JSON.parse(localStorage.getItem('tuo_transferencias_' + u.cbu) || '[]');
-            const mTotals    = {};
+            const mTotals = {};
             motivosRaw.forEach(m => { mTotals[m.motivo] = (mTotals[m.motivo] || 0) + Number(m.importe); });
-            const pieLabels  = Object.keys(mTotals);
-            const pieVals    = Object.values(mTotals);
-            const ctxPie     = document.getElementById('chartMotivos');
-            const emptyDiv   = document.getElementById('chartMotivosEmpty');
+            const entries = Object.entries(mTotals).sort((a, b) => b[1] - a[1]);
 
-            if (pieLabels.length === 0) {
-                ctxPie.style.display = 'none';
-                emptyDiv.style.display = 'flex';
-            } else {
-                ctxPie.style.display = 'block';
-                emptyDiv.style.display = 'none';
-                const PIE_COLORS = ['#0052FF','#7C3AED','#059669','#D97706','#DB2777','#0284C7','#DC2626','#10B981','#F59E0B','#0891B2'];
-                chartMotivosInst = new Chart(ctxPie, {
+            if (entries.length > 0) {
+                document.getElementById('motivosCard').style.display = 'block';
+                chartMotivosInst?.destroy();
+                chartMotivosInst = new Chart(document.getElementById('chartMotivos'), {
                     type: 'doughnut',
                     data: {
-                        labels: pieLabels,
-                        datasets: [{ data: pieVals, backgroundColor: PIE_COLORS.slice(0, pieLabels.length), borderWidth: 0 }]
+                        labels: entries.map(([m]) => m),
+                        datasets: [{ data: entries.map(([,v]) => v), backgroundColor: PIE_COLORS.slice(0, entries.length), borderWidth: 0 }]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         plugins: {
-                            legend: { position: 'bottom', labels: { color: clr.text, font: { family: 'Inter', size: 10 }, padding: 10, boxWidth: 12 } },
-                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
-                        }
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)}` } }
+                        },
+                        cutout: '68%'
                     }
                 });
+
+                document.getElementById('motivoList').innerHTML = entries.slice(0, 5).map(([m, v], i) =>
+                    `<div class="motivo-item">
+                        <span class="motivo-dot" style="background:${PIE_COLORS[i]};"></span>
+                        <span class="motivo-name">${m}</span>
+                        <span class="motivo-amt">${fmt(v)}</span>
+                    </div>`
+                ).join('');
             }
-
-            const recibidas = todasLasTx.filter(t => t.cbuDestino === u.cbu);
-            const enviadas  = todasLasTx.filter(t => t.cbuOrigen  === u.cbu);
-            const meses     = last6Months();
-            const labels    = meses.map(m => m.label);
-            const grpIn     = groupByMonth(recibidas);
-            const grpOut    = groupByMonth(enviadas);
-            const dataIn    = meses.map(m => grpIn[m.key]  || 0);
-            const dataOut   = meses.map(m => grpOut[m.key] || 0);
-
-            const barOpts = (color) => ({
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => ` $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
-                },
-                scales: {
-                    x: { grid: { color: clr.grid }, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, autoSkip: false, maxRotation: 0 } },
-                    y: { grid: { color: clr.grid }, beginAtZero: true, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, callback: v => '$' + v.toLocaleString('es-AR') } }
-                }
-            });
-
-            chartIngresosInst = new Chart(document.getElementById('chartIngresos'), {
-                type: 'bar',
-                data: { labels, datasets: [{ data: dataIn, backgroundColor: dark ? 'rgba(59,130,246,0.25)' : 'rgba(0,82,255,0.15)', borderColor: clr.barIn, borderWidth: 2, borderRadius: 6 }] },
-                options: barOpts(clr.barIn)
-            });
-
-            chartGastosInst = new Chart(document.getElementById('chartGastos'), {
-                type: 'bar',
-                data: { labels, datasets: [{ data: dataOut, backgroundColor: dark ? 'rgba(239,68,68,0.25)' : 'rgba(185,28,28,0.12)', borderColor: clr.barOut, borderWidth: 2, borderRadius: 6 }] },
-                options: barOpts(clr.barOut)
-            });
         }
 
-        // ── DATOS GENERALES ──
-        function renderDatosGenerales(txs, u) {
-            const depositos = txs.filter(t => t.cbuOrigen === 'DEPOSITO' && t.cbuDestino === u.cbu);
-            const ingresos  = txs.filter(t => t.cbuDestino === u.cbu && t.cbuOrigen !== 'DEPOSITO' && (t.estado === 'aprobada' || t.estado === 'approved'));
-            const gastos    = txs.filter(t => t.cbuOrigen === u.cbu && (t.estado === 'aprobada' || t.estado === 'approved'));
-
-            document.getElementById('valIngresos').textContent  = fmt(ingresos.reduce((s, t) => s + Number(t.importe), 0));
-            document.getElementById('valGastos').textContent    = fmt(gastos.reduce((s, t) => s + Number(t.importe), 0));
-            document.getElementById('valDepositos').textContent = fmt(depositos.reduce((s, t) => s + Number(t.importe), 0));
-            document.getElementById('valSaldo').textContent     = fmt(u.saldo);
-
-            // Gastos por motivo
-            const motivosRaw = JSON.parse(localStorage.getItem('tuo_transferencias_' + u.cbu) || '[]');
-            const motivoMap  = {};
-            motivosRaw.forEach(m => {
-                const key = m.motivo || 'Sin motivo';
-                if (!motivoMap[key]) motivoMap[key] = { count: 0, total: 0 };
-                motivoMap[key].count++;
-                motivoMap[key].total += Number(m.importe);
-            });
-            document.getElementById('tbodyMotivos').innerHTML = Object.entries(motivoMap).length
-                ? Object.entries(motivoMap).sort((a, b) => b[1].total - a[1].total)
-                    .map(([m, v]) => `<tr><td>${m}</td><td class="center">${v.count}</td><td class="right">${fmt(v.total)}</td></tr>`).join('')
-                : `<tr><td class="muted" colspan="3">Sin transferencias con motivo registradas</td></tr>`;
-
-            // Ingresos/gastos por mes
-            const meses  = last6Months();
-            const ingMes = {}, gasMes = {};
-            meses.forEach(m => { ingMes[m.key] = 0; gasMes[m.key] = 0; });
-            ingresos.forEach(t => { const k = (t.createdAt || t.created_at || '').slice(0,7); if (ingMes[k] !== undefined) ingMes[k] += Number(t.importe); });
-            gastos.forEach(t => { const k = (t.createdAt || t.created_at || '').slice(0,7); if (gasMes[k] !== undefined) gasMes[k] += Number(t.importe); });
-            document.getElementById('tbodyMeses').innerHTML = meses.map(m =>
-                `<tr><td>${m.label}</td><td class="green">${fmt(ingMes[m.key])}</td><td class="red">${fmt(gasMes[m.key])}</td></tr>`
-            ).join('');
-
-            // Depósitos
-            document.getElementById('tbodyDepositos').innerHTML = depositos.length
-                ? depositos.map(t =>
-                    `<tr><td>${fmtFecha(t.createdAt || t.created_at)}</td><td class="green">${fmt(t.importe)}</td></tr>`
-                  ).join('')
-                : `<tr><td class="muted" colspan="2">Sin depósitos registrados</td></tr>`;
-        }
-
-        // ── INIT ──
         document.addEventListener('DOMContentLoaded', () => {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             if (!u) { navTo('login.html'); return; }
-
             const txs = JSON.parse(localStorage.getItem('tuo_txs_cache') || '[]');
-
-            renderDatosGenerales(txs, u);
-
             if (typeof Chart !== 'undefined') {
-                inicializarGraficos(txs, u);
+                render(txs, u);
             } else {
                 const wait = setInterval(() => {
-                    if (typeof Chart !== 'undefined') {
-                        clearInterval(wait);
-                        inicializarGraficos(txs, u);
-                    }
+                    if (typeof Chart !== 'undefined') { clearInterval(wait); render(txs, u); }
                 }, 100);
             }
         });

@@ -1,5 +1,5 @@
 const Persona = require('../models/personaModel');
-const { enviarCodigoVerificacion } = require('../utils/mailer');
+const { enviarCodigoVerificacion, enviarCodigoPassword } = require('../utils/mailer');
 
 function fetchBC(url, options = {}, timeoutMs = 12000) {
   const ctrl = new AbortController();
@@ -307,6 +307,52 @@ exports.registrarPersona = async (req, res) => {
     if (error.message && error.message.toLowerCase().includes('already')) {
       return res.status(409).json({ error: 'El email ya está registrado' });
     }
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.solicitarCambioPassword = async (req, res) => {
+  try {
+    const { email, passwordActual } = req.body;
+    if (!email || !passwordActual)
+      return res.status(400).json({ error: 'Email y contraseña actual requeridos' });
+
+    const valido = await Persona.verificarPassword(email, passwordActual);
+    if (!valido)
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+
+    const result = await Persona.generarTokenPassword(email);
+    if (!result)
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    try {
+      await enviarCodigoPassword(email, result.nombre, result.token);
+    } catch (e) {
+      console.error('Error enviando email cambio contraseña:', e.message);
+      return res.status(500).json({ error: 'No se pudo enviar el email. Intentá de nuevo.' });
+    }
+
+    res.json({ message: 'Código enviado a tu email' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.confirmarCambioPassword = async (req, res) => {
+  try {
+    const { email, token, nuevaPassword } = req.body;
+    if (!email || !token || !nuevaPassword)
+      return res.status(400).json({ error: 'Email, código y nueva contraseña requeridos' });
+    if (nuevaPassword.length < 8)
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+
+    const result = await Persona.verificarTokenPassword(email, token);
+    if (!result.ok)
+      return res.status(400).json({ error: result.motivo });
+
+    await Persona.updatePassword(email, nuevaPassword);
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };

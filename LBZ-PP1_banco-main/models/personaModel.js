@@ -130,6 +130,48 @@ const Persona = {
     }));
   },
 
+  verificarPassword: async (email, password) => {
+    const { rows } = await db.query(
+      `SELECT p.id FROM Personas p
+       WHERE LOWER(p.email) = LOWER($1) AND p.password = $2`,
+      [email, password]
+    );
+    return !!rows[0];
+  },
+
+  generarTokenPassword: async (email) => {
+    const token = crypto.randomInt(100000, 999999).toString();
+    const expira = new Date(Date.now() + 5 * 60 * 1000);
+    const { rows } = await db.query(
+      `UPDATE Personas SET token_verificacion = $1, token_expira = $2
+       WHERE LOWER(email) = LOWER($3)
+       RETURNING nombre`,
+      [token, expira, email]
+    );
+    if (!rows[0]) return null;
+    return { nombre: rows[0].nombre, token };
+  },
+
+  verificarTokenPassword: async (email, token) => {
+    const { rows } = await db.query(
+      `SELECT id, token_expira FROM Personas
+       WHERE LOWER(email) = LOWER($1) AND token_verificacion = $2`,
+      [email, token]
+    );
+    if (rows.length === 0) return { ok: false, motivo: 'Código incorrecto' };
+    if (new Date() > new Date(rows[0].token_expira)) return { ok: false, motivo: 'El código expiró. Solicitá uno nuevo.' };
+    return { ok: true };
+  },
+
+  updatePassword: async (email, newPassword) => {
+    await db.query(
+      `UPDATE Personas
+       SET password = $1, token_verificacion = NULL, token_expira = NULL
+       WHERE LOWER(email) = LOWER($2)`,
+      [newPassword, email]
+    );
+  },
+
   reenviarToken: async (email) => {
     const token = crypto.randomInt(100000, 999999).toString();
     const expira = new Date(Date.now() + 5 * 60 * 1000);

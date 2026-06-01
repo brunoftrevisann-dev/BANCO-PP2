@@ -291,6 +291,18 @@
         .filter-monto-wrap { display: flex; align-items: center; gap: 6px; }
         .filter-monto-input { width: 82px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.74rem; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
         .filter-monto-input:focus { border-color: var(--accent); }
+        .filter-date-wrap { display: flex; align-items: center; gap: 6px; width: 100%; }
+        .filter-date-label { font-size: 0.7rem; color: var(--muted); white-space: nowrap; font-weight: 500; }
+        .filter-date-input {
+            padding: 4px 8px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 0.74rem; font-family: 'Inter', sans-serif;
+            background: var(--bg); color: var(--text); outline: none;
+            transition: border-color 0.15s; flex: 1; min-width: 0; color-scheme: light;
+        }
+        [data-theme="dark"] .filter-date-input { color-scheme: dark; }
+        .filter-date-input:focus { border-color: var(--accent); }
+        #filtroRangoWrap { width: 100%; display: none; }
+        #filtroRangoWrap.visible { display: flex; }
         .historial-search-wrap { width: 100%; position: relative; }
         .historial-search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; }
         .historial-search { width: 100%; padding: 7px 10px 7px 32px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
@@ -768,6 +780,13 @@
                     <button class="filter-chip" data-fecha="7d" onclick="setFiltroFecha(this)">7 días</button>
                     <button class="filter-chip" data-fecha="15d" onclick="setFiltroFecha(this)">15 días</button>
                     <button class="filter-chip" data-fecha="mes" onclick="setFiltroFecha(this)">Este mes</button>
+                    <button class="filter-chip" data-fecha="rango" onclick="setFiltroFecha(this)">Fecha personalizada</button>
+                </div>
+                <div class="filter-date-wrap" id="filtroRangoWrap">
+                    <span class="filter-date-label">Desde</span>
+                    <input class="filter-date-input" type="date" id="filtroDesde" oninput="renderHistorialFiltrado()">
+                    <span class="filter-date-label">Hasta</span>
+                    <input class="filter-date-input" type="date" id="filtroHasta" oninput="renderHistorialFiltrado()">
                 </div>
                 <div class="filter-monto-wrap">
                     <input class="filter-monto-input" id="filtroMontoMin" type="number" placeholder="$ Mín" min="0" oninput="renderHistorialFiltrado()">
@@ -867,40 +886,6 @@
                     </div>
                 </div>
 
-            </div>
-        </div>
-    </div>
-
-    <!-- ── MODAL DATOS PERSONALES ── -->
-    <div id="modalDatosPersonales" class="modal-overlay">
-        <div class="modal-panel" style="max-width:480px;">
-            <div class="modal-header">
-                <span class="modal-header-title">Datos personales</span>
-                <button class="modal-close-btn" onclick="cerrarDatosPersonales()">✕</button>
-            </div>
-            <div class="modal-body" style="padding:28px;">
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>Nombre completo</label>
-                        <span id="modalNombreCompleto">-</span>
-                    </div>
-                    <div class="info-item">
-                        <label>DNI</label>
-                        <span id="modalDni">-</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Email</label>
-                        <span id="modalEmail">-</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Teléfono</label>
-                        <span id="modalTelefono">-</span>
-                    </div>
-                </div>
-                <div style="margin-top:24px;">
-                    <div style="font-size:0.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:12px;">Accesos recientes</div>
-                    <div id="actividadLog" style="display:flex;flex-direction:column;gap:8px;"></div>
-                </div>
             </div>
         </div>
     </div>
@@ -1272,12 +1257,6 @@
             document.getElementById('cbu').textContent = formatCbu(u.cbu) || '-';
             document.getElementById('alias').textContent = u.alias || '-';
             document.getElementById('tipoCuenta').textContent = (u.tipo_producto || 'CAJA_AHORRO').replace(/_/g, ' ');
-            // Modal datos personales
-            document.getElementById('modalNombreCompleto').textContent = `${u.nombre} ${u.apellido}`;
-            document.getElementById('modalDni').textContent = u.dni || '-';
-            document.getElementById('modalEmail').textContent = u.email || '-';
-            document.getElementById('modalTelefono').textContent = u.telefono || '-';
-
             actualizarSaldoDisplay(parseFloat(u.saldo) || 0);
 
             // Detect pending deposit from depositar.html and animate saldo
@@ -1465,6 +1444,8 @@
             _filtroFecha = btn.dataset.fecha;
             document.querySelectorAll('#filtroFechaChips .filter-chip').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            const rangoWrap = document.getElementById('filtroRangoWrap');
+            if (rangoWrap) rangoWrap.classList.toggle('visible', _filtroFecha === 'rango');
             renderHistorialFiltrado();
         }
         function getFechaLimite() {
@@ -1481,8 +1462,19 @@
             let r = txs;
             if (_filtroTipo === 'enviados')   r = r.filter(t => t.cbuOrigen === u.cbu && t.cbuOrigen !== 'DEPOSITO');
             if (_filtroTipo === 'recibidos')  r = r.filter(t => t.cbuDestino === u.cbu);
-            const limite = getFechaLimite();
-            if (limite) r = r.filter(t => new Date(t.fecha || t.createdAt || t.timestamp || t.created_at) >= limite);
+            if (_filtroFecha === 'rango') {
+                const desde = document.getElementById('filtroDesde')?.value;
+                const hasta = document.getElementById('filtroHasta')?.value;
+                if (desde) r = r.filter(t => new Date(t.fecha || t.createdAt || t.timestamp || t.created_at) >= new Date(desde));
+                if (hasta) {
+                    const hastaFin = new Date(hasta);
+                    hastaFin.setHours(23, 59, 59, 999);
+                    r = r.filter(t => new Date(t.fecha || t.createdAt || t.timestamp || t.created_at) <= hastaFin);
+                }
+            } else {
+                const limite = getFechaLimite();
+                if (limite) r = r.filter(t => new Date(t.fecha || t.createdAt || t.timestamp || t.created_at) >= limite);
+            }
             const montoMin = parseFloat(document.getElementById('filtroMontoMin')?.value);
             const montoMax = parseFloat(document.getElementById('filtroMontoMax')?.value);
             if (!isNaN(montoMin) && montoMin > 0) r = r.filter(t => Number(t.importe) >= montoMin);
@@ -1855,41 +1847,8 @@
         // ── DATOS PERSONALES ─────────────────────────────────────────────
         function abrirDatosPersonales() {
             document.getElementById('headerDropdown').classList.remove('open');
-            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-            // Renderizar log de actividad
-            const actLog = JSON.parse(localStorage.getItem('tuo_activity_' + (u?.cbu || '')) || '[]');
-            const logEl  = document.getElementById('actividadLog');
-            if (actLog.length === 0) {
-                logEl.innerHTML = `<span style="font-size:0.8rem;color:var(--muted);">Sin registros disponibles.</span>`;
-            } else {
-                logEl.innerHTML = actLog.slice(0, 6).map((e, i) => {
-                    const d   = new Date(e.ts);
-                    const dia = d.toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric' });
-                    const hr  = d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:28px;height:28px;border-radius:8px;background:${i === 0 ? '#EEF3FF' : 'var(--border)'};display:flex;align-items:center;justify-content:center;">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${i === 0 ? '#0052FF' : 'var(--muted)'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                            </div>
-                            <div>
-                                <div style="font-size:0.8rem;font-weight:600;color:var(--text);">Inicio de sesión${i === 0 ? ' <span style="font-size:0.68rem;background:#EEF3FF;color:#0052FF;padding:1px 6px;border-radius:10px;font-weight:500;">Actual</span>' : ''}</div>
-                                <div style="font-size:0.72rem;color:var(--muted);">${dia}</div>
-                            </div>
-                        </div>
-                        <span style="font-size:0.78rem;font-weight:600;color:var(--text);">${hr}</span>
-                    </div>`;
-                }).join('');
-            }
-            document.getElementById('modalDatosPersonales').style.display = 'flex';
+            navTo('perfil.html');
         }
-
-        function cerrarDatosPersonales() {
-            document.getElementById('modalDatosPersonales').style.display = 'none';
-        }
-
-        document.getElementById('modalDatosPersonales').addEventListener('click', function(e) {
-            if (e.target === this) cerrarDatosPersonales();
-        });
 
         // ── DATE UTILS ───────────────────────────────────────────────────
         function etiquetaFecha(fechaStr) {

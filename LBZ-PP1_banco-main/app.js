@@ -70,6 +70,10 @@ app.put('/api/sincronizar-saldo', personaController.sincronizarSaldo);
 app.post('/api/verificar-cuenta', personaController.verificarCuenta);
 app.post('/api/reenviar-codigo', personaController.reenviarCodigo);
 app.post('/api/depositar', personaController.depositar);
+app.post('/api/solicitar-cambio-password', personaController.solicitarCambioPassword);
+app.put('/api/confirmar-cambio-password', personaController.confirmarCambioPassword);
+app.post('/api/solicitar-cambio-password', personaController.solicitarCambioPassword);
+app.put('/api/confirmar-cambio-password', personaController.confirmarCambioPassword);
 
 // Endpoints sin joins (tablas crudas)
 app.get('/api/tablas/:tabla', tablaController.obtenerTabla);
@@ -81,6 +85,10 @@ db.query(`
   ALTER TABLE Personas ADD COLUMN IF NOT EXISTS token_verificacion VARCHAR(6);
   ALTER TABLE Personas ADD COLUMN IF NOT EXISTS token_expira TIMESTAMPTZ;
 `).catch(e => console.error('Error agregando columnas verificación:', e.message));
+
+// Agregar columna descripcion si no existe (mensajes en transferencias)
+db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS descripcion TEXT`)
+  .catch(e => console.error('Error agregando columna descripcion:', e.message));
 
 // Crear tabla Transacciones si no existe (historial persistente)
 db.query(`
@@ -118,5 +126,9 @@ app.get('/api/banco/:code', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+}
+
+module.exports = app;

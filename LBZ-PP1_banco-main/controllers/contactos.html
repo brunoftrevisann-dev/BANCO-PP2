@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Contactos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9; --text: #1A1A1B; --accent: #0052FF;
+            --muted: #6B6B6B; --border: #E5E5E5; --white: #FFFFFF;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 40px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .btn-back {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 12px; cursor: pointer; color: var(--muted);
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
+        .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+        .page-title { font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        .main {
+            max-width: 520px; margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        .page-header {
+            margin-bottom: 20px;
+        }
+        .page-header h1 {
+            font-size: 1.4rem; font-weight: 800; color: var(--text); letter-spacing: -0.03em;
+        }
+        .page-header p { font-size: 0.84rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+        /* Contact list */
+        .contacts-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .contact-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            transition: background 0.12s;
+        }
+        .contact-item:last-child { border-bottom: none; }
+        .contact-item:hover { background: var(--bg); }
+
+        .contact-avatar {
+            width: 42px; height: 42px; border-radius: 50%;
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+        }
+
+        .contact-info { flex: 1; min-width: 0; }
+        .contact-name { font-size: 0.9rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .contact-cbu { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+        .contact-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        .btn-transferir {
+            padding: 7px 14px; background: var(--accent); color: white;
+            border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+        }
+        .btn-transferir:hover { opacity: 0.85; }
+
+        .btn-eliminar {
+            width: 30px; height: 30px; border-radius: 7px;
+            background: none; border: 1px solid var(--border);
+            color: var(--muted); cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+        }
+        .btn-eliminar:hover { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+
+        /* Empty state */
+        .empty-state {
+            padding: 48px 24px; text-align: center; color: var(--muted);
+        }
+        .empty-state svg { margin-bottom: 14px; opacity: 0.5; }
+        .empty-state p { font-size: 0.88rem; line-height: 1.6; }
+
+        /* Confirm delete overlay */
+        .confirm-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+            display: none; align-items: center; justify-content: center;
+            z-index: 200; backdrop-filter: blur(4px);
+        }
+        .confirm-overlay.open { display: flex; }
+        .confirm-box {
+            background: var(--white); border-radius: 16px; padding: 28px 24px;
+            width: 100%; max-width: 320px; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .confirm-box h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .confirm-box p { font-size: 0.84rem; color: var(--muted); margin-bottom: 22px; }
+        .confirm-btns { display: flex; gap: 10px; }
+        .btn-cancel {
+            flex: 1; padding: 11px; background: var(--bg); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px;
+            font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+        .btn-confirm-del {
+            flex: 1; padding: 11px; background: #DC2626; color: white;
+            border: none; border-radius: 10px;
+            font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: opacity 0.15s;
+        }
+        .btn-confirm-del:hover { opacity: 0.87; }
+
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; }
+            .main { padding: 24px 16px 60px; }
+        }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+            </button>
+            <span class="header-logo">tuo</span>
+        </div>
+        <span class="page-title">Contactos</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main">
+        <div class="page-header">
+            <h1>Contactos</h1>
+            <p>Hacé clic en <strong>Transferir</strong> para ir al dashboard con el destinatario pre-cargado.</p>
+        </div>
+
+        <div class="contacts-card" id="contactsCard"></div>
+    </main>
+
+    <!-- Confirm delete -->
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+            <h3 id="confirmTitle">¿Eliminar contacto?</h3>
+            <p>Esta acción no se puede deshacer.</p>
+            <div class="confirm-btns">
+                <button class="btn-cancel" onclick="cancelarEliminar()">Cancelar</button>
+                <button class="btn-confirm-del" onclick="confirmarEliminar()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const savedTheme = localStorage.getItem('tuo-theme') || 'light';
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
+        }
+
+        const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+        if (!u) { navTo('login.html'); }
+
+        // ── FAVORITES UTILS ──
+        const AVATAR_COLORS = ['#4338CA','#D97706','#059669','#DB2777','#0284C7','#7C3AED','#DC2626','#10B981','#F59E0B','#0891B2'];
+
+        function avatarColor(name) {
+            let h = 0;
+            for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+            return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+        }
+
+        function initials(nameStr) {
+            if (!nameStr || nameStr.startsWith('CBU ')) return '?';
+            const p = nameStr.trim().split(' ').filter(Boolean);
+            return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : (p[0]?.[0] || '?').toUpperCase();
+        }
+
+        function favKey() {
+            return u ? 'tuo_favoritos_' + u.cbu : 'tuo_favoritos';
+        }
+
+        function getFavoritos() {
+            return JSON.parse(localStorage.getItem(favKey()) || '[]');
+        }
+
+        function eliminarFavorito(cbu) {
+            localStorage.setItem(favKey(), JSON.stringify(getFavoritos().filter(f => f.cbu !== cbu)));
+        }
+
+        // ── RENDER ──
+        function renderContactos() {
+            const lista = getFavoritos();
+            const el = document.getElementById('contactsCard');
+
+            if (lista.length === 0) {
+                el.innerHTML = `<div class="empty-state">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <p>No tenés contactos guardados.<br>Se agregan automáticamente después de una transferencia.</p>
+                </div>`;
+                return;
+            }
+
+            el.innerHTML = lista.map(f => `
+                <div class="contact-item">
+                    <div class="contact-avatar" style="background:${avatarColor(f.nombre)};">${initials(f.nombre)}</div>
+                    <div class="contact-info">
+                        <div class="contact-name">${f.nombre}</div>
+                        <div class="contact-cbu">CBU ...${f.cbu.slice(-6)}</div>
+                    </div>
+                    <div class="contact-actions">
+                        <button class="btn-eliminar" onclick="pedirEliminar('${f.cbu}','${f.nombre.replace(/'/g,"\\'")}')
+" title="Eliminar contacto">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                        <button class="btn-transferir" onclick="irATransferir('${f.cbu}')">Transferir</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function irATransferir(cbu) {
+            navTo('dashboard.html?transferir=' + encodeURIComponent(cbu));
+        }
+
+        // ── ELIMINAR ──
+        let _cbuPendiente = null;
+        function pedirEliminar(cbu, nombre) {
+            _cbuPendiente = cbu;
+            document.getElementById('confirmTitle').textContent = `¿Eliminar a ${nombre}?`;
+            document.getElementById('confirmOverlay').classList.add('open');
+        }
+        function cancelarEliminar() {
+            _cbuPendiente = null;
+            document.getElementById('confirmOverlay').classList.remove('open');
+        }
+        function confirmarEliminar() {
+            if (!_cbuPendiente) return;
+            eliminarFavorito(_cbuPendiente);
+            _cbuPendiente = null;
+            document.getElementById('confirmOverlay').classList.remove('open');
+            renderContactos();
+        }
+
+        // ── NAV ──
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+            e.preventDefault();
+            navTo(href);
+        });
+
+        renderContactos();
+    </script>
+</body>
+</html>

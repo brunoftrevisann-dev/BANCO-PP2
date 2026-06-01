@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Seguridad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9;
+            --text: #1A1A1B;
+            --accent: #0052FF;
+            --muted: #6B6B6B;
+            --border: #E8E8E8;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── HEADER ── */
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: rgba(249,249,249,0.88);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 48px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        nav { display: flex; align-items: center; gap: 32px; }
+
+        nav a {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        nav a:hover { color: var(--text); }
+        nav a.active { color: var(--accent); font-weight: 600; }
+
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+
+        .btn-text {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        .btn-text:hover { background: var(--border); }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 22px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.15s;
+            letter-spacing: -0.01em;
+        }
+        .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        /* ── HERO ── */
+        .page-hero {
+            padding: 140px 48px 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #EEF3FF;
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-bottom: 28px;
+        }
+        .hero-badge::before {
+            content: '';
+            width: 6px; height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .page-hero h1 {
+            font-size: clamp(2.2rem, 4vw, 3.4rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            max-width: 700px;
+        }
+
+        .page-hero h1 span { color: var(--accent); }
+
+        .page-hero p {
+            font-size: 1.05rem;
+            color: var(--muted);
+            line-height: 1.65;
+            max-width: 520px;
+            font-weight: 400;
+        }
+
+        /* ── TRUST BANNER ── */
+        .section { padding: 0 48px 80px; max-width: 1200px; margin: 0 auto; }
+
+        .trust-banner {
+            background: #1A1A1B;
+            border-radius: 24px;
+            padding: 48px 56px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            margin-bottom: 32px;
+            overflow: hidden;
+        }
+
+        .trust-stat {
+            padding: 0 32px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        .trust-stat:first-child { padding-left: 0; }
+        .trust-stat:last-child { border-right: none; }
+
+        .trust-stat-number {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .trust-stat-number span { color: var(--accent); }
+
+        .trust-stat-label {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.4;
+        }
+
+        /* ── PILARES ── */
+        .pillars-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+            background: var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        .pillar-card {
+            background: var(--bg);
+            padding: 40px 36px;
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .pillar-icon {
+            width: 52px; height: 52px;
+            background: #EEF3FF;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .pillar-content h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .pillar-content p {
+            font-size: 0.87rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        /* ── PROCESO ── */
+        .process-section {
+            padding: 0 48px 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 48px;
+            max-width: 440px;
+        }
+
+        .steps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 28px;
+            align-items: flex-start;
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .step-item:last-child { border-bottom: none; }
+
+        .step-number {
+            width: 40px; height: 40px;
+            background: #EEF3FF;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            font-size: 0.97rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin-bottom: 6px;
+        }
+
+        .step-content p {
+            font-size: 0.86rem;
+            color: var(--muted);
+            line-height: 1.6;
+            max-width: 580px;
+        }
+
+        /* ── AVISO LEGAL ── */
+        .legal-section {
+            padding: 0 48px 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .legal-box {
+            background: #F0F5FF;
+            border: 1px solid #C7D9FF;
+            border-radius: 16px;
+            padding: 28px 32px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .legal-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .legal-box h4 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.01em;
+            margin-bottom: 6px;
+        }
+
+        .legal-box p {
+            font-size: 0.84rem;
+            color: #3A5FCC;
+            line-height: 1.6;
+        }
+
+        /* ── CTA ── */
+        .cta-section {
+            padding: 0 48px 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cta-box {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 56px 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+        }
+
+        .cta-box h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 10px;
+        }
+
+        .cta-box p {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .btn-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 36px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.15s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-cta:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        /* ── FOOTER ── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-logo { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.04em; color: var(--text); }
+        .footer-text { font-size: 0.8rem; color: var(--muted); }
+
+        @media (max-width: 768px) {
+            header { padding: 0 24px; }
+            nav { display: none; }
+            .page-hero { padding: 110px 24px 60px; }
+            .section, .process-section, .legal-section, .cta-section { padding-left: 24px; padding-right: 24px; }
+            .trust-banner { grid-template-columns: 1fr; gap: 24px; padding: 36px 28px; }
+            .trust-stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 0 0 24px 0; }
+            .trust-stat:last-child { border-bottom: none; padding-bottom: 0; }
+            .pillars-grid { grid-template-columns: 1fr; }
+            .pillar-card { padding: 30px 24px; }
+            .cta-box { flex-direction: column; padding: 40px 32px; gap: 28px; }
+            footer { flex-direction: column; gap: 16px; padding: 32px 24px; }
+        }
+
+        .header-left { display: flex; align-items: center; gap: 0; }
+        .header-divider { width: 1px; height: 20px; background: var(--border); margin: 0 18px; }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            text-decoration: none;
+            padding: 7px 14px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            white-space: nowrap;
+        }
+        .back-link:hover {
+            border-color: #bbb;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.09);
+            transform: translateY(-1px);
+        }
+        .back-link svg { transition: transform 0.15s; flex-shrink: 0; }
+        .back-link:hover svg { transform: translateX(-3px); }
+
+        @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        body { animation: pageIn 0.3s ease both; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <a href="/" class="logo">tuo</a>
+            <div class="header-divider"></div>
+            <a href="/" class="back-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                Inicio
+            </a>
+        </div>
+        <nav>
+            <a href="productos.html">Productos</a>
+            <a href="seguridad.html" class="active">Seguridad</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/login" class="btn-text">Log in</a>
+            <a href="/registro" class="btn-primary">Abrir Cuenta</a>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <div class="page-hero">
+        <div class="hero-badge">Tu seguridad</div>
+        <h1>Tu dinero protegido,<br>siempre y en todo <span>lugar</span>.</h1>
+        <p>La seguridad en tuo no es un extra, es el núcleo de todo lo que hacemos. Cada transacción, cada dato, cada acceso está protegido.</p>
+    </div>
+
+    <!-- Stats de confianza -->
+    <div class="section">
+        <div class="trust-banner">
+            <div class="trust-stat">
+                <div class="trust-stat-number">256<span>-bit</span></div>
+                <div class="trust-stat-label">Cifrado AES para todos los datos en tránsito y en reposo</div>
+            </div>
+            <div class="trust-stat">
+                <div class="trust-stat-number">24<span>/7</span></div>
+                <div class="trust-stat-label">Monitoreo continuo de actividad sospechosa y fraude</div>
+            </div>
+            <div class="trust-stat">
+                <div class="trust-stat-number">0<span>$</span></div>
+                <div class="trust-stat-label">Costo por activar todas las capas de seguridad disponibles</div>
+            </div>
+        </div>
+
+        <div class="pillars-grid">
+            <div class="pillar-card">
+                <div class="pillar-icon">🔐</div>
+                <div class="pillar-content">
+                    <h3>Verificación de identidad</h3>
+                    <p>Para crear tu cuenta validamos tu identidad con DNI y datos personales. Nadie más puede abrirse una cuenta con tu información sin saberlo.</p>
+                </div>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-icon">✉️</div>
+                <div class="pillar-content">
+                    <h3>Verificación por email</h3>
+                    <p>Cada registro y cada cambio de contraseña requiere confirmación por código enviado a tu email. Sin ese código, nadie puede entrar.</p>
+                </div>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-icon">🛡️</div>
+                <div class="pillar-content">
+                    <h3>Protección de contraseña</h3>
+                    <p>Podés cambiar tu contraseña en cualquier momento desde tu perfil. El proceso exige verificar la contraseña actual y confirmar por email.</p>
+                </div>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-icon">📋</div>
+                <div class="pillar-content">
+                    <h3>Registro de accesos</h3>
+                    <p>Cada inicio de sesión queda registrado con fecha y hora. Podés revisar el historial de accesos a tu cuenta en cualquier momento desde tu perfil.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Qué pasa si -->
+    <div class="process-section">
+        <div class="section-label">Protocolos de seguridad</div>
+        <div class="section-title">Qué hacemos ante cada situación.</div>
+        <div class="steps-list">
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h4>Intento de acceso no autorizado</h4>
+                    <p>Si detectamos múltiples intentos fallidos de login, el acceso se bloquea temporalmente. Recibirás una notificación en tu email para que puedas actuar de inmediato.</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h4>Cambio de contraseña</h4>
+                    <p>Para cambiar tu contraseña necesitás ingresar la contraseña actual y verificar un código de 6 dígitos enviado a tu email registrado. El código vence en 5 minutos.</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h4>Transferencia de dinero</h4>
+                    <p>Cada transferencia pasa por el sistema del Banco Central antes de acreditarse. Si la transacción no cumple los controles, se rechaza automáticamente y se te informa el motivo.</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h4>Cambio de alias</h4>
+                    <p>Modificar tu alias requiere autenticación en la sesión activa y se propaga inmediatamente al sistema interbancario. El alias anterior deja de funcionar al instante.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aviso legal -->
+    <div class="legal-section">
+        <div class="legal-box">
+            <div class="legal-icon">ℹ️</div>
+            <div>
+                <h4>Regulación y respaldo</h4>
+                <p>tuo opera dentro del sistema financiero argentino, conectado al Banco Central de la República Argentina (BCRA) a través de su API oficial. Todas las transacciones cumplen con la normativa vigente del sistema de pagos inmediatos (SPI).</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section">
+        <div class="cta-box">
+            <div>
+                <h2>Operá con tranquilidad.</h2>
+                <p>Abrí tu cuenta y experimentá una banca que pone tu seguridad primero.</p>
+            </div>
+            <a href="/registro" class="btn-cta">
+                Abrir cuenta gratis
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <footer>
+        <span class="footer-logo">tuo</span>
+        <span class="footer-text">© 2025 tuo · Todos los derechos reservados</span>
+    </footer>
+
+</body>
+</html>

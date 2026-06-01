@@ -203,6 +203,29 @@
 
         input:focus { border-bottom-color: var(--accent); }
         input::placeholder { color: #C8C8C8; font-weight: 300; }
+        [data-theme="dark"] input::placeholder { color: #444; }
+
+        input[type="date"] {
+            color-scheme: light;
+            cursor: pointer;
+        }
+        [data-theme="dark"] input[type="date"] { color-scheme: dark; }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px #F9F9F9 inset;
+            -webkit-text-fill-color: #1A1A1B;
+            caret-color: #1A1A1B;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+        [data-theme="dark"] input:-webkit-autofill,
+        [data-theme="dark"] input:-webkit-autofill:hover,
+        [data-theme="dark"] input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px #111113 inset;
+            -webkit-text-fill-color: #F0F0F0;
+            caret-color: #F0F0F0;
+        }
 
         .section-divider {
             grid-column: 1 / -1;
