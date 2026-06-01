@@ -160,6 +160,8 @@
             -webkit-text-fill-color: #1A1A1B;
             caret-color: #1A1A1B;
             transition: background-color 5000s ease-in-out 0s;
+            border-bottom-color: #0052FF !important;
+            animation: autofillPulse 0.6s ease;
         }
         [data-theme="dark"] input:-webkit-autofill,
         [data-theme="dark"] input:-webkit-autofill:hover,
@@ -167,6 +169,12 @@
             -webkit-box-shadow: 0 0 0 1000px #111113 inset;
             -webkit-text-fill-color: #F0F0F0;
             caret-color: #F0F0F0;
+            border-bottom-color: #0052FF !important;
+        }
+        @keyframes autofillPulse {
+            0%   { border-bottom-color: var(--border); }
+            40%  { border-bottom-color: #0052FF; }
+            100% { border-bottom-color: #0052FF; }
         }
 
         .btn-primary {
@@ -246,9 +254,9 @@
         }
         .footer-signup a:hover { text-decoration: underline; }
 
-        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
-        body { animation: pageIn 0.3s ease both; }
+        @keyframes pageIn  { from { opacity:0; transform:translateY(12px) scale(0.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-8px) scale(0.99); } }
+        body { animation: pageIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
     </style>
 </head>
@@ -317,7 +325,7 @@
             localStorage.setItem('tuo-theme', next);
             applyTheme(next);
         }
-        applyTheme(localStorage.getItem('tuo-theme') || 'light');
+        applyTheme(localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
         // ── LOGIN ────────────────────────────────────────────────────────
         document.getElementById('loginForm').addEventListener('submit', async function(e) {

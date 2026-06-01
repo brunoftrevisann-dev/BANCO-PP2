@@ -227,6 +227,15 @@
             caret-color: #F0F0F0;
         }
 
+        .str-bar {
+            flex: 1; height: 3px; border-radius: 3px;
+            background: var(--border); transition: background 0.3s;
+        }
+        .str-bar.weak   { background: #EF4444; }
+        .str-bar.fair   { background: #F97316; }
+        .str-bar.good   { background: #EAB308; }
+        .str-bar.strong { background: #22C55E; }
+
         .section-divider {
             grid-column: 1 / -1;
             height: 1px;
@@ -359,8 +368,8 @@
             .section-label { grid-column: 1; }
         }
 
-        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        @keyframes pageIn  { from { opacity:0; transform:translateY(12px) scale(0.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-8px) scale(0.99); } }
         body { animation: pageIn 0.3s ease both; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
     </style>
@@ -447,11 +456,22 @@
 
                 <div class="form-group">
                     <label for="password">Contraseña</label>
-                    <input type="password" id="password" name="password" required placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                    <input type="password" id="password" name="password" required placeholder="Mínimo 6 caracteres" autocomplete="new-password" oninput="checkStrength(this.value)">
+                    <div id="strengthWrap" style="margin-top:10px;display:none;">
+                        <div style="display:flex;gap:4px;margin-bottom:6px;">
+                            <div class="str-bar" id="sb1"></div>
+                            <div class="str-bar" id="sb2"></div>
+                            <div class="str-bar" id="sb3"></div>
+                            <div class="str-bar" id="sb4"></div>
+                        </div>
+                        <div id="strengthLabel" style="font-size:0.72rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;"></div>
+                        <ul id="strengthTips" style="margin-top:6px;padding-left:14px;font-size:0.72rem;color:var(--muted);line-height:1.8;"></ul>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="confirmPassword">Confirmar contraseña</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Repetí tu contraseña" autocomplete="new-password">
+                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Repetí tu contraseña" autocomplete="new-password" oninput="checkMatch()">
+                    <div id="matchLabel" style="font-size:0.72rem;font-weight:600;margin-top:6px;display:none;"></div>
                 </div>
 
             </div>
@@ -483,7 +503,7 @@
             localStorage.setItem('tuo-theme', next);
             applyThemeReg(next);
         }
-        applyThemeReg(localStorage.getItem('tuo-theme') || 'light');
+        applyThemeReg(localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
         let _emailPendiente = null;
         let _timerInterval = null;
@@ -765,6 +785,53 @@
             e.preventDefault();
             navTo(href);
         });
+
+        // ── FORTALEZA DE CONTRASEÑA ──────────────────────────────────────
+        function checkStrength(val) {
+            const wrap  = document.getElementById('strengthWrap');
+            const label = document.getElementById('strengthLabel');
+            const tips  = document.getElementById('strengthTips');
+            const bars  = [1,2,3,4].map(i => document.getElementById('sb' + i));
+            if (!val) { wrap.style.display = 'none'; return; }
+            wrap.style.display = 'block';
+
+            let score = 0;
+            const issues = [];
+            if (val.length >= 8)  score++; else issues.push('Mínimo 8 caracteres');
+            if (/[A-Z]/.test(val)) score++; else issues.push('Al menos una mayúscula');
+            if (/[0-9]/.test(val)) score++; else issues.push('Al menos un número');
+            if (/[^A-Za-z0-9]/.test(val)) score++; else issues.push('Al menos un símbolo (!@#$…)');
+
+            const levels = [
+                { cls: 'weak',   text: 'Muy débil', color: '#EF4444' },
+                { cls: 'weak',   text: 'Débil',      color: '#EF4444' },
+                { cls: 'fair',   text: 'Regular',    color: '#F97316' },
+                { cls: 'good',   text: 'Buena',      color: '#EAB308' },
+                { cls: 'strong', text: 'Muy fuerte', color: '#22C55E' },
+            ];
+            const lv = levels[score];
+            bars.forEach((b, i) => {
+                b.className = 'str-bar';
+                if (i < score) b.classList.add(lv.cls);
+            });
+            label.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${lv.color}" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span style="color:${lv.color}">${lv.text}</span>`;
+            tips.innerHTML = issues.map(t => `<li>${t}</li>`).join('');
+        }
+
+        function checkMatch() {
+            const pwd  = document.getElementById('password').value;
+            const conf = document.getElementById('confirmPassword').value;
+            const lbl  = document.getElementById('matchLabel');
+            if (!conf) { lbl.style.display = 'none'; return; }
+            lbl.style.display = 'block';
+            if (pwd === conf) {
+                lbl.textContent = '✓ Las contraseñas coinciden';
+                lbl.style.color = '#22C55E';
+            } else {
+                lbl.textContent = '✗ No coinciden';
+                lbl.style.color = '#EF4444';
+            }
+        }
     </script>
 </body>
 </html>

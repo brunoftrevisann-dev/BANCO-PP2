@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -382,6 +383,97 @@
         @keyframes toastIn  { from { opacity:0; transform:translateY(12px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(8px) scale(0.95); } }
 
+        /* ── QR MODAL ── */
+        #qrModal { display:none; }
+        #qrModal.open { display:flex; }
+        .qr-panel {
+            background: var(--white); border-radius: 20px; padding: 36px;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+            max-width: 320px; width: 100%; text-align: center;
+            animation: modalIn 0.22s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .qr-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+        .qr-sub { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+        #qrCanvas { border-radius: 12px; overflow: hidden; }
+        .qr-cbu-val { font-size: 0.75rem; color: var(--muted); font-family: monospace; letter-spacing: 0.04em; }
+        .btn-qr {
+            background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; padding: 4px 10px; color: rgba(255,255,255,0.7);
+            font-size: 0.72rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: background 0.15s; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn-qr:hover { background: rgba(255,255,255,0.2); color: white; }
+
+        /* ── GLOBAL SEARCH ── */
+        #globalSearchOverlay {
+            position: fixed; inset: 0; z-index: 9990;
+            background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+            display: none; align-items: flex-start; justify-content: center;
+            padding-top: 120px;
+        }
+        #globalSearchOverlay.open { display: flex; }
+        .gsearch-panel {
+            background: var(--white); border-radius: 16px;
+            width: 100%; max-width: 540px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+            overflow: hidden;
+            animation: modalIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .gsearch-input-wrap {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+        }
+        .gsearch-input {
+            flex: 1; border: none; background: none; font-family: 'Inter', sans-serif;
+            font-size: 1rem; color: var(--text); outline: none;
+        }
+        .gsearch-input::placeholder { color: var(--muted); }
+        .gsearch-kbd {
+            font-size: 0.7rem; color: var(--muted); background: var(--bg);
+            border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px;
+            font-family: monospace; white-space: nowrap;
+        }
+        .gsearch-results { max-height: 360px; overflow-y: auto; }
+        .gsearch-section-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--muted); padding: 12px 20px 6px;
+        }
+        .gsearch-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 10px 20px; cursor: pointer; transition: background 0.1s;
+        }
+        .gsearch-item:hover, .gsearch-item.selected { background: var(--bg); }
+        .gsearch-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .gsearch-item-name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+        .gsearch-item-sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+        .gsearch-amount { font-size: 0.9rem; font-weight: 700; margin-left: auto; flex-shrink: 0; }
+        .gsearch-empty { padding: 32px 20px; text-align: center; font-size: 0.88rem; color: var(--muted); }
+        .gsearch-footer {
+            padding: 10px 20px; border-top: 1px solid var(--border);
+            display: flex; gap: 16px; align-items: center;
+        }
+        .gsearch-hint { font-size: 0.72rem; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+
+        /* ── RIPPLE en botones de modal ── */
+        .modal-confirm-btn, .btn-next, .btn-back { position: relative; overflow: hidden; }
+        .modal-confirm-btn .ripple, .btn-next .ripple, .btn-back .ripple {
+            background: rgba(255,255,255,0.25);
+        }
+
+        /* ── EXPORT BTN ── */
+        .btn-export {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.74rem; font-weight: 600; color: var(--muted);
+            background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+            padding: 5px 10px; cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .btn-export:hover { color: var(--accent); border-color: var(--accent); }
+
         /* ── MODAL CONTACTOS ── */
         .contact-modal-list { max-height: 420px; overflow-y: auto; }
         .contact-modal-item { display: flex; align-items: center; gap: 12px; padding: 13px 24px; border-bottom: 1px solid var(--border); transition: background 0.12s; }
@@ -697,10 +789,16 @@
             <div class="account-details">
                 <div class="account-detail-item">
                     <label>CBU</label>
-                    <div class="copy-wrap" onclick="copiarAlPortapapeles('cbu')" title="Copiar CBU">
-                        <span id="cbu">-</span>
-                        <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                        <div class="copy-tooltip" id="tooltipCbu">¡Copiado!</div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="copy-wrap" onclick="copiarAlPortapapeles('cbu')" title="Copiar CBU">
+                            <span id="cbu">-</span>
+                            <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            <div class="copy-tooltip" id="tooltipCbu">¡Copiado!</div>
+                        </div>
+                        <button class="btn-qr" onclick="abrirQR()" title="Ver QR de CBU">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3m4-3v.01M14 21h.01M17 21h3M21 18v3"/></svg>
+                            QR
+                        </button>
                     </div>
                 </div>
                 <div class="account-detail-item">
@@ -762,7 +860,13 @@
         <div class="modal-panel historial-panel" style="max-width:520px;">
             <div class="modal-header">
                 <span class="modal-header-title">Historial de movimientos</span>
-                <button class="modal-close-btn" onclick="document.getElementById('modalHistorial').style.display='none'">✕</button>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button class="btn-export" onclick="exportarCSV()" title="Exportar a CSV">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        CSV
+                    </button>
+                    <button class="modal-close-btn" onclick="document.getElementById('modalHistorial').style.display='none'">✕</button>
+                </div>
             </div>
             <div class="historial-filters">
                 <div class="historial-search-wrap">
@@ -1024,6 +1128,36 @@
     <!-- ── TOAST CONTAINER ── -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- ── QR MODAL ── -->
+    <div id="qrModal" class="modal-overlay" onclick="e => { if(e.target===this) cerrarQR(); }">
+        <div class="qr-panel" onclick="event.stopPropagation()">
+            <div class="qr-title">Tu código QR</div>
+            <div class="qr-sub">Compartilo para recibir transferencias de cualquier banco</div>
+            <div id="qrCanvas"></div>
+            <div class="qr-cbu-val" id="qrCbuVal"></div>
+            <button class="modal-close-btn" onclick="cerrarQR()" style="align-self:center;margin-top:4px;">✕ Cerrar</button>
+        </div>
+    </div>
+
+    <!-- ── BÚSQUEDA GLOBAL ── -->
+    <div id="globalSearchOverlay" onclick="cerrarGlobalSearch()">
+        <div class="gsearch-panel" onclick="event.stopPropagation()">
+            <div class="gsearch-input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input class="gsearch-input" id="gsearchInput" placeholder="Buscar movimientos, personas..." oninput="renderGsearch(this.value)" onkeydown="gsearchKeyNav(event)" autocomplete="off">
+                <span class="gsearch-kbd">Esc</span>
+            </div>
+            <div class="gsearch-results" id="gsearchResults">
+                <div class="gsearch-empty">Escribí para buscar en tu historial</div>
+            </div>
+            <div class="gsearch-footer">
+                <span class="gsearch-hint"><kbd class="gsearch-kbd">↑↓</kbd> Navegar</span>
+                <span class="gsearch-hint"><kbd class="gsearch-kbd">Enter</kbd> Abrir</span>
+                <span class="gsearch-hint"><kbd class="gsearch-kbd">Esc</kbd> Cerrar</span>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ── DARK MODE ────────────────────────────────────────────────────
         const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
@@ -1041,7 +1175,7 @@
             applyTheme(next);
         }
 
-        applyTheme(localStorage.getItem('tuo-theme') || 'light');
+        applyTheme(localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
         // ── TOAST ────────────────────────────────────────────────────────
         function showToast(message, type = 'success') {
@@ -1257,7 +1391,7 @@
             document.getElementById('cbu').textContent = formatCbu(u.cbu) || '-';
             document.getElementById('alias').textContent = u.alias || '-';
             document.getElementById('tipoCuenta').textContent = (u.tipo_producto || 'CAJA_AHORRO').replace(/_/g, ' ');
-            actualizarSaldoDisplay(parseFloat(u.saldo) || 0);
+            actualizarSaldoDisplay(parseFloat(u.saldo) || 0, true);
 
             // Detect pending deposit from depositar.html and animate saldo
             const _pendingDepKey = 'tuo_pending_deposit_' + u.cbu;
@@ -2631,6 +2765,158 @@
             if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('blob:')) return;
             e.preventDefault();
             navTo(href);
+        });
+
+        // ── RIPPLE extendido ─────────────────────────────────────────────
+        function addRipple(btn) {
+            btn.addEventListener('click', function(e) {
+                const circle = document.createElement('span');
+                const d = Math.max(this.clientWidth, this.clientHeight);
+                const r = d / 2;
+                const rect = this.getBoundingClientRect();
+                circle.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-rect.left-r}px;top:${e.clientY-rect.top-r}px;`;
+                circle.classList.add('ripple');
+                this.querySelector('.ripple')?.remove();
+                this.appendChild(circle);
+            });
+        }
+        document.querySelectorAll('.modal-confirm-btn, .btn-next, .btn-back').forEach(addRipple);
+
+        // ── QR DEL CBU ──────────────────────────────────────────────────
+        function abrirQR() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!u?.cbu) return;
+            const modal = document.getElementById('qrModal');
+            const canvas = document.getElementById('qrCanvas');
+            const label  = document.getElementById('qrCbuVal');
+            canvas.innerHTML = '';
+            label.textContent = u.cbu;
+            modal.classList.add('open');
+            setTimeout(() => {
+                if (typeof QRCode !== 'undefined') {
+                    new QRCode(canvas, { text: u.cbu, width: 200, height: 200, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                } else {
+                    canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Cargando QR…</div>';
+                }
+            }, 80);
+        }
+        function cerrarQR() { document.getElementById('qrModal').classList.remove('open'); }
+        document.getElementById('qrModal').addEventListener('click', function(e) {
+            if (e.target === this) cerrarQR();
+        });
+
+        // ── EXPORT CSV ──────────────────────────────────────────────────
+        function exportarCSV() {
+            const u = _usuarioHist || JSON.parse(localStorage.getItem('usuarioLogueado'));
+            const datos = _todasPropias.length ? aplicarFiltros(_todasPropias) : [];
+            if (!datos.length) { showToast('No hay movimientos para exportar', 'info'); return; }
+            const headers = ['Fecha','Tipo','Nombre/CBU','Importe','Estado','Motivo rechazo'];
+            const rows = datos.map(t => {
+                const fecha = new Date(t.fecha || t.createdAt || t.created_at).toLocaleString('es-AR');
+                const esDeposito = t.cbuOrigen === 'DEPOSITO';
+                const esEnvio = !esDeposito && t.cbuOrigen === u?.cbu;
+                const tipo = esDeposito ? 'Depósito' : esEnvio ? 'Enviado' : 'Recibido';
+                const nombre = esDeposito ? 'Depósito' : esEnvio
+                    ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
+                    : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
+                const importe = (esEnvio ? '-' : '+') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
+                return [fecha, tipo, nombre, importe, t.estado || '', t.motivoRechazo || ''];
+            });
+            const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = `tuo-historial-${new Date().toISOString().slice(0,10)}.csv`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast('Historial exportado como CSV');
+        }
+
+        // ── BÚSQUEDA GLOBAL (Ctrl+K) ─────────────────────────────────────
+        let _gsearchIdx = -1;
+
+        function abrirGlobalSearch() {
+            document.getElementById('globalSearchOverlay').classList.add('open');
+            setTimeout(() => document.getElementById('gsearchInput').focus(), 50);
+            renderGsearch('');
+        }
+        function cerrarGlobalSearch() {
+            document.getElementById('globalSearchOverlay').classList.remove('open');
+            document.getElementById('gsearchInput').value = '';
+            _gsearchIdx = -1;
+        }
+        function renderGsearch(q) {
+            _gsearchIdx = -1;
+            const box = document.getElementById('gsearchResults');
+            const u   = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!q.trim()) {
+                box.innerHTML = '<div class="gsearch-empty">Escribí para buscar en tu historial</div>';
+                return;
+            }
+            const qlow = q.toLowerCase();
+            const txs  = (_todasPropias || []).filter(t => {
+                const esEnvio = t.cbuOrigen === u?.cbu && t.cbuOrigen !== 'DEPOSITO';
+                const nombre = t.cbuOrigen === 'DEPOSITO' ? 'Depósito'
+                    : esEnvio
+                        ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
+                        : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
+                const cbu = esEnvio ? t.cbuDestino : t.cbuOrigen;
+                return nombre.toLowerCase().includes(qlow) || (cbu||'').includes(qlow) ||
+                       String(t.importe).includes(q);
+            }).slice(0, 8);
+
+            if (!txs.length) {
+                box.innerHTML = '<div class="gsearch-empty">Sin resultados para "' + q + '"</div>';
+                return;
+            }
+
+            const avatarColor = str => { let h=0; for(let c of str) h=(h<<5)-h+c.charCodeAt(0); return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length]; };
+            box.innerHTML = '<div class="gsearch-section-label">Movimientos</div>' +
+                txs.map((t, i) => {
+                    const esDeposito = t.cbuOrigen === 'DEPOSITO';
+                    const esEnvio = !esDeposito && t.cbuOrigen === u?.cbu;
+                    const nombre = esDeposito ? 'Depósito'
+                        : esEnvio
+                            ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
+                            : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
+                    const ini = esDeposito ? '💰' : nombre.slice(0,2).toUpperCase();
+                    const color = esDeposito ? '#059669' : avatarColor(nombre);
+                    const signo = esDeposito || !esEnvio ? '+' : '-';
+                    const col   = signo === '+' ? '#059669' : '#B91C1C';
+                    const fecha = new Date(t.fecha||t.createdAt||t.created_at).toLocaleDateString('es-AR');
+                    return `<div class="gsearch-item" data-txid="${t._id}" onclick="gsearchAbrirTx('${t._id}')">
+                        <div class="gsearch-icon" style="background:${color}">${ini}</div>
+                        <div><div class="gsearch-item-name">${nombre}</div><div class="gsearch-item-sub">${fecha}</div></div>
+                        <div class="gsearch-amount" style="color:${col}">${signo}$${Number(t.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
+                    </div>`;
+                }).join('');
+        }
+        function gsearchAbrirTx(id) {
+            cerrarGlobalSearch();
+            setTimeout(() => {
+                abrirHistorial();
+                setTimeout(() => { if (_txMap[id]) abrirDetalleTx(_txMap[id]); }, 400);
+            }, 100);
+        }
+        function gsearchKeyNav(e) {
+            const items = document.querySelectorAll('.gsearch-item');
+            if (e.key === 'Escape') { cerrarGlobalSearch(); return; }
+            if (e.key === 'ArrowDown') { _gsearchIdx = Math.min(_gsearchIdx+1, items.length-1); }
+            else if (e.key === 'ArrowUp') { _gsearchIdx = Math.max(_gsearchIdx-1, 0); }
+            else if (e.key === 'Enter' && _gsearchIdx >= 0) { items[_gsearchIdx]?.click(); return; }
+            else return;
+            items.forEach((it, i) => it.classList.toggle('selected', i === _gsearchIdx));
+            items[_gsearchIdx]?.scrollIntoView({ block: 'nearest' });
+        }
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('globalSearchOverlay').classList.contains('open')
+                    ? cerrarGlobalSearch()
+                    : abrirGlobalSearch();
+            }
+            if (e.key === 'Escape' && document.getElementById('globalSearchOverlay').classList.contains('open')) {
+                cerrarGlobalSearch();
+            }
         });
     </script>
 

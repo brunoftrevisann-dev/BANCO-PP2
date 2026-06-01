@@ -578,13 +578,26 @@
         }
 
         if (yaLogueado) {
-            // Mostrar splash brevemente y redirigir al dashboard
             setTimeout(() => {
                 ocultarSplash(() => { window.location.href = 'dashboard.html'; });
             }, 1400);
         } else {
-            // Mostrar splash y luego revelar la landing
             setTimeout(() => ocultarSplash(), 1600);
+        }
+
+        // ── PARALLAX tarjeta ─────────────────────────────────────────────
+        const cardScene = document.querySelector('.card-scene');
+        if (cardScene) {
+            document.addEventListener('mousemove', e => {
+                const cx = window.innerWidth  / 2;
+                const cy = window.innerHeight / 2;
+                const dx = (e.clientX - cx) / cx;
+                const dy = (e.clientY - cy) / cy;
+                cardScene.style.transform = `rotateY(${-12 + dx * 6}deg) rotateX(${6 - dy * 4}deg)`;
+            });
+            document.addEventListener('mouseleave', () => {
+                cardScene.style.transform = '';
+            });
         }
     </script>
 </body>

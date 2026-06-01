@@ -456,15 +456,15 @@
     <div class="section">
         <div class="trust-banner">
             <div class="trust-stat">
-                <div class="trust-stat-number">256<span>-bit</span></div>
+                <div class="trust-stat-number" data-count="256" data-suffix="-bit">0<span>-bit</span></div>
                 <div class="trust-stat-label">Cifrado AES para todos los datos en tránsito y en reposo</div>
             </div>
             <div class="trust-stat">
-                <div class="trust-stat-number">24<span>/7</span></div>
+                <div class="trust-stat-number" data-count="24" data-suffix="/7">0<span>/7</span></div>
                 <div class="trust-stat-label">Monitoreo continuo de actividad sospechosa y fraude</div>
             </div>
             <div class="trust-stat">
-                <div class="trust-stat-number">0<span>$</span></div>
+                <div class="trust-stat-number" data-count="0" data-suffix="$">0<span>$</span></div>
                 <div class="trust-stat-label">Costo por activar todas las capas de seguridad disponibles</div>
             </div>
         </div>
@@ -568,6 +568,30 @@
         <span class="footer-logo">tuo</span>
         <span class="footer-text">© 2025 tuo · Todos los derechos reservados</span>
     </footer>
+
+    <script>
+        const counters = document.querySelectorAll('[data-count]');
+        const obs = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const el     = entry.target;
+                const target = parseInt(el.dataset.count);
+                const suffix = el.dataset.suffix;
+                const duration = 1200;
+                const start = performance.now();
+                function step(now) {
+                    const p    = Math.min((now - start) / duration, 1);
+                    const ease = 1 - Math.pow(1 - p, 3);
+                    const val  = Math.round(target * ease);
+                    el.innerHTML = val + `<span>${suffix}</span>`;
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+                obs.unobserve(el);
+            });
+        }, { threshold: 0.5 });
+        counters.forEach(c => obs.observe(c));
+    </script>
 
 </body>
 </html>

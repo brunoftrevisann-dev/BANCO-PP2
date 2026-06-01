@@ -192,7 +192,7 @@
     </div>
 
     <script>
-        const savedTheme = localStorage.getItem('tuo-theme') || 'light';
+        const savedTheme = localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         function toggleTheme() {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';
