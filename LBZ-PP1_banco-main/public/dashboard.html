@@ -387,15 +387,47 @@
         #qrModal { display:none; }
         #qrModal.open { display:flex; }
         .qr-panel {
-            background: var(--white); border-radius: 20px; padding: 36px;
-            display: flex; flex-direction: column; align-items: center; gap: 20px;
-            max-width: 320px; width: 100%; text-align: center;
+            background: var(--white); border-radius: 24px; padding: 0;
+            display: flex; flex-direction: column; align-items: stretch;
+            max-width: 340px; width: 100%; text-align: center;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.16);
             animation: modalIn 0.22s cubic-bezier(0.16,1,0.3,1) both;
+            overflow: hidden;
         }
-        .qr-title { font-size: 1rem; font-weight: 700; color: var(--text); }
-        .qr-sub { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
-        #qrCanvas { border-radius: 12px; overflow: hidden; }
-        .qr-cbu-val { font-size: 0.75rem; color: var(--muted); font-family: monospace; letter-spacing: 0.04em; }
+        .qr-header {
+            background: #0052FF; padding: 28px 28px 24px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .qr-header-icon {
+            width: 48px; height: 48px; background: rgba(255,255,255,0.15);
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+        }
+        .qr-title { font-size: 1.05rem; font-weight: 700; color: white; letter-spacing: -0.02em; }
+        .qr-sub { font-size: 0.8rem; color: rgba(255,255,255,0.7); line-height: 1.4; max-width: 220px; }
+        .qr-body { padding: 28px 28px 0; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        .qr-canvas-wrap {
+            background: white; border-radius: 16px; padding: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #F0F0F0;
+        }
+        #qrCanvas { display: block; }
+        #qrCanvas img, #qrCanvas canvas { display: block; border-radius: 4px; }
+        .qr-cbu-wrap {
+            width: 100%; background: var(--bg); border-radius: 10px;
+            padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+            border: 1px solid var(--border); cursor: pointer;
+        }
+        .qr-cbu-wrap:hover { border-color: var(--accent); }
+        .qr-cbu-val { font-size: 0.72rem; color: var(--muted); font-family: monospace; letter-spacing: 0.04em; flex: 1; text-align: left; }
+        .qr-copy-icon { color: var(--muted); flex-shrink: 0; transition: color 0.15s; }
+        .qr-cbu-wrap:hover .qr-copy-icon { color: var(--accent); }
+        .qr-footer { padding: 20px 28px 24px; display: flex; gap: 10px; }
+        .btn-qr-close {
+            flex: 1; padding: 12px; background: var(--bg); color: var(--text);
+            border: 1.5px solid var(--border); border-radius: 12px;
+            font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; transition: border-color 0.15s;
+        }
+        .btn-qr-close:hover { border-color: #aaa; }
         .btn-qr {
             background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px; padding: 4px 10px; color: rgba(255,255,255,0.7);
@@ -404,59 +436,23 @@
         }
         .btn-qr:hover { background: rgba(255,255,255,0.2); color: white; }
 
-        /* ── GLOBAL SEARCH ── */
-        #globalSearchOverlay {
-            position: fixed; inset: 0; z-index: 9990;
-            background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
-            display: none; align-items: flex-start; justify-content: center;
-            padding-top: 120px;
+        /* ── MENSAJE OTROS MOTIVOS ── */
+        .mensaje-wrap {
+            display: none; padding: 14px 20px 18px;
+            border-top: 1px solid var(--border);
+            animation: toastIn 0.2s ease both;
         }
-        #globalSearchOverlay.open { display: flex; }
-        .gsearch-panel {
-            background: var(--white); border-radius: 16px;
-            width: 100%; max-width: 540px;
-            box-shadow: 0 24px 60px rgba(0,0,0,0.18);
-            overflow: hidden;
-            animation: modalIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+        .mensaje-wrap.visible { display: block; }
+        .mensaje-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+        .mensaje-textarea {
+            width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+            border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 0.88rem;
+            color: var(--text); background: var(--bg); outline: none; resize: none;
+            transition: border-color 0.2s; line-height: 1.5;
         }
-        .gsearch-input-wrap {
-            display: flex; align-items: center; gap: 12px;
-            padding: 16px 20px; border-bottom: 1px solid var(--border);
-        }
-        .gsearch-input {
-            flex: 1; border: none; background: none; font-family: 'Inter', sans-serif;
-            font-size: 1rem; color: var(--text); outline: none;
-        }
-        .gsearch-input::placeholder { color: var(--muted); }
-        .gsearch-kbd {
-            font-size: 0.7rem; color: var(--muted); background: var(--bg);
-            border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px;
-            font-family: monospace; white-space: nowrap;
-        }
-        .gsearch-results { max-height: 360px; overflow-y: auto; }
-        .gsearch-section-label {
-            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.08em; color: var(--muted); padding: 12px 20px 6px;
-        }
-        .gsearch-item {
-            display: flex; align-items: center; gap: 14px;
-            padding: 10px 20px; cursor: pointer; transition: background 0.1s;
-        }
-        .gsearch-item:hover, .gsearch-item.selected { background: var(--bg); }
-        .gsearch-icon {
-            width: 36px; height: 36px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem; font-weight: 700; color: white; flex-shrink: 0;
-        }
-        .gsearch-item-name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
-        .gsearch-item-sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
-        .gsearch-amount { font-size: 0.9rem; font-weight: 700; margin-left: auto; flex-shrink: 0; }
-        .gsearch-empty { padding: 32px 20px; text-align: center; font-size: 0.88rem; color: var(--muted); }
-        .gsearch-footer {
-            padding: 10px 20px; border-top: 1px solid var(--border);
-            display: flex; gap: 16px; align-items: center;
-        }
-        .gsearch-hint { font-size: 0.72rem; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+        .mensaje-textarea:focus { border-color: var(--accent); }
+        .mensaje-textarea::placeholder { color: var(--muted); }
+        .mensaje-char { font-size: 0.7rem; color: var(--muted); text-align: right; margin-top: 4px; }
 
         /* ── RIPPLE en botones de modal ── */
         .modal-confirm-btn, .btn-next, .btn-back { position: relative; overflow: hidden; }
@@ -1009,7 +1005,13 @@
                 <button class="motivo-list-item" data-motivo="Educación" onclick="seleccionarMotivoModal(this)">📚&nbsp;&nbsp;Educación</button>
                 <button class="motivo-list-item" data-motivo="Transporte" onclick="seleccionarMotivoModal(this)">🚗&nbsp;&nbsp;Transporte</button>
                 <button class="motivo-list-item" data-motivo="Entretenimiento" onclick="seleccionarMotivoModal(this)">🎬&nbsp;&nbsp;Entretenimiento</button>
-                <button class="motivo-list-item" data-motivo="Otros motivos" onclick="seleccionarMotivoModal(this)">💬&nbsp;&nbsp;Otros motivos</button>
+                <button class="motivo-list-item" data-motivo="Otros motivos" onclick="seleccionarOtrosMotivos()">💬&nbsp;&nbsp;Otros motivos</button>
+            </div>
+            <div class="mensaje-wrap" id="mensajeWrap">
+                <div class="mensaje-label">Tu mensaje para el destinatario</div>
+                <textarea class="mensaje-textarea" id="mensajeInput" rows="3" maxlength="120" placeholder="Ej: gracias por el alquiler del mes..." oninput="document.getElementById('mensajeChar').textContent=this.value.length+'/120'"></textarea>
+                <div class="mensaje-char" id="mensajeChar">0/120</div>
+                <button class="motivo-list-item" style="border-top:1px solid var(--border);border-bottom:none;color:var(--accent);font-weight:700;" onclick="confirmarMensajeOtros()">Confirmar mensaje →</button>
             </div>
         </div>
     </div>
@@ -1129,31 +1131,26 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- ── QR MODAL ── -->
-    <div id="qrModal" class="modal-overlay" onclick="e => { if(e.target===this) cerrarQR(); }">
+    <div id="qrModal" class="modal-overlay">
         <div class="qr-panel" onclick="event.stopPropagation()">
-            <div class="qr-title">Tu código QR</div>
-            <div class="qr-sub">Compartilo para recibir transferencias de cualquier banco</div>
-            <div id="qrCanvas"></div>
-            <div class="qr-cbu-val" id="qrCbuVal"></div>
-            <button class="modal-close-btn" onclick="cerrarQR()" style="align-self:center;margin-top:4px;">✕ Cerrar</button>
-        </div>
-    </div>
-
-    <!-- ── BÚSQUEDA GLOBAL ── -->
-    <div id="globalSearchOverlay" onclick="cerrarGlobalSearch()">
-        <div class="gsearch-panel" onclick="event.stopPropagation()">
-            <div class="gsearch-input-wrap">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input class="gsearch-input" id="gsearchInput" placeholder="Buscar movimientos, personas..." oninput="renderGsearch(this.value)" onkeydown="gsearchKeyNav(event)" autocomplete="off">
-                <span class="gsearch-kbd">Esc</span>
+            <div class="qr-header">
+                <div class="qr-header-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3m4-3v.01M14 21h.01M17 21h3M21 18v3"/></svg>
+                </div>
+                <div class="qr-title">Tu código QR</div>
+                <div class="qr-sub">Mostralo para que te transfieran desde cualquier banco</div>
             </div>
-            <div class="gsearch-results" id="gsearchResults">
-                <div class="gsearch-empty">Escribí para buscar en tu historial</div>
+            <div class="qr-body">
+                <div class="qr-canvas-wrap">
+                    <div id="qrCanvas"></div>
+                </div>
+                <div class="qr-cbu-wrap" onclick="copiarCbuDesdeQR()" title="Copiar CBU">
+                    <span class="qr-cbu-val" id="qrCbuVal"></span>
+                    <svg class="qr-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </div>
             </div>
-            <div class="gsearch-footer">
-                <span class="gsearch-hint"><kbd class="gsearch-kbd">↑↓</kbd> Navegar</span>
-                <span class="gsearch-hint"><kbd class="gsearch-kbd">Enter</kbd> Abrir</span>
-                <span class="gsearch-hint"><kbd class="gsearch-kbd">Esc</kbd> Cerrar</span>
+            <div class="qr-footer">
+                <button class="btn-qr-close" onclick="cerrarQR()">Cerrar</button>
             </div>
         </div>
     </div>
@@ -1876,6 +1873,14 @@
                     </div>` : ''}
                 </div>
 
+                ${t.descripcion ? `
+                <div class="detalle-tx-section">
+                    <div class="detalle-tx-section-title">Mensaje</div>
+                    <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
+                        💬 ${t.descripcion}
+                    </div>
+                </div>` : ''}
+
                 <button id="btnDescargarPdf" onclick="descargarComprobante('${id}')"
                     style="width:100%;padding:13px;background:#1A1A1B;color:white;border:none;border-radius:12px;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -2387,7 +2392,8 @@
 
         // ── MODAL TRANSFERENCIA ───────────────────────────────────────────
         let destinatarioCbuSeleccionado = null;
-        let motivoSeleccionado = null;
+        let motivoSeleccionado    = null;
+        let mensajeTransferencia  = null;
 
         function abrirModalMotivo() {
             document.getElementById('modalMotivo').style.display = 'flex';
@@ -2397,10 +2403,28 @@
         }
         function cerrarModalMotivo() {
             document.getElementById('modalMotivo').style.display = 'none';
+            document.getElementById('mensajeWrap').classList.remove('visible');
         }
         function seleccionarMotivoModal(btn) {
             motivoSeleccionado = btn.dataset.motivo;
+            mensajeTransferencia = null;
             document.getElementById('motivoLabel').textContent = motivoSeleccionado;
+            document.getElementById('btnAbrirMotivo').classList.add('has-motivo');
+            cerrarModalMotivo();
+        }
+        function seleccionarOtrosMotivos() {
+            document.querySelectorAll('#modalMotivo .motivo-list-item').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-motivo="Otros motivos"]').classList.add('active');
+            const wrap = document.getElementById('mensajeWrap');
+            wrap.classList.add('visible');
+            document.getElementById('mensajeInput').focus();
+        }
+        function confirmarMensajeOtros() {
+            const msg = document.getElementById('mensajeInput').value.trim();
+            motivoSeleccionado   = 'Otros motivos';
+            mensajeTransferencia = msg || null;
+            const label = msg ? `💬 "${msg.length > 28 ? msg.slice(0,28)+'…' : msg}"` : 'Otros motivos';
+            document.getElementById('motivoLabel').textContent = label;
             document.getElementById('btnAbrirMotivo').classList.add('has-motivo');
             cerrarModalMotivo();
         }
@@ -2415,9 +2439,12 @@
             document.getElementById('errorTransferencia').style.display = 'none';
             destinatarioCbuSeleccionado = null;
             _cbuPendienteContacto = null;
-            motivoSeleccionado = null;
+            motivoSeleccionado   = null;
+            mensajeTransferencia = null;
             document.getElementById('motivoLabel').textContent = 'Motivo (opcional)';
             document.getElementById('btnAbrirMotivo').classList.remove('has-motivo');
+            document.getElementById('mensajeInput').value = '';
+            document.getElementById('mensajeChar').textContent = '0/120';
             renderizarFavoritos();
         }
 
@@ -2563,7 +2590,12 @@
                 const res  = await fetch('/api/transferencia', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cbuOrigen: u.cbu, cbuDestino: destinatarioCbuSeleccionado, importe })
+                    body: JSON.stringify({
+                        cbuOrigen:   u.cbu,
+                        cbuDestino:  destinatarioCbuSeleccionado,
+                        importe,
+                        descripcion: mensajeTransferencia || undefined
+                    })
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -2801,6 +2833,14 @@
             }, 80);
         }
         function cerrarQR() { document.getElementById('qrModal').classList.remove('open'); }
+        async function copiarCbuDesdeQR() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            if (!u?.cbu) return;
+            try {
+                await navigator.clipboard.writeText(u.cbu);
+                showToast('CBU copiado al portapapeles');
+            } catch { showToast('No se pudo copiar', 'error'); }
+        }
         document.getElementById('qrModal').addEventListener('click', function(e) {
             if (e.target === this) cerrarQR();
         });
@@ -2831,93 +2871,6 @@
             showToast('Historial exportado como CSV');
         }
 
-        // ── BÚSQUEDA GLOBAL (Ctrl+K) ─────────────────────────────────────
-        let _gsearchIdx = -1;
-
-        function abrirGlobalSearch() {
-            document.getElementById('globalSearchOverlay').classList.add('open');
-            setTimeout(() => document.getElementById('gsearchInput').focus(), 50);
-            renderGsearch('');
-        }
-        function cerrarGlobalSearch() {
-            document.getElementById('globalSearchOverlay').classList.remove('open');
-            document.getElementById('gsearchInput').value = '';
-            _gsearchIdx = -1;
-        }
-        function renderGsearch(q) {
-            _gsearchIdx = -1;
-            const box = document.getElementById('gsearchResults');
-            const u   = JSON.parse(localStorage.getItem('usuarioLogueado'));
-            if (!q.trim()) {
-                box.innerHTML = '<div class="gsearch-empty">Escribí para buscar en tu historial</div>';
-                return;
-            }
-            const qlow = q.toLowerCase();
-            const txs  = (_todasPropias || []).filter(t => {
-                const esEnvio = t.cbuOrigen === u?.cbu && t.cbuOrigen !== 'DEPOSITO';
-                const nombre = t.cbuOrigen === 'DEPOSITO' ? 'Depósito'
-                    : esEnvio
-                        ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
-                        : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
-                const cbu = esEnvio ? t.cbuDestino : t.cbuOrigen;
-                return nombre.toLowerCase().includes(qlow) || (cbu||'').includes(qlow) ||
-                       String(t.importe).includes(q);
-            }).slice(0, 8);
-
-            if (!txs.length) {
-                box.innerHTML = '<div class="gsearch-empty">Sin resultados para "' + q + '"</div>';
-                return;
-            }
-
-            const avatarColor = str => { let h=0; for(let c of str) h=(h<<5)-h+c.charCodeAt(0); return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length]; };
-            box.innerHTML = '<div class="gsearch-section-label">Movimientos</div>' +
-                txs.map((t, i) => {
-                    const esDeposito = t.cbuOrigen === 'DEPOSITO';
-                    const esEnvio = !esDeposito && t.cbuOrigen === u?.cbu;
-                    const nombre = esDeposito ? 'Depósito'
-                        : esEnvio
-                            ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
-                            : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
-                    const ini = esDeposito ? '💰' : nombre.slice(0,2).toUpperCase();
-                    const color = esDeposito ? '#059669' : avatarColor(nombre);
-                    const signo = esDeposito || !esEnvio ? '+' : '-';
-                    const col   = signo === '+' ? '#059669' : '#B91C1C';
-                    const fecha = new Date(t.fecha||t.createdAt||t.created_at).toLocaleDateString('es-AR');
-                    return `<div class="gsearch-item" data-txid="${t._id}" onclick="gsearchAbrirTx('${t._id}')">
-                        <div class="gsearch-icon" style="background:${color}">${ini}</div>
-                        <div><div class="gsearch-item-name">${nombre}</div><div class="gsearch-item-sub">${fecha}</div></div>
-                        <div class="gsearch-amount" style="color:${col}">${signo}$${Number(t.importe).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
-                    </div>`;
-                }).join('');
-        }
-        function gsearchAbrirTx(id) {
-            cerrarGlobalSearch();
-            setTimeout(() => {
-                abrirHistorial();
-                setTimeout(() => { if (_txMap[id]) abrirDetalleTx(_txMap[id]); }, 400);
-            }, 100);
-        }
-        function gsearchKeyNav(e) {
-            const items = document.querySelectorAll('.gsearch-item');
-            if (e.key === 'Escape') { cerrarGlobalSearch(); return; }
-            if (e.key === 'ArrowDown') { _gsearchIdx = Math.min(_gsearchIdx+1, items.length-1); }
-            else if (e.key === 'ArrowUp') { _gsearchIdx = Math.max(_gsearchIdx-1, 0); }
-            else if (e.key === 'Enter' && _gsearchIdx >= 0) { items[_gsearchIdx]?.click(); return; }
-            else return;
-            items.forEach((it, i) => it.classList.toggle('selected', i === _gsearchIdx));
-            items[_gsearchIdx]?.scrollIntoView({ block: 'nearest' });
-        }
-        document.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                document.getElementById('globalSearchOverlay').classList.contains('open')
-                    ? cerrarGlobalSearch()
-                    : abrirGlobalSearch();
-            }
-            if (e.key === 'Escape' && document.getElementById('globalSearchOverlay').classList.contains('open')) {
-                cerrarGlobalSearch();
-            }
-        });
     </script>
 
 

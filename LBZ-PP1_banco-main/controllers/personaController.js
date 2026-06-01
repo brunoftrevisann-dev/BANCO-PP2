@@ -115,7 +115,7 @@ exports.buscarPersona = async (req, res) => {
 
 exports.transferir = async (req, res) => {
   try {
-    const { cbuOrigen, cbuDestino, importe } = req.body;
+    const { cbuOrigen, cbuDestino, importe, descripcion } = req.body;
     if (!cbuOrigen || !cbuDestino || !importe)
       return res.status(400).json({ error: 'cbuOrigen, cbuDestino e importe son requeridos' });
     if (Number(importe) <= 0) return res.status(400).json({ error: 'El importe debe ser mayor a 0' });
@@ -147,6 +147,14 @@ exports.transferir = async (req, res) => {
 
     const nuevoSaldo = Number(cuentaOrigen.saldo) - Number(importe);
     await Persona.updateSaldo(cbuOrigen, nuevoSaldo);
+
+    // Guardar descripcion en DB para ambas partes (tuo→tuo)
+    if (bcData._id && descripcion) {
+      await Persona.upsertTransaccion({
+        ...bcData,
+        descripcion: descripcion.trim().slice(0, 120)
+      }).catch(() => {});
+    }
 
     const cuentaDestino = await Persona.getByCbu(cbuDestino);
     if (cuentaDestino) {

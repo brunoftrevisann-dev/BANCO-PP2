@@ -93,13 +93,14 @@ const Persona = {
     await db.query(
       `INSERT INTO Transacciones
          (tx_id, cbu_origen, cbu_destino, importe, estado, motivo_rechazo,
-          bank_code_origen, bank_code_destino, persona_origen, persona_destino, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+          bank_code_origen, bank_code_destino, persona_origen, persona_destino, created_at, descripcion)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (tx_id) DO UPDATE SET
          estado          = EXCLUDED.estado,
          motivo_rechazo  = EXCLUDED.motivo_rechazo,
          persona_origen  = EXCLUDED.persona_origen,
-         persona_destino = EXCLUDED.persona_destino`,
+         persona_destino = EXCLUDED.persona_destino,
+         descripcion     = COALESCE(EXCLUDED.descripcion, Transacciones.descripcion)`,
       [
         tx._id,
         tx.cbuOrigen, tx.cbuDestino,
@@ -108,7 +109,8 @@ const Persona = {
         tx.bankCodeOrigen || null, tx.bankCodeDestino || null,
         JSON.stringify(tx.personaOrigen || null),
         JSON.stringify(tx.personaDestino || null),
-        tx.createdAt || new Date().toISOString()
+        tx.createdAt || new Date().toISOString(),
+        tx.descripcion || null
       ]
     );
   },
@@ -126,7 +128,8 @@ const Persona = {
       bankCodeDestino: r.bank_code_destino,
       personaOrigen:   r.persona_origen,
       personaDestino:  r.persona_destino,
-      createdAt:       r.created_at
+      createdAt:       r.created_at,
+      descripcion:     r.descripcion || null
     }));
   },
 
