@@ -325,7 +325,20 @@
             localStorage.setItem('tuo-theme', next);
             applyTheme(next);
         }
-        applyTheme(localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm]=(s.desde||'20:00').split(':').map(Number);
+                const [hh,hm]=(s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        applyTheme(resolverTema());
 
         // ── LOGIN ────────────────────────────────────────────────────────
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -360,13 +373,27 @@
                 }
 
                 localStorage.setItem('usuarioLogueado', JSON.stringify(result));
-                // Registrar acceso en el log de actividad
-                const actKey = 'tuo_activity_' + result.cbu;
-                const actLog = JSON.parse(localStorage.getItem(actKey) || '[]');
-                actLog.unshift({ ts: new Date().toISOString() });
+                showMessage('¡Acceso exitoso! Redirigiendo...', 'success');
+
+                // Registrar acceso con geolocalización y dispositivo
+                const actKey   = 'tuo_activity_' + result.cbu;
+                const actLog   = JSON.parse(localStorage.getItem(actKey) || '[]');
+                const entrada  = { ts: new Date().toISOString(), dispositivo: detectarDispositivo() };
+                try {
+                    const geo = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) });
+                    if (geo.ok) {
+                        const g = await geo.json();
+                        entrada.ciudad = g.city || null;
+                        entrada.pais   = g.country_name || null;
+                        entrada.ip     = g.ip || null;
+                        entrada.lat    = g.latitude  || null;
+                        entrada.lon    = g.longitude || null;
+                    }
+                } catch { /* sin geo, igual guardamos */ }
+                actLog.unshift(entrada);
                 if (actLog.length > 10) actLog.pop();
                 localStorage.setItem(actKey, JSON.stringify(actLog));
-                showMessage('¡Acceso exitoso! Redirigiendo...', 'success');
+
                 setTimeout(() => navTo('dashboard.html'), 670);
 
             } catch (error) {
@@ -375,6 +402,21 @@
                 btnLogin.textContent = 'Entrar';
             }
         });
+
+        function detectarDispositivo() {
+            const ua = navigator.userAgent;
+            const os = /Windows/.test(ua) ? 'Windows'
+                     : /Mac OS X/.test(ua) ? 'macOS'
+                     : /Android/.test(ua) ? 'Android'
+                     : /iPhone|iPad/.test(ua) ? 'iOS'
+                     : /Linux/.test(ua) ? 'Linux' : 'Desconocido';
+            const browser = /Edg\//.test(ua) ? 'Edge'
+                          : /OPR\/|Opera/.test(ua) ? 'Opera'
+                          : /Chrome\//.test(ua) ? 'Chrome'
+                          : /Firefox\//.test(ua) ? 'Firefox'
+                          : /Safari\//.test(ua) ? 'Safari' : 'Navegador';
+            return `${browser} · ${os}`;
+        }
 
         function showMessage(text, type) {
             const msg = document.getElementById('message');

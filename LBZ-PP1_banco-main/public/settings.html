@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Ajustes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9; --text: #1A1A1B; --accent: #0052FF;
+            --muted: #6B6B6B; --border: #E5E5E5; --white: #FFFFFF;
+            --error-bg: #FEF2F2; --error-text: #B91C1C; --error-border: #FECACA;
+            --success-bg: #F0FDF4; --success-text: #15803D; --success-border: #BBF7D0;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 24px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .btn-back {
+            width: 34px; height: 34px; border-radius: 10px;
+            border: 1.5px solid var(--border); background: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text); transition: border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { border-color: #aaa; background: var(--bg); }
+        .header-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+        .btn-theme {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: none; border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        /* ── MAIN ── */
+        .main {
+            max-width: 560px; margin: 0 auto;
+            padding: 28px 20px 80px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        /* ── SECTION ── */
+        .section-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--muted);
+            padding: 0 4px; margin-top: 10px; margin-bottom: 4px;
+        }
+        .section-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        /* ── ROW ── */
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px 18px; border-bottom: 1px solid var(--border);
+            gap: 16px;
+        }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-row-sub {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 18px 12px 42px; border-bottom: 1px solid var(--border);
+            gap: 16px; background: var(--bg);
+        }
+        .setting-row-sub:last-child { border-bottom: none; }
+        .row-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .row-icon {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: rgba(0,82,255,0.08);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .row-info { min-width: 0; }
+        .row-title { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+        .row-sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+
+        /* ── TOGGLE ── */
+        .toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; cursor: pointer; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0; border-radius: 26px;
+            background: var(--border); transition: background 0.2s;
+        }
+        .toggle-slider::before {
+            content: ''; position: absolute;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: white; left: 3px; top: 3px;
+            transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+        }
+        .toggle input:checked + .toggle-slider { background: var(--accent); }
+        .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+        /* ── THEME SELECTOR ── */
+        .theme-pills { display: flex; gap: 6px; }
+        .theme-pill {
+            padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+            background: var(--bg); color: var(--muted); font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s;
+        }
+        .theme-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* ── TIME INPUT ── */
+        .time-input-wrap { display: flex; align-items: center; gap: 8px; }
+        .time-label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+        .time-input {
+            padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 8px;
+            font-family: 'Inter', sans-serif; font-size: 0.82rem;
+            background: var(--bg); color: var(--text); outline: none;
+            transition: border-color 0.15s; color-scheme: light; width: 90px;
+        }
+        [data-theme="dark"] .time-input { color-scheme: dark; }
+        .time-input:focus { border-color: var(--accent); }
+
+        /* ── BTN ACTION ── */
+        .btn-action {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: 10px;
+            border: 1.5px solid var(--border); background: var(--bg);
+            color: var(--text); font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .btn-action:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-action.danger { color: #B91C1C; }
+        .btn-action.danger:hover { border-color: #B91C1C; color: #B91C1C; background: #FEF2F2; }
+
+        /* ── TOAST ── */
+        .toast-container { position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { padding: 12px 18px; border-radius: 10px; font-size: 0.84rem; font-weight: 500; font-family: 'Inter', sans-serif; max-width: 300px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); display: flex; align-items: center; gap: 10px; animation: toastIn 0.25s ease; pointer-events: auto; }
+        .toast.success { background: #1A1A1B; color: white; }
+        .toast.info    { background: #EEF3FF; color: #0052FF; border: 1px solid #C7D9FF; }
+        .toast.removing { animation: toastOut 0.2s ease forwards; }
+        @keyframes toastIn  { from { opacity:0; transform:translateY(12px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(8px) scale(0.95); } }
+
+        /* ── MISC ── */
+        .version-text { font-size: 0.75rem; color: var(--muted); }
+        .about-logo { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.05em; color: var(--accent); }
+
+        @keyframes pageIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            </button>
+            <span class="header-title">Ajustes</span>
+        </div>
+        <button class="btn-theme" id="btnTheme" onclick="toggleTheme()"></button>
+    </header>
+
+    <main class="main">
+
+        <!-- APARIENCIA -->
+        <div class="section-label">Apariencia</div>
+        <div class="section-card">
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title">Tema</div>
+                        <div class="row-sub">Claro, oscuro o según el sistema</div>
+                    </div>
+                </div>
+                <div class="theme-pills">
+                    <button class="theme-pill" id="pillLight" onclick="setTema('light')">Claro</button>
+                    <button class="theme-pill" id="pillDark"  onclick="setTema('dark')">Oscuro</button>
+                    <button class="theme-pill" id="pillAuto"  onclick="setTema('auto')">Auto</button>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title">Modo nocturno por horario</div>
+                        <div class="row-sub">Activar automáticamente entre dos horas</div>
+                    </div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" id="toggleSchedule" onchange="onScheduleToggle()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row-sub" id="scheduleRow" style="display:none;">
+                <div class="row-info">
+                    <div class="row-title" style="font-size:0.82rem;">Horario del modo oscuro</div>
+                </div>
+                <div class="time-input-wrap">
+                    <span class="time-label">Desde</span>
+                    <input type="time" class="time-input" id="scheduleDesde" value="20:00" onchange="guardarSchedule()">
+                    <span class="time-label">Hasta</span>
+                    <input type="time" class="time-input" id="scheduleHasta" value="08:00" onchange="guardarSchedule()">
+                </div>
+            </div>
+        </div>
+
+        <!-- SEGURIDAD -->
+        <div class="section-label">Seguridad</div>
+        <div class="section-card">
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title">Cierre automático de sesión</div>
+                        <div class="row-sub">Cierra sesión tras 3 minutos de inactividad</div>
+                    </div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" id="toggleAutoLogout" onchange="guardarAutoLogout()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- SONIDO -->
+        <div class="section-label">Sonido y notificaciones</div>
+        <div class="section-card">
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title">Sonidos de transacciones</div>
+                        <div class="row-sub">Sonido al enviar o recibir dinero</div>
+                    </div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" id="toggleSonidos" onchange="guardarSonidos()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- PRIVACIDAD -->
+        <div class="section-label">Privacidad</div>
+        <div class="section-card">
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title">Ocultar saldo al inicio</div>
+                        <div class="row-sub">El saldo arranca oculto hasta que lo mostrás</div>
+                    </div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" id="toggleOcultarSaldo" onchange="guardarOcultarSaldo()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title" style="color:#B91C1C;">Limpiar cache local</div>
+                        <div class="row-sub">Borra datos guardados en este dispositivo</div>
+                    </div>
+                </div>
+                <button class="btn-action danger" onclick="limpiarCache()">Limpiar</button>
+            </div>
+        </div>
+
+        <!-- SOBRE TUO -->
+        <div class="section-label">Sobre tuo</div>
+        <div class="section-card">
+            <div class="setting-row">
+                <div class="row-left">
+                    <span class="about-logo">tuo</span>
+                    <div class="row-info">
+                        <div class="row-title">tuo — Tu banco</div>
+                        <div class="row-sub version-text">Versión 1.0.0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ── TEMA ─────────────────────────────────────────────────────────
+        const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+        const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm] = (s.desde||'20:00').split(':').map(Number);
+                const [hh,hm] = (s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function aplicarTema(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            document.getElementById('btnTheme').innerHTML = t === 'dark' ? SUN : MOON;
+        }
+
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme');
+            const next = cur === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('tuo-theme', next);
+            aplicarTema(next);
+            actualizarPills();
+        }
+
+        function setTema(modo) {
+            if (modo === 'auto') {
+                localStorage.removeItem('tuo-theme');
+            } else {
+                localStorage.setItem('tuo-theme', modo);
+            }
+            aplicarTema(resolverTema());
+            actualizarPills();
+            showToast('Tema actualizado');
+        }
+
+        function actualizarPills() {
+            const t = localStorage.getItem('tuo-theme');
+            document.getElementById('pillLight').classList.toggle('active', t === 'light');
+            document.getElementById('pillDark').classList.toggle('active',  t === 'dark');
+            document.getElementById('pillAuto').classList.toggle('active',  !t);
+        }
+
+        // ── SCHEDULE ─────────────────────────────────────────────────────
+        function onScheduleToggle() {
+            const on = document.getElementById('toggleSchedule').checked;
+            document.getElementById('scheduleRow').style.display = on ? 'flex' : 'none';
+            guardarSchedule();
+        }
+
+        function guardarSchedule() {
+            const on     = document.getElementById('toggleSchedule').checked;
+            const desde  = document.getElementById('scheduleDesde').value || '20:00';
+            const hasta  = document.getElementById('scheduleHasta').value || '08:00';
+            localStorage.setItem('tuo_dark_hours', JSON.stringify({ enabled: on, desde, hasta }));
+            if (on) aplicarTema(resolverTema());
+            showToast('Horario guardado');
+        }
+
+        // ── AUTO LOGOUT ───────────────────────────────────────────────────
+        function guardarAutoLogout() {
+            const on = document.getElementById('toggleAutoLogout').checked;
+            localStorage.setItem('tuo_auto_logout', on ? '1' : '0');
+            showToast(on ? 'Cierre automático activado' : 'Cierre automático desactivado');
+        }
+
+        // ── SONIDOS ───────────────────────────────────────────────────────
+        function guardarSonidos() {
+            const on = document.getElementById('toggleSonidos').checked;
+            localStorage.setItem('tuo_sonidos', on ? '1' : '0');
+            showToast(on ? 'Sonidos activados' : 'Sonidos desactivados');
+        }
+
+        // ── EXPORTAR ──────────────────────────────────────────────────────
+        function exportarDesdeSettings(formato) {
+            const u   = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+            const txs = JSON.parse(localStorage.getItem('tuo_txs_cache') || '[]');
+            if (!u || !txs.length) {
+                showToast('Abrí el dashboard primero para cargar los datos', 'info');
+                return;
+            }
+            const propias = txs.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu);
+            if (!propias.length) { showToast('Sin movimientos para exportar', 'info'); return; }
+
+            if (formato === 'csv') {
+                exportarCSVLocal(propias, u);
+            } else {
+                exportarPDFLocal(propias, u);
+            }
+        }
+
+        function exportarCSVLocal(txs, u) {
+            const headers = ['Fecha','Tipo','Nombre/CBU','Importe','Estado'];
+            const rows = txs.map(t => {
+                const f = new Date(t.fecha || t.createdAt || t.created_at).toLocaleString('es-AR');
+                const esD = t.cbuOrigen === 'DEPOSITO';
+                const esE = !esD && t.cbuOrigen === u.cbu;
+                const tipo = esD ? 'Deposito' : esE ? 'Enviado' : 'Recibido';
+                const nom  = esD ? 'Deposito' : esE
+                    ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
+                    : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
+                const imp  = (esE ? '-' : '+') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
+                return [f, tipo, nom, imp, t.estado || ''];
+            });
+            const csv  = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `tuo-historial-${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            showToast('Historial exportado como CSV');
+        }
+
+        function exportarPDFLocal(txs, u) {
+            showToast('Abrí el historial en el dashboard para exportar PDF', 'info');
+        }
+
+        // ── OCULTAR SALDO ─────────────────────────────────────────────────
+        function guardarOcultarSaldo() {
+            const on = document.getElementById('toggleOcultarSaldo').checked;
+            localStorage.setItem('tuo_ocultar_saldo', on ? '1' : '0');
+            showToast(on ? 'Saldo se ocultara al inicio' : 'Saldo visible al inicio');
+        }
+
+        // ── LIMPIAR CACHÉ ─────────────────────────────────────────────────
+        function limpiarCache() {
+            if (!confirm('Se borrarán los datos en caché de este dispositivo. No afecta tu cuenta ni tus movimientos.')) return;
+            const keep = ['usuarioLogueado','tuo-theme','tuo_dark_hours','tuo_auto_logout','tuo_sonidos'];
+            const keysToRemove = Object.keys(localStorage).filter(k => !keep.includes(k) && !k.startsWith('tuo_activity_') && !k.startsWith('tuo_avatar_'));
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            showToast('Caché limpiado correctamente');
+        }
+
+        // ── INIT ──────────────────────────────────────────────────────────
+        aplicarTema(resolverTema());
+        actualizarPills();
+
+        const schedule = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+        if (schedule?.enabled) {
+            document.getElementById('toggleSchedule').checked = true;
+            document.getElementById('scheduleRow').style.display = 'flex';
+            document.getElementById('scheduleDesde').value = schedule.desde || '20:00';
+            document.getElementById('scheduleHasta').value = schedule.hasta || '08:00';
+        }
+
+        document.getElementById('toggleAutoLogout').checked =
+            localStorage.getItem('tuo_auto_logout') !== '0';
+
+        document.getElementById('toggleSonidos').checked =
+            localStorage.getItem('tuo_sonidos') !== '0';
+
+        document.getElementById('toggleOcultarSaldo').checked =
+            localStorage.getItem('tuo_ocultar_saldo') === '1';
+
+        // ── TOAST ─────────────────────────────────────────────────────────
+        function showToast(msg, type = 'success') {
+            const c = document.getElementById('toastContainer');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = msg;
+            c.appendChild(el);
+            setTimeout(() => {
+                el.classList.add('removing');
+                el.addEventListener('animationend', () => el.remove(), { once: true });
+            }, 2500);
+        }
+
+        // ── NAV ───────────────────────────────────────────────────────────
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 220);
+        }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted) { document.body.classList.remove('leaving'); }
+        });
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http')) return;
+            e.preventDefault(); navTo(href);
+        });
+    </script>
+</body>
+</html>

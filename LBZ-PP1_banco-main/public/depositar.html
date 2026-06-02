@@ -199,7 +199,20 @@
 
 
     <script>
-        const savedTheme = localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm]=(s.desde||'20:00').split(':').map(Number);
+                const [hh,hm]=(s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        const savedTheme = resolverTema();
         if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         function toggleTheme() {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';

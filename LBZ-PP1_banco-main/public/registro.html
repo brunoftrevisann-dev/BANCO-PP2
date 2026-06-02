@@ -503,7 +503,20 @@
             localStorage.setItem('tuo-theme', next);
             applyThemeReg(next);
         }
-        applyThemeReg(localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm]=(s.desde||'20:00').split(':').map(Number);
+                const [hh,hm]=(s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        applyThemeReg(resolverTema());
 
         let _emailPendiente = null;
         let _timerInterval = null;
@@ -814,7 +827,7 @@
                 b.className = 'str-bar';
                 if (i < score) b.classList.add(lv.cls);
             });
-            label.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${lv.color}" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span style="color:${lv.color}">${lv.text}</span>`;
+            label.innerHTML = `<span style="color:${lv.color};font-weight:700;">${lv.text}</span>`;
             tips.innerHTML = issues.map(t => `<li>${t}</li>`).join('');
         }
 
@@ -825,10 +838,10 @@
             if (!conf) { lbl.style.display = 'none'; return; }
             lbl.style.display = 'block';
             if (pwd === conf) {
-                lbl.textContent = '✓ Las contraseñas coinciden';
+                lbl.textContent = 'Las contraseñas coinciden';
                 lbl.style.color = '#22C55E';
             } else {
-                lbl.textContent = '✗ No coinciden';
+                lbl.textContent = 'No coinciden';
                 lbl.style.color = '#EF4444';
             }
         }

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Mi perfil</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -75,7 +77,18 @@
             background: rgba(255,255,255,0.2);
             display: flex; align-items: center; justify-content: center;
             font-size: 1.4rem; font-weight: 700; flex-shrink: 0; letter-spacing: 0.02em;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: opacity 0.15s;
         }
+        .avatar-circle:hover { opacity: 0.85; }
+        .avatar-circle img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .avatar-edit-hint {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.35);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.15s; pointer-events: none;
+        }
+        .avatar-circle:hover .avatar-edit-hint { opacity: 1; }
+        #avatarFileInput { display: none; }
         .avatar-name { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 3px; }
         .avatar-email { font-size: 0.82rem; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -199,19 +212,61 @@
         /* ── ACTIVITY ── */
         .activity-list { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
         .activity-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 12px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border);
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+            padding: 12px 14px; background: var(--bg); border-radius: 12px; border: 1px solid var(--border);
         }
-        .activity-left { display: flex; align-items: center; gap: 10px; }
+        .activity-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
         .activity-dot {
-            width: 28px; height: 28px; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
         }
-        .activity-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
-        .activity-date  { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
-        .activity-time  { font-size: 0.78rem; font-weight: 600; color: var(--text); }
-        .badge-current  { font-size: 0.65rem; background: rgba(0,82,255,0.1); color: var(--accent); padding: 1px 7px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+        .activity-info { flex: 1; min-width: 0; }
+        .activity-label { font-size: 0.82rem; font-weight: 600; color: var(--text); display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .activity-location { font-size: 0.75rem; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+        .activity-device  { font-size: 0.72rem; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+        .activity-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+        .activity-time  { font-size: 0.8rem; font-weight: 600; color: var(--text); white-space: nowrap; }
+        .activity-date  { font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
+        .badge-current  { font-size: 0.62rem; background: rgba(0,82,255,0.1); color: var(--accent); padding: 1px 7px; border-radius: 10px; font-weight: 700; }
         .activity-empty { padding: 20px; text-align: center; font-size: 0.84rem; color: var(--muted); }
+        .btn-ver-mapa {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 0.7rem; font-weight: 600; color: var(--accent);
+            background: rgba(0,82,255,0.08); border: none; border-radius: 6px;
+            padding: 3px 8px; cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: background 0.15s; margin-top: 5px;
+        }
+        .btn-ver-mapa:hover { background: rgba(0,82,255,0.15); }
+
+        /* ── MAP MODAL ── */
+        #mapModal {
+            position: fixed; inset: 0; z-index: 500;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; padding: 24px;
+        }
+        #mapModal.open { display: flex; }
+        .map-panel {
+            background: var(--white); border-radius: 20px; overflow: hidden;
+            width: 100%; max-width: 520px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+            animation: pageIn 0.22s cubic-bezier(0.16,1,0.3,1) both;
+            display: flex; flex-direction: column;
+        }
+        .map-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+        }
+        .map-header-info { display: flex; flex-direction: column; gap: 2px; }
+        .map-header-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+        .map-header-sub { font-size: 0.78rem; color: var(--muted); }
+        .map-close {
+            width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+            background: none; cursor: pointer; color: var(--muted);
+            display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+        .map-close:hover { background: var(--bg); }
+        #leafletMap { height: 320px; width: 100%; }
 
         @media (max-width: 600px) {
             .header { padding: 0 16px; }
@@ -247,8 +302,13 @@
     <main class="main">
 
         <!-- Avatar -->
+        <input type="file" id="avatarFileInput" accept="image/*" onchange="onAvatarChange(this)">
         <div class="avatar-card">
-            <div class="avatar-circle" id="avatarCircle">--</div>
+            <div class="avatar-circle" id="avatarCircle" onclick="document.getElementById('avatarFileInput').click()">
+                <div class="avatar-edit-hint">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+            </div>
             <div>
                 <div class="avatar-name" id="avatarName"></div>
                 <div class="avatar-email" id="avatarEmail"></div>
@@ -382,8 +442,35 @@
 
     </main>
 
+    <!-- ── MAPA DE ACCESO ── -->
+    <div id="mapModal" onclick="if(event.target===this) cerrarMapa()">
+        <div class="map-panel" onclick="event.stopPropagation()">
+            <div class="map-header">
+                <div class="map-header-info">
+                    <div class="map-header-title" id="mapTitle">Ubicación del acceso</div>
+                    <div class="map-header-sub" id="mapSub"></div>
+                </div>
+                <button class="map-close" onclick="cerrarMapa()">✕</button>
+            </div>
+            <div id="leafletMap"></div>
+        </div>
+    </div>
+
     <script>
-        const savedTheme = localStorage.getItem('tuo-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm]=(s.desde||'20:00').split(':').map(Number);
+                const [hh,hm]=(s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        const savedTheme = resolverTema();
         if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         function toggleTheme() {
             const dark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -396,7 +483,40 @@
 
         // ── Poblar datos ──
         const ini = ((u.nombre || '')[0] + (u.apellido || '')[0]).toUpperCase();
-        document.getElementById('avatarCircle').textContent  = ini || '--';
+        // Avatar: cargar imagen guardada o iniciales
+        function cargarAvatar() {
+            const av  = document.getElementById('avatarCircle');
+            const img = localStorage.getItem('tuo_avatar_' + (u.cbu || ''));
+            if (img) {
+                av.innerHTML = `<img src="${img}" alt="avatar"><div class="avatar-edit-hint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>`;
+            } else {
+                av.innerHTML = `<span>${ini || '--'}</span><div class="avatar-edit-hint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>`;
+            }
+        }
+        cargarAvatar();
+        function onAvatarChange(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 200;
+                    canvas.width = canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    const min = Math.min(img.width, img.height);
+                    const sx = (img.width - min) / 2, sy = (img.height - min) / 2;
+                    ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+                    const data = canvas.toDataURL('image/jpeg', 0.7);
+                    localStorage.setItem('tuo_avatar_' + (u.cbu || ''), data);
+                    cargarAvatar();
+                    showMsg('Foto de perfil actualizada', 'success');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
         document.getElementById('avatarName').textContent    = `${u.nombre || ''} ${u.apellido || ''}`.trim();
         document.getElementById('avatarEmail').textContent   = u.email || '';
         document.getElementById('infoNombre').textContent    = `${u.nombre || ''} ${u.apellido || ''}`.trim();
@@ -411,22 +531,42 @@
         const actEl  = document.getElementById('activityList');
         if (actLog.length > 0) {
             actEl.innerHTML = actLog.slice(0, 6).map((e, i) => {
-                const d   = new Date(e.ts);
-                const dia = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
-                const hr  = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-                const dotBg   = i === 0 ? 'rgba(0,82,255,0.1)' : 'var(--border)';
-                const dotClr  = i === 0 ? 'var(--accent)' : 'var(--muted)';
+                const d      = new Date(e.ts);
+                const dia    = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+                const hr     = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                const isNow  = i === 0;
+                const dotBg  = isNow ? 'rgba(0,82,255,0.1)' : 'var(--border)';
+                const dotClr = isNow ? 'var(--accent)'      : 'var(--muted)';
+                const lugar  = [e.ciudad, e.pais].filter(Boolean).join(', ') || null;
+                const disp   = e.dispositivo || null;
                 return `<div class="activity-item">
                     <div class="activity-left">
                         <div class="activity-dot" style="background:${dotBg}">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${dotClr}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${dotClr}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                         </div>
-                        <div>
-                            <div class="activity-label">Inicio de sesión${i === 0 ? '<span class="badge-current">Actual</span>' : ''}</div>
-                            <div class="activity-date">${dia}</div>
+                        <div class="activity-info">
+                            <div class="activity-label">
+                                Inicio de sesión
+                                ${isNow ? '<span class="badge-current">Actual</span>' : ''}
+                            </div>
+                            ${lugar ? `<div class="activity-location">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                ${lugar}
+                            </div>` : ''}
+                            ${disp ? `<div class="activity-device">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                ${disp}
+                            </div>` : ''}
+                            ${e.lat && e.lon ? `<button class="btn-ver-mapa" onclick="abrirMapa(${e.lat},${e.lon},'${(lugar||'Ubicación').replace(/'/g,"\\'")}','${(disp||'').replace(/'/g,"\\'")}')">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Ver en mapa
+                            </button>` : ''}
                         </div>
                     </div>
-                    <span class="activity-time">${hr}</span>
+                    <div class="activity-right">
+                        <span class="activity-time">${hr}</span>
+                        <span class="activity-date">${dia}</span>
+                    </div>
                 </div>`;
             }).join('');
         }
@@ -616,6 +756,49 @@
             e.preventDefault();
             navTo(href);
         });
+
+        // ── MAPA DE ACCESO ───────────────────────────────────────────────
+        let _leafletMap = null;
+
+        function abrirMapa(lat, lon, lugar, dispositivo) {
+            document.getElementById('mapTitle').textContent = lugar || 'Ubicación del acceso';
+            document.getElementById('mapSub').textContent  = dispositivo || '';
+            document.getElementById('mapModal').classList.add('open');
+
+            // Destruir instancia anterior para evitar conflicto de Leaflet
+            if (_leafletMap) { _leafletMap.remove(); _leafletMap = null; }
+
+            setTimeout(() => {
+                _leafletMap = L.map('leafletMap', { zoomControl: true, attributionControl: false }).setView([lat, lon], 13);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18
+                }).addTo(_leafletMap);
+
+                // Marcador personalizado azul
+                const icon = L.divIcon({
+                    className: '',
+                    html: `<div style="width:36px;height:36px;background:#0052FF;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 4px 14px rgba(0,82,255,0.45);display:flex;align-items:center;justify-content:center;">
+                               <div style="transform:rotate(45deg);width:10px;height:10px;background:white;border-radius:50%;"></div>
+                           </div>`,
+                    iconSize:   [36, 36],
+                    iconAnchor: [18, 36],
+                    popupAnchor:[0, -38]
+                });
+
+                L.marker([lat, lon], { icon })
+                 .addTo(_leafletMap)
+                 .bindPopup(`<b style="font-family:Inter,sans-serif;font-size:0.82rem;">${lugar}</b>`)
+                 .openPopup();
+
+                _leafletMap.invalidateSize();
+            }, 80);
+        }
+
+        function cerrarMapa() {
+            document.getElementById('mapModal').classList.remove('open');
+            if (_leafletMap) { _leafletMap.remove(); _leafletMap = null; }
+        }
     </script>
 </body>
 </html>
