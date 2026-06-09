@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Ajustes</title>
+    <script src="tuo-i18n.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -109,14 +110,20 @@
         .toggle input:checked + .toggle-slider { background: var(--accent); }
         .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
 
-        /* ── THEME SELECTOR ── */
-        .theme-pills { display: flex; gap: 6px; }
-        .theme-pill {
-            padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+        /* ── PILLS (theme / lang / fontsize) ── */
+        .pill-group { display: flex; gap: 5px; flex-wrap: wrap; }
+        .pill {
+            padding: 6px 13px; border-radius: 20px; border: 1.5px solid var(--border);
             background: var(--bg); color: var(--muted); font-size: 0.8rem; font-weight: 600;
             cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s;
+            white-space: nowrap;
         }
-        .theme-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .pill:hover:not(.active) { border-color: #aaa; color: var(--text); }
+
+        /* ── FONT SIZE PILL special sizing ── */
+        .fontsize-pill { min-width: 36px; text-align: center; }
+        .fontsize-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
 
         /* ── TIME INPUT ── */
         .time-input-wrap { display: flex; align-items: center; gap: 8px; }
@@ -169,15 +176,78 @@
             <button class="btn-back" onclick="navTo('dashboard.html')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
             </button>
-            <span class="header-title">Ajustes</span>
+            <span class="header-title" data-i18n="settings.title">Ajustes</span>
         </div>
         <button class="btn-theme" id="btnTheme" onclick="toggleTheme()"></button>
     </header>
 
     <main class="main">
 
+        <!-- GENERAL -->
+        <div class="section-label" data-i18n="settings.general">General</div>
+        <div class="section-card">
+
+            <!-- Idioma -->
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title" data-i18n="settings.language">Idioma</div>
+                        <div class="row-sub" data-i18n="settings.language.sub">Idioma de la aplicación</div>
+                    </div>
+                </div>
+                <div class="pill-group">
+                    <button class="pill" id="pillLangEs" onclick="setLang('es')">
+                        <span data-i18n="settings.lang.es">Español</span>
+                    </button>
+                    <button class="pill" id="pillLangEn" onclick="setLang('en')">
+                        <span data-i18n="settings.lang.en">English</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tamaño de texto -->
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title" data-i18n="settings.fontsize">Tamaño de texto</div>
+                        <div class="row-sub" data-i18n="settings.fontsize.sub">Ajustá el tamaño de la letra</div>
+                    </div>
+                </div>
+                <div class="pill-group">
+                    <button class="pill fontsize-pill" id="pillFontSm" onclick="setFontSize('sm')" data-i18n="settings.fontsize.sm">S</button>
+                    <button class="pill fontsize-pill" id="pillFontMd" onclick="setFontSize('md')" data-i18n="settings.fontsize.md">M</button>
+                    <button class="pill fontsize-pill" id="pillFontLg" onclick="setFontSize('lg')" data-i18n="settings.fontsize.lg">L</button>
+                    <button class="pill fontsize-pill" id="pillFontXl" onclick="setFontSize('xl')" data-i18n="settings.fontsize.xl">XL</button>
+                </div>
+            </div>
+
+            <!-- Vibración -->
+            <div class="setting-row">
+                <div class="row-left">
+                    <div class="row-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M20 12h2M6.34 6.34l-1.42-1.42M19.07 4.93l-1.41 1.41M6.34 17.66l-1.42 1.42M19.07 19.07l-1.41-1.41"/><circle cx="12" cy="12" r="4"/></svg>
+                    </div>
+                    <div class="row-info">
+                        <div class="row-title" data-i18n="settings.vibration">Vibración</div>
+                        <div class="row-sub" data-i18n="settings.vibration.sub">Vibración al confirmar acciones</div>
+                    </div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" id="toggleVibration" onchange="guardarVibration()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+        </div>
+
         <!-- APARIENCIA -->
-        <div class="section-label">Apariencia</div>
+        <div class="section-label" data-i18n="settings.appearance">Apariencia</div>
         <div class="section-card">
             <div class="setting-row">
                 <div class="row-left">
@@ -185,14 +255,14 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                     </div>
                     <div class="row-info">
-                        <div class="row-title">Tema</div>
-                        <div class="row-sub">Claro, oscuro o según el sistema</div>
+                        <div class="row-title" data-i18n="settings.theme">Tema</div>
+                        <div class="row-sub" data-i18n="settings.theme.sub">Claro, oscuro o según el sistema</div>
                     </div>
                 </div>
-                <div class="theme-pills">
-                    <button class="theme-pill" id="pillLight" onclick="setTema('light')">Claro</button>
-                    <button class="theme-pill" id="pillDark"  onclick="setTema('dark')">Oscuro</button>
-                    <button class="theme-pill" id="pillAuto"  onclick="setTema('auto')">Auto</button>
+                <div class="pill-group">
+                    <button class="pill" id="pillLight" onclick="setTema('light')" data-i18n="settings.theme.light">Claro</button>
+                    <button class="pill" id="pillDark"  onclick="setTema('dark')"  data-i18n="settings.theme.dark">Oscuro</button>
+                    <button class="pill" id="pillAuto"  onclick="setTema('auto')"  data-i18n="settings.theme.auto">Auto</button>
                 </div>
             </div>
             <div class="setting-row">
@@ -201,8 +271,8 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                     </div>
                     <div class="row-info">
-                        <div class="row-title">Modo nocturno por horario</div>
-                        <div class="row-sub">Activar automáticamente entre dos horas</div>
+                        <div class="row-title" data-i18n="settings.nightmode">Modo nocturno por horario</div>
+                        <div class="row-sub" data-i18n="settings.nightmode.sub">Activar automáticamente entre dos horas</div>
                     </div>
                 </div>
                 <label class="toggle">
@@ -212,19 +282,19 @@
             </div>
             <div class="setting-row-sub" id="scheduleRow" style="display:none;">
                 <div class="row-info">
-                    <div class="row-title" style="font-size:0.82rem;">Horario del modo oscuro</div>
+                    <div class="row-title" style="font-size:0.82rem;" data-i18n="settings.nightmode.schedule">Horario del modo oscuro</div>
                 </div>
                 <div class="time-input-wrap">
-                    <span class="time-label">Desde</span>
+                    <span class="time-label" data-i18n="settings.nightmode.from">Desde</span>
                     <input type="time" class="time-input" id="scheduleDesde" value="20:00" onchange="guardarSchedule()">
-                    <span class="time-label">Hasta</span>
+                    <span class="time-label" data-i18n="settings.nightmode.to">Hasta</span>
                     <input type="time" class="time-input" id="scheduleHasta" value="08:00" onchange="guardarSchedule()">
                 </div>
             </div>
         </div>
 
         <!-- SEGURIDAD -->
-        <div class="section-label">Seguridad</div>
+        <div class="section-label" data-i18n="settings.security_section">Seguridad</div>
         <div class="section-card">
             <div class="setting-row">
                 <div class="row-left">
@@ -232,8 +302,8 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     </div>
                     <div class="row-info">
-                        <div class="row-title">Cierre automático de sesión</div>
-                        <div class="row-sub">Cierra sesión tras 3 minutos de inactividad</div>
+                        <div class="row-title" data-i18n="settings.autologout">Cierre automático de sesión</div>
+                        <div class="row-sub" data-i18n="settings.autologout.sub">Cierra sesión tras 3 minutos de inactividad</div>
                     </div>
                 </div>
                 <label class="toggle">
@@ -244,7 +314,7 @@
         </div>
 
         <!-- SONIDO -->
-        <div class="section-label">Sonido y notificaciones</div>
+        <div class="section-label" data-i18n="settings.sound">Sonido y notificaciones</div>
         <div class="section-card">
             <div class="setting-row">
                 <div class="row-left">
@@ -252,8 +322,8 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                     </div>
                     <div class="row-info">
-                        <div class="row-title">Sonidos de transacciones</div>
-                        <div class="row-sub">Sonido al enviar o recibir dinero</div>
+                        <div class="row-title" data-i18n="settings.sounds">Sonidos de transacciones</div>
+                        <div class="row-sub" data-i18n="settings.sounds.sub">Sonido al enviar o recibir dinero</div>
                     </div>
                 </div>
                 <label class="toggle">
@@ -264,7 +334,7 @@
         </div>
 
         <!-- PRIVACIDAD -->
-        <div class="section-label">Privacidad</div>
+        <div class="section-label" data-i18n="settings.privacy">Privacidad</div>
         <div class="section-card">
             <div class="setting-row">
                 <div class="row-left">
@@ -272,8 +342,8 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
                     </div>
                     <div class="row-info">
-                        <div class="row-title">Ocultar saldo al inicio</div>
-                        <div class="row-sub">El saldo arranca oculto hasta que lo mostrás</div>
+                        <div class="row-title" data-i18n="settings.hidesaldo">Ocultar saldo al inicio</div>
+                        <div class="row-sub" data-i18n="settings.hidesaldo.sub">El saldo arranca oculto hasta que lo mostrás</div>
                     </div>
                 </div>
                 <label class="toggle">
@@ -287,23 +357,23 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                     </div>
                     <div class="row-info">
-                        <div class="row-title" style="color:#B91C1C;">Limpiar cache local</div>
-                        <div class="row-sub">Borra datos guardados en este dispositivo</div>
+                        <div class="row-title" style="color:#B91C1C;" data-i18n="settings.clearcache">Limpiar cache local</div>
+                        <div class="row-sub" data-i18n="settings.clearcache.sub">Borra datos guardados en este dispositivo</div>
                     </div>
                 </div>
-                <button class="btn-action danger" onclick="limpiarCache()">Limpiar</button>
+                <button class="btn-action danger" onclick="limpiarCache()" data-i18n="settings.clearcache.btn">Limpiar</button>
             </div>
         </div>
 
         <!-- SOBRE TUO -->
-        <div class="section-label">Sobre tuo</div>
+        <div class="section-label" data-i18n="settings.about">Sobre tuo</div>
         <div class="section-card">
             <div class="setting-row">
                 <div class="row-left">
                     <span class="about-logo">tuo</span>
                     <div class="row-info">
-                        <div class="row-title">tuo — Tu banco</div>
-                        <div class="row-sub version-text">Versión 1.0.0</div>
+                        <div class="row-title" data-i18n="settings.about.name">tuo — Tu banco</div>
+                        <div class="row-sub version-text" data-i18n="settings.about.version">Versión 1.0.0</div>
                     </div>
                 </div>
             </div>
@@ -342,7 +412,7 @@
             const next = cur === 'dark' ? 'light' : 'dark';
             localStorage.setItem('tuo-theme', next);
             aplicarTema(next);
-            actualizarPills();
+            actualizarPillsTema();
         }
 
         function setTema(modo) {
@@ -352,15 +422,61 @@
                 localStorage.setItem('tuo-theme', modo);
             }
             aplicarTema(resolverTema());
-            actualizarPills();
-            showToast('Tema actualizado');
+            actualizarPillsTema();
+            showToast(window.t('toast.theme_updated'));
+            if (window.tuoI18n) window.tuoI18n.vibrateLight();
         }
 
-        function actualizarPills() {
+        function actualizarPillsTema() {
             const t = localStorage.getItem('tuo-theme');
             document.getElementById('pillLight').classList.toggle('active', t === 'light');
             document.getElementById('pillDark').classList.toggle('active',  t === 'dark');
             document.getElementById('pillAuto').classList.toggle('active',  !t);
+        }
+
+        // ── IDIOMA ────────────────────────────────────────────────────────
+        function setLang(lang) {
+            localStorage.setItem('tuo_lang', lang);
+            document.getElementById('pillLangEs').classList.toggle('active', lang === 'es');
+            document.getElementById('pillLangEn').classList.toggle('active', lang === 'en');
+            if (window.tuoI18n) {
+                window.tuoI18n.applyI18n();
+                window.tuoI18n.vibrateLight();
+            }
+            showToast(window.t('toast.lang_updated'));
+        }
+
+        function actualizarPillsLang() {
+            const lang = localStorage.getItem('tuo_lang') || 'es';
+            document.getElementById('pillLangEs').classList.toggle('active', lang === 'es');
+            document.getElementById('pillLangEn').classList.toggle('active', lang === 'en');
+        }
+
+        // ── TAMAÑO DE TEXTO ───────────────────────────────────────────────
+        function setFontSize(size) {
+            localStorage.setItem('tuo_font_size', size);
+            if (window.tuoI18n) {
+                window.tuoI18n.applyFontSize();
+                window.tuoI18n.vibrateLight();
+            }
+            actualizarPillsFontSize();
+            showToast(window.t('toast.fontsize_updated'));
+        }
+
+        function actualizarPillsFontSize() {
+            const size = localStorage.getItem('tuo_font_size') || 'md';
+            ['sm','md','lg','xl'].forEach(s => {
+                const el = document.getElementById('pillFont' + s.charAt(0).toUpperCase() + s.slice(1));
+                if (el) el.classList.toggle('active', s === size);
+            });
+        }
+
+        // ── VIBRACIÓN ─────────────────────────────────────────────────────
+        function guardarVibration() {
+            const on = document.getElementById('toggleVibration').checked;
+            localStorage.setItem('tuo_vibration', on ? '1' : '0');
+            if (on && window.tuoI18n) window.tuoI18n.vibrateMedium();
+            showToast(window.t(on ? 'toast.vibration_on' : 'toast.vibration_off'));
         }
 
         // ── SCHEDULE ─────────────────────────────────────────────────────
@@ -376,86 +492,48 @@
             const hasta  = document.getElementById('scheduleHasta').value || '08:00';
             localStorage.setItem('tuo_dark_hours', JSON.stringify({ enabled: on, desde, hasta }));
             if (on) aplicarTema(resolverTema());
-            showToast('Horario guardado');
+            showToast(window.t('toast.schedule_saved'));
         }
 
         // ── AUTO LOGOUT ───────────────────────────────────────────────────
         function guardarAutoLogout() {
             const on = document.getElementById('toggleAutoLogout').checked;
             localStorage.setItem('tuo_auto_logout', on ? '1' : '0');
-            showToast(on ? 'Cierre automático activado' : 'Cierre automático desactivado');
+            showToast(window.t(on ? 'toast.autologout_on' : 'toast.autologout_off'));
+            if (window.tuoI18n) window.tuoI18n.vibrateLight();
         }
 
         // ── SONIDOS ───────────────────────────────────────────────────────
         function guardarSonidos() {
             const on = document.getElementById('toggleSonidos').checked;
             localStorage.setItem('tuo_sonidos', on ? '1' : '0');
-            showToast(on ? 'Sonidos activados' : 'Sonidos desactivados');
-        }
-
-        // ── EXPORTAR ──────────────────────────────────────────────────────
-        function exportarDesdeSettings(formato) {
-            const u   = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
-            const txs = JSON.parse(localStorage.getItem('tuo_txs_cache') || '[]');
-            if (!u || !txs.length) {
-                showToast('Abrí el dashboard primero para cargar los datos', 'info');
-                return;
-            }
-            const propias = txs.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu);
-            if (!propias.length) { showToast('Sin movimientos para exportar', 'info'); return; }
-
-            if (formato === 'csv') {
-                exportarCSVLocal(propias, u);
-            } else {
-                exportarPDFLocal(propias, u);
-            }
-        }
-
-        function exportarCSVLocal(txs, u) {
-            const headers = ['Fecha','Tipo','Nombre/CBU','Importe','Estado'];
-            const rows = txs.map(t => {
-                const f = new Date(t.fecha || t.createdAt || t.created_at).toLocaleString('es-AR');
-                const esD = t.cbuOrigen === 'DEPOSITO';
-                const esE = !esD && t.cbuOrigen === u.cbu;
-                const tipo = esD ? 'Deposito' : esE ? 'Enviado' : 'Recibido';
-                const nom  = esD ? 'Deposito' : esE
-                    ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
-                    : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
-                const imp  = (esE ? '-' : '+') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
-                return [f, tipo, nom, imp, t.estado || ''];
-            });
-            const csv  = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `tuo-historial-${new Date().toISOString().slice(0,10)}.csv`;
-            a.click();
-            showToast('Historial exportado como CSV');
-        }
-
-        function exportarPDFLocal(txs, u) {
-            showToast('Abrí el historial en el dashboard para exportar PDF', 'info');
+            showToast(window.t(on ? 'toast.sounds_on' : 'toast.sounds_off'));
+            if (window.tuoI18n) window.tuoI18n.vibrateLight();
         }
 
         // ── OCULTAR SALDO ─────────────────────────────────────────────────
         function guardarOcultarSaldo() {
             const on = document.getElementById('toggleOcultarSaldo').checked;
             localStorage.setItem('tuo_ocultar_saldo', on ? '1' : '0');
-            showToast(on ? 'Saldo se ocultara al inicio' : 'Saldo visible al inicio');
+            showToast(window.t(on ? 'toast.saldo_hidden' : 'toast.saldo_visible'));
+            if (window.tuoI18n) window.tuoI18n.vibrateLight();
         }
 
         // ── LIMPIAR CACHÉ ─────────────────────────────────────────────────
         function limpiarCache() {
-            if (!confirm('Se borrarán los datos en caché de este dispositivo. No afecta tu cuenta ni tus movimientos.')) return;
-            const keep = ['usuarioLogueado','tuo-theme','tuo_dark_hours','tuo_auto_logout','tuo_sonidos'];
+            if (!confirm(window.t('settings.cache.confirm'))) return;
+            const keep = ['usuarioLogueado','tuo-theme','tuo_dark_hours','tuo_auto_logout','tuo_sonidos','tuo_lang','tuo_font_size','tuo_vibration'];
             const keysToRemove = Object.keys(localStorage).filter(k => !keep.includes(k) && !k.startsWith('tuo_activity_') && !k.startsWith('tuo_avatar_'));
             keysToRemove.forEach(k => localStorage.removeItem(k));
-            showToast('Caché limpiado correctamente');
+            showToast(window.t('toast.cache_cleared'));
+            if (window.tuoI18n) window.tuoI18n.vibrateLight();
         }
 
         // ── INIT ──────────────────────────────────────────────────────────
         aplicarTema(resolverTema());
-        actualizarPills();
+        actualizarPillsTema();
+        actualizarPillsLang();
+        actualizarPillsFontSize();
 
         const schedule = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
         if (schedule?.enabled) {
@@ -473,6 +551,9 @@
 
         document.getElementById('toggleOcultarSaldo').checked =
             localStorage.getItem('tuo_ocultar_saldo') === '1';
+
+        document.getElementById('toggleVibration').checked =
+            localStorage.getItem('tuo_vibration') !== '0';
 
         // ── TOAST ─────────────────────────────────────────────────────────
         function showToast(msg, type = 'success') {

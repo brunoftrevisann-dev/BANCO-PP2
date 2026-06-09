@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Inicio</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="tuo-i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -784,32 +785,32 @@
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="abrirDatosPersonales()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Datos personales
+                        <span data-i18n="dashboard.menu.personal">Datos personales</span>
                     </button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="navTo('depositar.html')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                        Depositar
+                        <span data-i18n="dashboard.menu.deposit">Depositar</span>
                     </button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="navTo('contactos.html')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        Contactos
+                        <span data-i18n="dashboard.menu.contacts">Contactos</span>
                     </button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="abrirEstadisticas()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                        Estadísticas
+                        <span data-i18n="dashboard.menu.stats">Estadísticas</span>
                     </button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="document.getElementById('headerDropdown').classList.remove('open'); navTo('settings.html')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                        Ajustes
+                        <span data-i18n="dashboard.menu.settings">Ajustes</span>
                     </button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item danger" onclick="pedirConfirmLogout()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                        Cerrar sesión
+                        <span data-i18n="dashboard.menu.logout">Cerrar sesión</span>
                     </button>
                 </div>
             </div>
@@ -825,7 +826,7 @@
                 <span class="account-type" id="tipoCuenta">Caja de Ahorro</span>
             </div>
             <div class="balance-row">
-                <div class="account-balance-label">Saldo disponible</div>
+                <div class="account-balance-label" data-i18n="dashboard.available">Saldo disponible</div>
                 <button class="btn-eye" id="btnEye" onclick="toggleSaldo()" title="Mostrar/ocultar saldo"></button>
             </div>
             <div class="account-balance" id="saldo">$ 0,00</div>
@@ -868,19 +869,19 @@
 
         <!-- Acciones rápidas -->
         <div>
-            <div class="section-title">Acciones rápidas</div>
+            <div class="section-title" data-i18n="dashboard.actions">Acciones rápidas</div>
             <div class="actions-grid">
                 <button class="action-btn" onclick="abrirModalTransferencia()" data-tooltip="Transferir dinero">
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-                    <span class="action-label">Transferir</span>
+                    <span class="action-label" data-i18n="dashboard.transfer">Transferir</span>
                 </button>
                 <button class="action-btn" onclick="navTo('depositar.html')" data-tooltip="Depositar fondos">
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
-                    <span class="action-label">Depositar</span>
+                    <span class="action-label" data-i18n="dashboard.deposit">Depositar</span>
                 </button>
                 <button class="action-btn" onclick="abrirHistorial()" data-tooltip="Ver todos los movimientos">
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div>
-                    <span class="action-label">Historial</span>
+                    <span class="action-label" data-i18n="dashboard.history">Historial</span>
                 </button>
             </div>
         </div>
@@ -888,8 +889,8 @@
         <!-- Últimos movimientos -->
         <div>
             <div class="recent-section-header">
-                <div class="section-title">Últimos movimientos</div>
-                <button class="btn-ver-todos" onclick="abrirHistorial()">Ver todos →</button>
+                <div class="section-title" data-i18n="dashboard.recent">Últimos movimientos</div>
+                <button class="btn-ver-todos" onclick="abrirHistorial()" data-i18n="dashboard.viewall">Ver todos →</button>
             </div>
             <div class="recent-tx-section">
                 <div id="recentTxList"></div>
@@ -902,7 +903,7 @@
     <div id="modalHistorial" class="modal-overlay">
         <div class="modal-panel historial-panel" style="max-width:520px;">
             <div class="modal-header">
-                <span class="modal-header-title">Historial de movimientos</span>
+                <span class="modal-header-title" data-i18n="dashboard.historial.title">Historial de movimientos</span>
                 <div style="display:flex;align-items:center;gap:6px;">
                     <button class="btn-export" onclick="exportarPDF()" title="Exportar a PDF">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -918,25 +919,25 @@
             <div class="historial-filters">
                 <div class="historial-search-wrap">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input class="historial-search" id="filtroTextoInput" type="text" placeholder="Buscar por nombre o CBU..." oninput="setFiltroTexto(this.value)">
+                    <input class="historial-search" id="filtroTextoInput" type="text" placeholder="Buscar por nombre o CBU..." data-i18n-placeholder="dashboard.historial.search" oninput="setFiltroTexto(this.value)">
                 </div>
                 <div class="filter-chips" id="filtroTipoChips">
-                    <button class="filter-chip active" data-tipo="todos" onclick="setFiltroTipo(this)">Todos</button>
-                    <button class="filter-chip" data-tipo="enviados" onclick="setFiltroTipo(this)">Enviados</button>
-                    <button class="filter-chip" data-tipo="recibidos" onclick="setFiltroTipo(this)">Recibidos</button>
+                    <button class="filter-chip active" data-tipo="todos" onclick="setFiltroTipo(this)" data-i18n="dashboard.historial.all">Todos</button>
+                    <button class="filter-chip" data-tipo="enviados" onclick="setFiltroTipo(this)" data-i18n="dashboard.historial.sent">Enviados</button>
+                    <button class="filter-chip" data-tipo="recibidos" onclick="setFiltroTipo(this)" data-i18n="dashboard.historial.received">Recibidos</button>
                 </div>
                 <div class="filter-chips" id="filtroFechaChips">
-                    <button class="filter-chip active" data-fecha="todos" onclick="setFiltroFecha(this)">Todo</button>
-                    <button class="filter-chip" data-fecha="24h" onclick="setFiltroFecha(this)">24hs</button>
-                    <button class="filter-chip" data-fecha="7d" onclick="setFiltroFecha(this)">7 días</button>
-                    <button class="filter-chip" data-fecha="15d" onclick="setFiltroFecha(this)">15 días</button>
-                    <button class="filter-chip" data-fecha="mes" onclick="setFiltroFecha(this)">Este mes</button>
-                    <button class="filter-chip" data-fecha="rango" onclick="setFiltroFecha(this)">Fecha personalizada</button>
+                    <button class="filter-chip active" data-fecha="todos" onclick="setFiltroFecha(this)" data-i18n="dashboard.historial.all_time">Todo</button>
+                    <button class="filter-chip" data-fecha="24h" onclick="setFiltroFecha(this)" data-i18n="dashboard.historial.24h">24hs</button>
+                    <button class="filter-chip" data-fecha="7d" onclick="setFiltroFecha(this)" data-i18n="dashboard.historial.7d">7 días</button>
+                    <button class="filter-chip" data-fecha="15d" onclick="setFiltroFecha(this)" data-i18n="dashboard.historial.15d">15 días</button>
+                    <button class="filter-chip" data-fecha="mes" onclick="setFiltroFecha(this)" data-i18n="dashboard.historial.month">Este mes</button>
+                    <button class="filter-chip" data-fecha="rango" onclick="setFiltroFecha(this)" data-i18n="dashboard.historial.custom">Fecha personalizada</button>
                 </div>
                 <div class="filter-date-wrap" id="filtroRangoWrap">
-                    <span class="filter-date-label">Desde</span>
+                    <span class="filter-date-label" data-i18n="dashboard.historial.from">Desde</span>
                     <input class="filter-date-input" type="date" id="filtroDesde" oninput="renderHistorialFiltrado()">
-                    <span class="filter-date-label">Hasta</span>
+                    <span class="filter-date-label" data-i18n="dashboard.historial.to">Hasta</span>
                     <input class="filter-date-input" type="date" id="filtroHasta" oninput="renderHistorialFiltrado()">
                 </div>
                 <div class="filter-monto-wrap">
@@ -1193,8 +1194,8 @@
             <div class="autologout-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <div class="autologout-title">Sesion por vencer</div>
-            <div class="autologout-sub">Por inactividad, tu sesion se cerrara en</div>
+            <div class="autologout-title">Sesión por vencer</div>
+            <div class="autologout-sub">Por inactividad, tu sesión se cerrará en</div>
             <div class="autologout-count" id="logoutCountdown">30</div>
             <div class="autologout-btns">
                 <button class="btn-stay" onclick="cancelarAutoLogout()">Seguir conectado</button>
@@ -1727,7 +1728,7 @@
             if (!u || _todasPropias.length === 0) return;
             const filtradas = aplicarFiltros(_todasPropias);
             if (filtradas.length === 0) {
-                cuerpo.innerHTML = emptyState('Sin movimientos para este filtro.');
+                cuerpo.innerHTML = emptyState(window.t ? window.t('dashboard.historial.no_results') : 'Sin movimientos para este filtro.');
                 return;
             }
             _txMap = {};
@@ -1740,13 +1741,13 @@
                     const esDeposito  = t.cbuOrigen === 'DEPOSITO';
                     const esEnvio     = !esDeposito && t.cbuOrigen === u.cbu;
                     const contraparte = esDeposito
-                        ? 'Depósito en efectivo'
+                        ? (window.t ? window.t('dashboard.tx.deposit') : 'Depósito en efectivo')
                         : (esEnvio
                             ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || t.cbuDestino)
                             : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || t.cbuOrigen));
                     const colorAmt    = esEnvio ? '#B91C1C' : '#15803D';
                     const signo       = esEnvio ? '−' : '+';
-                    const etiqueta    = esDeposito ? 'Depósito' : (esEnvio ? 'Enviado a' : 'Recibido de');
+                    const etiqueta    = esDeposito ? (window.t ? window.t('dashboard.tx.deposito') : 'Depósito') : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
                     const badgeBg     = esEnvio ? '#FEF2F2' : '#F0FDF4';
                     const badgeFg     = esEnvio ? '#B91C1C' : '#15803D';
                     const estadoOk    = t.estado === 'aprobada' || t.estado === 'approved';
@@ -1768,7 +1769,7 @@
                         <div class="historial-info">
                             <div class="historial-name">${etiqueta}: ${contraparte}</div>
                             ${fechaStr ? `<div class="historial-date">${fechaStr}</div>` : ''}
-                            <span class="historial-estado" style="${estadoStyle}">${estadoOk ? 'Aprobada' : 'Rechazada'}</span>
+                            <span class="historial-estado" style="${estadoStyle}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>
                         </div>
                         <div class="historial-amount" style="color:${colorAmt};">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:4px;"><path d="M9 18l6-6-6-6"/></svg>
@@ -1853,17 +1854,17 @@
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
                         </div>
                         <div class="detalle-tx-amount" style="color:#15803D;">+ ${fmt(t.importe)}</div>
-                        <div class="detalle-tx-label">Depósito en efectivo</div>
-                        <span class="historial-estado" style="background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;">Aprobada</span>
+                        <div class="detalle-tx-label">${window.t ? window.t('dashboard.tx.deposit') : 'Depósito en efectivo'}</div>
+                        <span class="historial-estado" style="background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;">${window.t ? window.t('dashboard.tx.approved') : 'Aprobada'}</span>
                     </div>
                     <div class="detalle-tx-section">
-                        <div class="detalle-tx-row"><span class="detalle-tx-label">Fecha</span><span class="detalle-tx-value">${fechaHora}</span></div>
-                        <div class="detalle-tx-row"><span class="detalle-tx-label">Importe</span><span class="detalle-tx-value">${fmt(t.importe)}</span></div>
-                        <div class="detalle-tx-row"><span class="detalle-tx-label">Tipo</span><span class="detalle-tx-value">Depósito en efectivo</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.date') : 'Fecha'}</span><span class="detalle-tx-value">${fechaHora}</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.amount_label') : 'Importe'}</span><span class="detalle-tx-value">${fmt(t.importe)}</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.type') : 'Tipo'}</span><span class="detalle-tx-value">${window.t ? window.t('dashboard.tx.deposit') : 'Depósito en efectivo'}</span></div>
                     </div>
                     <button class="btn-comprobante-hist" onclick="imprimirComprobanteDeposito('${txId}')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Descargar comprobante
+                        ${window.t ? window.t('dashboard.tx.download_receipt') : 'Descargar comprobante'}
                     </button>`;
                 document.getElementById('modalDetalleTx').style.display = 'flex';
                 return;
@@ -1871,8 +1872,8 @@
 
             const persona        = esEnvio ? t.personaDestino : t.personaOrigen;
             const cbuContraparte = esEnvio ? t.cbuDestino      : t.cbuOrigen;
-            const labelRole      = esEnvio ? 'Destinatario'    : 'Emisor';
-            const labelDir       = esEnvio ? 'Enviaste a'      : 'Recibiste de';
+            const labelRole      = esEnvio ? (window.t ? window.t('dashboard.tx.recipient') : 'Destinatario') : (window.t ? window.t('dashboard.tx.sender_role') : 'Emisor');
+            const labelDir       = esEnvio ? (window.t ? window.t('dashboard.tx.sent_to') : 'Enviaste a') : (window.t ? window.t('dashboard.tx.received_from') : 'Recibiste de');
 
             const personaCache = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}');
             const cachedPersona = personaCache[cbuContraparte] || null;
@@ -1942,36 +1943,36 @@
                         <span class="detalle-tx-value">${aliasDisplay}</span>
                     </div>
                     ${nombreBanco ? `<div class="detalle-tx-row">
-                        <span class="detalle-tx-label">Banco</span>
+                        <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.bank') : 'Banco'}</span>
                         <span class="detalle-tx-value">${nombreBanco}</span>
                     </div>` : ''}
                 </div>
 
                 <div class="detalle-tx-section">
-                    <div class="detalle-tx-section-title">Transacción</div>
+                    <div class="detalle-tx-section-title">${window.t ? window.t('dashboard.tx.transaction') : 'Transacción'}</div>
                     <div class="detalle-tx-row">
-                        <span class="detalle-tx-label">Fecha y hora</span>
+                        <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.datetime') : 'Fecha y hora'}</span>
                         <span class="detalle-tx-value">${fechaHora}</span>
                     </div>
                     <div class="detalle-tx-row">
-                        <span class="detalle-tx-label">Monto</span>
+                        <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.amount') : 'Monto'}</span>
                         <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div class="detalle-tx-row">
-                        <span class="detalle-tx-label">Estado</span>
+                        <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.status') : 'Estado'}</span>
                         <span class="detalle-tx-value">
-                            <span style="font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:600;${estadoOk ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;' : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;'}">${estadoOk ? 'Aprobada' : 'Rechazada'}</span>
+                            <span style="font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:600;${estadoOk ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;' : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;'}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>
                         </span>
                     </div>
                     ${t._id ? `<div class="detalle-tx-row">
-                        <span class="detalle-tx-label">ID</span>
+                        <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.id') : 'ID'}</span>
                         <span class="detalle-tx-value" style="font-size:0.68rem;color:var(--muted);">${t._id}</span>
                     </div>` : ''}
                 </div>
 
                 ${t.descripcion ? `
                 <div class="detalle-tx-section">
-                    <div class="detalle-tx-section-title">Mensaje</div>
+                    <div class="detalle-tx-section-title">${window.t ? window.t('dashboard.tx.message') : 'Mensaje'}</div>
                     <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
                         ${t.descripcion}
                     </div>
@@ -1980,7 +1981,7 @@
                 <button id="btnDescargarPdf" onclick="descargarComprobante('${id}')"
                     style="width:100%;padding:13px;background:#1A1A1B;color:white;border:none;border-radius:12px;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Descargar comprobante
+                    ${window.t ? window.t('dashboard.tx.download_receipt') : 'Descargar comprobante'}
                 </button>`;
 
             document.getElementById('modalDetalleTx').style.display = 'flex';
@@ -2008,8 +2009,8 @@
             const esEnvio       = t.cbuOrigen === u.cbu;
             const persona       = esEnvio ? t.personaDestino : t.personaOrigen;
             const cbuContra     = esEnvio ? t.cbuDestino : t.cbuOrigen;
-            const labelRole     = esEnvio ? 'Destinatario' : 'Emisor';
-            const labelDir      = esEnvio ? 'Enviaste a' : 'Recibiste de';
+            const labelRole     = esEnvio ? (window.t ? window.t('dashboard.tx.recipient') : 'Destinatario') : (window.t ? window.t('dashboard.tx.sender_role') : 'Emisor');
+            const labelDir      = esEnvio ? (window.t ? window.t('dashboard.tx.sent_to') : 'Enviaste a') : (window.t ? window.t('dashboard.tx.received_from') : 'Recibiste de');
             const _pdfCache     = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}')[cbuContra] || null;
             const nombre        = persona ? `${persona.nombre} ${persona.apellido}` : (_pdfCache ? `${_pdfCache.nombre} ${_pdfCache.apellido}` : (getNombrePorCbu(cbuContra) || 'Desconocido'));
             const dni           = persona?.dni || getDniPorCbu(cbuContra) || _pdfCache?.dni || '—';
@@ -2037,22 +2038,23 @@
 
             // Populate PDF template
             document.getElementById('pdf-estado-badge').innerHTML =
-                `<span style="font-size:0.72rem;padding:5px 12px;border-radius:20px;font-weight:700;${estadoOk ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;' : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;'}">${estadoOk ? 'Aprobada' : 'Rechazada'}</span>`;
+                `<span style="font-size:0.72rem;padding:5px 12px;border-radius:20px;font-weight:700;${estadoOk ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;' : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;'}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>`;
             document.getElementById('pdf-dir').textContent = `${labelDir} · ${fechaHora}`;
             document.getElementById('pdf-dir-label').textContent = labelDir;
             document.getElementById('pdf-amount').style.color = colorAmt;
             document.getElementById('pdf-amount').textContent = amtFmt;
             document.getElementById('pdf-persona-title').textContent = labelRole;
+            const _wt = window.t || (k => k);
             document.getElementById('pdf-persona').innerHTML =
-                row('Nombre', nombre) +
+                row(_wt('dashboard.tx.name'), nombre) +
                 row('DNI', dni) +
                 row('CBU', cbu, 'font-size:0.72rem;') +
-                (nombreBanco ? row('Alias', alias) + rowLast('Banco', nombreBanco) : rowLast('Alias', alias));
+                (nombreBanco ? row(_wt('dashboard.tx.alias'), alias) + rowLast(_wt('dashboard.tx.bank'), nombreBanco) : rowLast(_wt('dashboard.tx.alias'), alias));
             document.getElementById('pdf-tx').innerHTML =
-                row('Monto', amtFmt, `color:${colorAmt};font-weight:700;`) +
-                row('Fecha y hora', fechaHora) +
-                row('Estado', estadoOk ? 'Aprobada' : 'Rechazada', `color:${estadoOk ? '#15803D' : '#B91C1C'};`) +
-                (t._id ? rowLast('ID', t._id, 'font-size:0.7rem;color:#6B6B6B;') : rowLast('', ''));
+                row(_wt('dashboard.tx.amount'), amtFmt, `color:${colorAmt};font-weight:700;`) +
+                row(_wt('dashboard.tx.datetime'), fechaHora) +
+                row(_wt('dashboard.tx.status'), estadoOk ? _wt('dashboard.tx.approved') : _wt('dashboard.tx.rejected'), `color:${estadoOk ? '#15803D' : '#B91C1C'};`) +
+                (t._id ? rowLast(_wt('dashboard.tx.id'), t._id, 'font-size:0.7rem;color:#6B6B6B;') : rowLast('', ''));
 
             const tpl = document.getElementById('pdfTpl');
             tpl.style.visibility = 'visible';
@@ -2233,7 +2235,7 @@
                 clearTimeout(tid);
                 const data = await res.json();
                 if (!res.ok) {
-                    container.innerHTML = emptyState('Sin movimientos disponibles.');
+                    container.innerHTML = emptyState(window.t ? window.t('dashboard.historial.unavailable') : 'Sin movimientos disponibles.');
                     try { inicializarGraficos([]); } catch { /* charts are optional */ }
                     return;
                 }
@@ -2259,7 +2261,7 @@
                     if (t.personaDestino?.nombre) guardarNombreCbu(t.cbuDestino, `${t.personaDestino.nombre} ${t.personaDestino.apellido}`);
                 });
                 if (propias.length === 0) {
-                    container.innerHTML = emptyState('No tenés movimientos aún.');
+                    container.innerHTML = emptyState(window.t ? window.t('dashboard.historial.no_transactions') : 'No tenés movimientos aún.');
                     return;
                 }
                 await resolverNombresCbu(propias.slice(0, 3).map(t => t.cbuOrigen === u.cbu ? t.cbuDestino : t.cbuOrigen));
@@ -2270,7 +2272,7 @@
                         : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || 'CBU ' + (t.cbuOrigen  || '').slice(-6));
                     const colorAmt = esEnvio ? '#B91C1C' : '#15803D';
                     const signo    = esEnvio ? '−' : '+';
-                    const etiqueta = esEnvio ? 'Enviado a' : 'Recibido de';
+                    const etiqueta = esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de');
                     const fecha    = t.fecha || t.createdAt || t.timestamp || t.created_at;
                     const fechaStr = fecha ? new Date(fecha).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
                     const bg       = avatarColor(contraparte);
@@ -2446,7 +2448,7 @@
                 const all    = Array.isArray(data) ? data : (data.transactions || data.data || []);
                 const propias = deduplicarTxs(all.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu));
                 if (propias.length === 0) {
-                    cuerpo.innerHTML = emptyState('No tenés movimientos aún.');
+                    cuerpo.innerHTML = emptyState(window.t ? window.t('dashboard.historial.no_transactions') : 'No tenés movimientos aún.');
                     return;
                 }
                 propias.forEach(t => {
@@ -2965,14 +2967,36 @@
         // ── EXPORT PDF ───────────────────────────────────────────────────
         function exportarPDF() {
             const u = _usuarioHist || JSON.parse(localStorage.getItem('usuarioLogueado'));
-            // Usar datos ya filtrados o toda la caché del usuario
+
+            // Collect data: prefer filtered historial, fallback to recent cache
             let datos = _todasPropias.length ? aplicarFiltros(_todasPropias) : [];
             if (!datos.length && window._txsCache) {
                 datos = deduplicarTxs((window._txsCache || []).filter(t => t.cbuOrigen === u?.cbu || t.cbuDestino === u?.cbu));
             }
-            if (!datos.length) { showToast('Abri el historial primero para cargar los datos', 'info'); return; }
+
+            // If still empty, auto-fetch then generate
+            if (!datos.length) {
+                showToast('Cargando datos...', 'info');
+                fetch('/api/historial?minutos=525600')
+                    .then(r => r.ok ? r.json() : Promise.reject(r))
+                    .then(data => {
+                        const all = Array.isArray(data) ? data : (data.transactions || data.data || []);
+                        const propias = deduplicarTxs(all.filter(t => t.cbuOrigen === u?.cbu || t.cbuDestino === u?.cbu));
+                        if (!propias.length) { showToast('Sin movimientos para exportar', 'info'); return; }
+                        _todasPropias = propias;
+                        _usuarioHist  = u;
+                        _generarPDFConDatos(propias, u);
+                    })
+                    .catch(() => showToast('Error cargando datos para PDF', 'error'));
+                return;
+            }
+
+            _generarPDFConDatos(datos, u);
+        }
+
+        function _generarPDFConDatos(datos, u) {
             if (typeof window.jspdf === 'undefined') {
-                showToast('Libreria PDF no disponible, intentalo en un momento.', 'error'); return;
+                showToast('Libreria PDF no disponible. Intentalo en unos segundos.', 'error'); return;
             }
 
             // jsPDF no soporta tildes en Helvetica — normalizamos todo
@@ -3075,9 +3099,11 @@
 
                 doc.save(`tuo-historial-${new Date().toISOString().slice(0,10)}.pdf`);
                 showToast('PDF descargado');
+                if (window.tuoI18n) window.tuoI18n.vibrateSuccess();
             } catch(e) {
                 console.error('Error generando PDF:', e);
                 showToast('Error al generar el PDF: ' + e.message, 'error');
+                if (window.tuoI18n) window.tuoI18n.vibrateError();
             }
         }
 

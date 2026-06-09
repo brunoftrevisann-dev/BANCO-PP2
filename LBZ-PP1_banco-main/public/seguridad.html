@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Seguridad</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="tuo-i18n.js"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -432,24 +433,24 @@
             <div class="header-divider"></div>
             <a href="/" class="back-link">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                Inicio
+                <span data-i18n="nav.home">Inicio</span>
             </a>
         </div>
         <nav>
-            <a href="productos.html">Productos</a>
-            <a href="seguridad.html" class="active">Seguridad</a>
+            <a href="productos.html" data-i18n="nav.products">Productos</a>
+            <a href="seguridad.html" class="active" data-i18n="nav.security">Seguridad</a>
         </nav>
         <div class="header-actions">
-            <a href="/login" class="btn-text">Log in</a>
-            <a href="/registro" class="btn-primary">Abrir Cuenta</a>
+            <a href="/login" class="btn-text" data-i18n="nav.login">Log in</a>
+            <a href="/registro" class="btn-primary" data-i18n="nav.open_account">Abrir Cuenta</a>
         </div>
     </header>
 
     <!-- Hero -->
     <div class="page-hero">
-        <div class="hero-badge">Tu seguridad</div>
-        <h1>Tu dinero protegido,<br>siempre y en todo <span>lugar</span>.</h1>
-        <p>La seguridad en tuo no es un extra, es el núcleo de todo lo que hacemos. Cada transacción, cada dato, cada acceso está protegido.</p>
+        <div class="hero-badge" data-i18n="security.page.badge">Tu seguridad</div>
+        <h1 data-i18n-html="security.page.hero_title_html">Tu dinero protegido,<br>siempre y en todo <span>lugar</span>.</h1>
+        <p data-i18n="security.page.hero_sub">La seguridad en tuo no es un extra, es el núcleo de todo lo que hacemos. Cada transacción, cada dato, cada acceso está protegido.</p>
     </div>
 
     <!-- Stats de confianza -->
@@ -457,15 +458,15 @@
         <div class="trust-banner">
             <div class="trust-stat">
                 <div class="trust-stat-number" data-count="256" data-suffix="-bit">0<span>-bit</span></div>
-                <div class="trust-stat-label">Cifrado AES para todos los datos en tránsito y en reposo</div>
+                <div class="trust-stat-label" data-i18n="security.page.stat1_label">Cifrado AES para todos los datos en tránsito y en reposo</div>
             </div>
             <div class="trust-stat">
                 <div class="trust-stat-number" data-count="24" data-suffix="/7">0<span>/7</span></div>
-                <div class="trust-stat-label">Monitoreo continuo de actividad sospechosa y fraude</div>
+                <div class="trust-stat-label" data-i18n="security.page.stat2_label">Monitoreo continuo de actividad sospechosa y fraude</div>
             </div>
             <div class="trust-stat">
                 <div class="trust-stat-number" data-count="0" data-suffix="$">0<span>$</span></div>
-                <div class="trust-stat-label">Costo por activar todas las capas de seguridad disponibles</div>
+                <div class="trust-stat-label" data-i18n="security.page.stat3_label">Costo por activar todas las capas de seguridad disponibles</div>
             </div>
         </div>
 
@@ -473,29 +474,29 @@
             <div class="pillar-card">
                 <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1" fill="#0052FF"/></svg></div>
                 <div class="pillar-content">
-                    <h3>Verificación de identidad</h3>
-                    <p>Para crear tu cuenta validamos tu identidad con DNI y datos personales. Nadie más puede abrirse una cuenta con tu información sin saberlo.</p>
+                    <h3 data-i18n="security.page.pillar1_title">Verificación de identidad</h3>
+                    <p data-i18n="security.page.pillar1_desc">Para crear tu cuenta validamos tu identidad con DNI y datos personales. Nadie más puede abrirse una cuenta con tu información sin saberlo.</p>
                 </div>
             </div>
             <div class="pillar-card">
                 <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
                 <div class="pillar-content">
-                    <h3>Verificación por email</h3>
-                    <p>Cada registro y cada cambio de contraseña requiere confirmación por código enviado a tu email. Sin ese código, nadie puede entrar.</p>
+                    <h3 data-i18n="security.page.pillar2_title">Verificación por email</h3>
+                    <p data-i18n="security.page.pillar2_desc">Cada registro y cada cambio de contraseña requiere confirmación por código enviado a tu email. Sin ese código, nadie puede entrar.</p>
                 </div>
             </div>
             <div class="pillar-card">
                 <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
                 <div class="pillar-content">
-                    <h3>Protección de contraseña</h3>
-                    <p>Podés cambiar tu contraseña en cualquier momento desde tu perfil. El proceso exige verificar la contraseña actual y confirmar por email.</p>
+                    <h3 data-i18n="security.page.pillar3_title">Protección de contraseña</h3>
+                    <p data-i18n="security.page.pillar3_desc">Podés cambiar tu contraseña en cualquier momento desde tu perfil. El proceso exige verificar la contraseña actual y confirmar por email.</p>
                 </div>
             </div>
             <div class="pillar-card">
                 <div class="pillar-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
                 <div class="pillar-content">
-                    <h3>Registro de accesos</h3>
-                    <p>Cada inicio de sesión queda registrado con fecha y hora. Podés revisar el historial de accesos a tu cuenta en cualquier momento desde tu perfil.</p>
+                    <h3 data-i18n="security.page.pillar4_title">Registro de accesos</h3>
+                    <p data-i18n="security.page.pillar4_desc">Cada inicio de sesión queda registrado con fecha y hora. Podés revisar el historial de accesos a tu cuenta en cualquier momento desde tu perfil.</p>
                 </div>
             </div>
         </div>
@@ -503,35 +504,35 @@
 
     <!-- Qué pasa si -->
     <div class="process-section">
-        <div class="section-label">Protocolos de seguridad</div>
-        <div class="section-title">Qué hacemos ante cada situación.</div>
+        <div class="section-label" data-i18n="security.page.protocols_label">Protocolos de seguridad</div>
+        <div class="section-title" data-i18n="security.page.protocols_title">Qué hacemos ante cada situación.</div>
         <div class="steps-list">
             <div class="step-item">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                    <h4>Intento de acceso no autorizado</h4>
-                    <p>Si detectamos múltiples intentos fallidos de login, el acceso se bloquea temporalmente. Recibirás una notificación en tu email para que puedas actuar de inmediato.</p>
+                    <h4 data-i18n="security.page.step1_title">Intento de acceso no autorizado</h4>
+                    <p data-i18n="security.page.step1_desc">Si detectamos múltiples intentos fallidos de login, el acceso se bloquea temporalmente. Recibirás una notificación en tu email para que puedas actuar de inmediato.</p>
                 </div>
             </div>
             <div class="step-item">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <h4>Cambio de contraseña</h4>
-                    <p>Para cambiar tu contraseña necesitás ingresar la contraseña actual y verificar un código de 6 dígitos enviado a tu email registrado. El código vence en 5 minutos.</p>
+                    <h4 data-i18n="security.page.step2_title">Cambio de contraseña</h4>
+                    <p data-i18n="security.page.step2_desc">Para cambiar tu contraseña necesitás ingresar la contraseña actual y verificar un código de 6 dígitos enviado a tu email registrado. El código vence en 5 minutos.</p>
                 </div>
             </div>
             <div class="step-item">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                    <h4>Transferencia de dinero</h4>
-                    <p>Cada transferencia pasa por el sistema del Banco Central antes de acreditarse. Si la transacción no cumple los controles, se rechaza automáticamente y se te informa el motivo.</p>
+                    <h4 data-i18n="security.page.step3_title">Transferencia de dinero</h4>
+                    <p data-i18n="security.page.step3_desc">Cada transferencia pasa por el sistema del Banco Central antes de acreditarse. Si la transacción no cumple los controles, se rechaza automáticamente y se te informa el motivo.</p>
                 </div>
             </div>
             <div class="step-item">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                    <h4>Cambio de alias</h4>
-                    <p>Modificar tu alias requiere autenticación en la sesión activa y se propaga inmediatamente al sistema interbancario. El alias anterior deja de funcionar al instante.</p>
+                    <h4 data-i18n="security.page.step4_title">Cambio de alias</h4>
+                    <p data-i18n="security.page.step4_desc">Modificar tu alias requiere autenticación en la sesión activa y se propaga inmediatamente al sistema interbancario. El alias anterior deja de funcionar al instante.</p>
                 </div>
             </div>
         </div>
@@ -542,8 +543,8 @@
         <div class="legal-box">
             <div class="legal-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
             <div>
-                <h4>Regulación y respaldo</h4>
-                <p>tuo opera dentro del sistema financiero argentino, conectado al Banco Central de la República Argentina (BCRA) a través de su API oficial. Todas las transacciones cumplen con la normativa vigente del sistema de pagos inmediatos (SPI).</p>
+                <h4 data-i18n="security.page.legal_title">Regulación y respaldo</h4>
+                <p data-i18n="security.page.legal_desc">tuo opera dentro del sistema financiero argentino, conectado al Banco Central de la República Argentina (BCRA) a través de su API oficial. Todas las transacciones cumplen con la normativa vigente del sistema de pagos inmediatos (SPI).</p>
             </div>
         </div>
     </div>
@@ -552,11 +553,11 @@
     <div class="cta-section">
         <div class="cta-box">
             <div>
-                <h2>Operá con tranquilidad.</h2>
-                <p>Abrí tu cuenta y experimentá una banca que pone tu seguridad primero.</p>
+                <h2 data-i18n="security.page.cta_title">Operá con tranquilidad.</h2>
+                <p data-i18n="security.page.cta_sub">Abrí tu cuenta y experimentá una banca que pone tu seguridad primero.</p>
             </div>
             <a href="/registro" class="btn-cta">
-                Abrir cuenta gratis
+                <span data-i18n="security.page.cta_btn">Abrir cuenta gratis</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
@@ -566,7 +567,7 @@
 
     <footer>
         <span class="footer-logo">tuo</span>
-        <span class="footer-text">© 2025 tuo · Todos los derechos reservados</span>
+        <span class="footer-text" data-i18n="footer.rights">© 2025 tuo · Todos los derechos reservados</span>
     </footer>
 
     <script>

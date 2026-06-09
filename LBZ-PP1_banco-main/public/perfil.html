@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Mi perfil</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="tuo-i18n.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <style>
@@ -291,7 +292,7 @@
             </button>
             <span class="header-logo">tuo</span>
         </div>
-        <span class="page-title">Mi perfil</span>
+        <span class="page-title" data-i18n="profile.title">Mi perfil</span>
         <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
@@ -321,22 +322,22 @@
                 <div class="section-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
-                <span class="section-title">Datos personales</span>
+                <span class="section-title" data-i18n="profile.personal">Datos personales</span>
             </div>
             <div class="info-row">
-                <span class="info-label">Nombre</span>
+                <span class="info-label" data-i18n="profile.name">Nombre</span>
                 <span class="info-value" id="infoNombre">—</span>
             </div>
             <div class="info-row">
-                <span class="info-label">DNI</span>
+                <span class="info-label" data-i18n="profile.dni">DNI</span>
                 <span class="info-value" id="infoDni">—</span>
             </div>
             <div class="info-row">
-                <span class="info-label">Email</span>
+                <span class="info-label" data-i18n="profile.email">Email</span>
                 <span class="info-value" id="infoEmail">—</span>
             </div>
             <div class="info-row">
-                <span class="info-label">Teléfono</span>
+                <span class="info-label" data-i18n="profile.phone">Teléfono</span>
                 <span class="info-value" id="infoTelefono">—</span>
             </div>
             <div class="info-row">
@@ -354,7 +355,7 @@
                 <div class="section-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                 </div>
-                <span class="section-title">Alias</span>
+                <span class="section-title" data-i18n="profile.alias">Alias</span>
             </div>
             <div class="alias-row">
                 <span class="alias-current" id="aliasDisplay">—</span>
@@ -376,7 +377,7 @@
                 <div class="section-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 </div>
-                <span class="section-title">Cambiar contraseña</span>
+                <span class="section-title" data-i18n="profile.password">Cambiar contraseña</span>
             </div>
             <div class="pwd-body">
 
@@ -433,10 +434,10 @@
                 <div class="section-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                 </div>
-                <span class="section-title">Accesos recientes</span>
+                <span class="section-title" data-i18n="profile.activity">Accesos recientes</span>
             </div>
             <div class="activity-list" id="activityList">
-                <div class="activity-empty">Sin registros disponibles.</div>
+                <div class="activity-empty" id="activityEmpty" data-i18n="profile.activity_empty">Sin registros disponibles.</div>
             </div>
         </div>
 
@@ -546,8 +547,8 @@
                         </div>
                         <div class="activity-info">
                             <div class="activity-label">
-                                Inicio de sesión
-                                ${isNow ? '<span class="badge-current">Actual</span>' : ''}
+                                ${window.t ? window.t('profile.login_event') : 'Inicio de sesión'}
+                                ${isNow ? `<span class="badge-current">${window.t ? window.t('profile.current') : 'Actual'}</span>` : ''}
                             </div>
                             ${lugar ? `<div class="activity-location">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -559,7 +560,7 @@
                             </div>` : ''}
                             ${e.lat && e.lon ? `<button class="btn-ver-mapa" onclick="abrirMapa(${e.lat},${e.lon},'${(lugar||'Ubicación').replace(/'/g,"\\'")}','${(disp||'').replace(/'/g,"\\'")}')">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                Ver en mapa
+                                ${window.t ? window.t('profile.view_map') : 'Ver en mapa'}
                             </button>` : ''}
                         </div>
                     </div>
