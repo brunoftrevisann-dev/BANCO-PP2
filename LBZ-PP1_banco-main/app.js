@@ -72,8 +72,6 @@ app.post('/api/reenviar-codigo', personaController.reenviarCodigo);
 app.post('/api/depositar', personaController.depositar);
 app.post('/api/solicitar-cambio-password', personaController.solicitarCambioPassword);
 app.put('/api/confirmar-cambio-password', personaController.confirmarCambioPassword);
-app.post('/api/solicitar-cambio-password', personaController.solicitarCambioPassword);
-app.put('/api/confirmar-cambio-password', personaController.confirmarCambioPassword);
 
 // Endpoints sin joins (tablas crudas)
 app.get('/api/tablas/:tabla', tablaController.obtenerTabla);
