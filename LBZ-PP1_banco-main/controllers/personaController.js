@@ -1,11 +1,45 @@
 const Persona = require('../models/personaModel');
-const { enviarCodigoVerificacion, enviarCodigoPassword } = require('../utils/mailer');
+const { enviarCodigoVerificacion, enviarCodigoPassword, enviarCodigoAperturaUsd } = require('../utils/mailer');
 
 function fetchBC(url, options = {}, timeoutMs = 12000) {
   const ctrl = new AbortController();
   const tid  = setTimeout(() => ctrl.abort(), timeoutMs);
   return fetch(url, { ...options, signal: ctrl.signal })
     .finally(() => clearTimeout(tid));
+}
+
+const DIACRITICOS = new RegExp('[̀-ͯ]', 'g');
+function normalizarParaAlias(texto) {
+  return (texto || '')
+    .toLowerCase()
+    .normalize('NFD').replace(DIACRITICOS, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+// Intenta asignar un alias a una cuenta USD recién creada. Si el candidato base ya está en uso,
+// prueba una vez más con un sufijo numérico. Si todo falla, devuelve null (el usuario lo asigna a mano después).
+async function intentarAsignarAliasUsd(cbu, nombre, apellido) {
+  const base = `${normalizarParaAlias(nombre)}.${normalizarParaAlias(apellido)}.usd`;
+  const candidatos = [base, `${base}.${Math.floor(100 + Math.random() * 900)}`];
+  for (const alias of candidatos) {
+    if (!alias || alias === '.usd') return null;
+    try {
+      const res = await fetchBC(`${process.env.BANCO_URL}/accounts/${encodeURIComponent(cbu)}/alias`, {
+        method: 'PUT',
+        headers: {
+          'x-api-key': process.env.BANCO_TOKEN,
+          'x-environment': process.env.BANCO_ENV,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ alias })
+      });
+      if (res.ok) return alias;
+      if (res.status !== 409) return null; // error distinto a "alias en uso": no insistimos
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 exports.obtenerPersonas = async (req, res) => {
@@ -88,12 +122,14 @@ exports.obtenerHistorial = async (req, res) => {
 
 exports.buscarPersona = async (req, res) => {
   try {
-    const { tipo, valor } = req.query;
+    const { tipo, valor, moneda } = req.query;
     if (!tipo || !valor) return res.status(400).json({ error: 'tipo y valor requeridos' });
     if (tipo !== 'cbu' && tipo !== 'alias') return res.status(400).json({ error: 'tipo debe ser cbu o alias' });
+    // La caja en ARS se busca en /persons; cualquier otra moneda (ej. USD) vive en /accounts
+    const recurso = moneda && moneda !== 'ARS' ? 'accounts' : 'persons';
     const url = tipo === 'cbu'
-      ? `${process.env.BANCO_URL}/persons/${encodeURIComponent(valor)}`
-      : `${process.env.BANCO_URL}/persons/alias/${encodeURIComponent(valor)}`;
+      ? `${process.env.BANCO_URL}/${recurso}/${encodeURIComponent(valor)}`
+      : `${process.env.BANCO_URL}/${recurso}/alias/${encodeURIComponent(valor)}`;
     const response = await fetchBC(url, {
       headers: { 'x-api-key': process.env.BANCO_TOKEN, 'x-environment': process.env.BANCO_ENV }
     });
@@ -170,14 +206,125 @@ exports.transferir = async (req, res) => {
   }
 };
 
+exports.cotizacionDolar = async (req, res) => {
+  try {
+    const [oficialRes, blueRes, mepRes] = await Promise.all([
+      fetchBC('https://dolarapi.com/v1/dolares/oficial'),
+      fetchBC('https://dolarapi.com/v1/dolares/blue'),
+      fetchBC('https://dolarapi.com/v1/dolares/bolsa')
+    ]);
+    if (!oficialRes.ok || !blueRes.ok || !mepRes.ok) {
+      return res.status(502).json({ error: 'No se pudo obtener la cotización del dólar' });
+    }
+    const [oficial, blue, mep] = await Promise.all([oficialRes.json(), blueRes.json(), mepRes.json()]);
+    res.json({ oficial, blue, mep });
+  } catch (error) {
+    const msg = error.name === 'AbortError' ? 'Timeout: la API externa tardó demasiado' : error.message;
+    res.status(504).json({ error: msg });
+  }
+};
+
+// Paso 1: verifica que dni/telefono/email coincidan con la persona logueada y manda el código por email
+exports.solicitarAperturaUsd = async (req, res) => {
+  try {
+    const { idPersona, dni, telefono, email } = req.body;
+    if (!idPersona || !dni || !telefono || !email)
+      return res.status(400).json({ error: 'idPersona, dni, telefono y email son requeridos' });
+
+    const yaExiste = await Persona.getCuentaPorMoneda(idPersona, 'USD');
+    if (yaExiste) return res.status(200).json(yaExiste);
+
+    const coincide = await Persona.verificarDatosPersona(idPersona, dni.trim(), telefono.trim(), email.trim());
+    if (!coincide) return res.status(403).json({ error: 'Los datos no coinciden con los de tu cuenta' });
+
+    const result = await Persona.generarTokenPassword(email);
+    if (!result) return res.status(404).json({ error: 'Persona no encontrada' });
+
+    await enviarCodigoAperturaUsd(email, result.nombre, result.token);
+    res.json({ message: 'Te enviamos un código a tu email. Tenés 5 minutos para confirmarlo.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Paso 2: confirma el código y recién ahí abre la cuenta en el Banco Central
+exports.abrirCuentaUsd = async (req, res) => {
+  try {
+    const { idPersona, email, token } = req.body;
+    if (!idPersona || !email || !token) return res.status(400).json({ error: 'idPersona, email y token son requeridos' });
+
+    const existente = await Persona.getCuentaPorMoneda(idPersona, 'USD');
+    if (existente) return res.status(200).json(existente);
+
+    const verif = await Persona.verificarTokenPassword(email, token);
+    if (!verif.ok) return res.status(400).json({ error: verif.motivo });
+
+    const persona = await Persona.getDatosBasicos(idPersona);
+    if (!persona) return res.status(404).json({ error: 'Persona no encontrada' });
+
+    const bcRes = await fetchBC(`${process.env.BANCO_URL}/accounts`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.BANCO_TOKEN,
+        'x-environment': process.env.BANCO_ENV,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ dni: persona.dni, moneda: 'USD' })
+    });
+    const bcData = await bcRes.json();
+    if (!bcRes.ok) return res.status(bcRes.status).json(bcData);
+    if (!bcData.cbu) return res.status(502).json({ error: 'El Banco Central no devolvió los datos de la cuenta USD' });
+
+    // El Banco Central no asigna alias solo al abrir la cuenta: se lo generamos y asignamos acá
+    const alias = bcData.alias || await intentarAsignarAliasUsd(bcData.cbu, persona.nombre, persona.apellido);
+
+    const cuenta = await Persona.crearCuentaUsd(idPersona, bcData.cbu, alias);
+    await Persona.limpiarTokenPorEmail(email);
+    res.status(201).json(cuenta);
+  } catch (error) {
+    if (error.code === '23505') {
+      const existente = await Persona.getCuentaPorMoneda(req.body.idPersona, 'USD');
+      if (existente) return res.status(200).json(existente);
+    }
+    const msg = error.name === 'AbortError' ? 'La operación tardó demasiado. Intentá de nuevo.' : error.message;
+    res.status(500).json({ error: msg });
+  }
+};
+
+exports.cambiarDivisa = async (req, res) => {
+  try {
+    const { idPersona, direccion, importeUsd } = req.body;
+    if (!idPersona || !direccion || !importeUsd)
+      return res.status(400).json({ error: 'idPersona, direccion e importeUsd son requeridos' });
+    if (!['compra', 'venta'].includes(direccion))
+      return res.status(400).json({ error: 'direccion debe ser compra o venta' });
+    if (Number(importeUsd) <= 0) return res.status(400).json({ error: 'El importe debe ser mayor a 0' });
+
+    // Compra/venta de USD siempre usa la cotización MEP ("bolsa" en dolarapi)
+    const rateRes = await fetchBC('https://dolarapi.com/v1/dolares/bolsa');
+    if (!rateRes.ok) return res.status(502).json({ error: 'No se pudo obtener la cotización del dólar' });
+    const { compra, venta } = await rateRes.json();
+
+    const resultado = await Persona.cambiarDivisa(idPersona, direccion, Number(importeUsd), compra, venta);
+    res.json({ ...resultado, tasaUsada: direccion === 'compra' ? venta : compra });
+  } catch (error) {
+    if (error.code === 'NO_CUENTA') return res.status(404).json({ error: error.message });
+    if (error.code === 'SALDO_INSUFICIENTE') return res.status(422).json({ error: error.message });
+    const msg = error.name === 'AbortError' ? 'La operación tardó demasiado. Intentá de nuevo.' : error.message;
+    res.status(500).json({ error: msg });
+  }
+};
+
 exports.actualizarAlias = async (req, res) => {
   try {
-    const { cbu, alias } = req.body;
+    const { cbu, alias, moneda } = req.body;
     if (!cbu || !alias) return res.status(400).json({ error: 'cbu y alias requeridos' });
     if (!/^[a-zA-Z0-9.\-]+$/.test(alias))
       return res.status(400).json({ error: 'El alias solo puede contener letras, números, puntos y guiones' });
 
-    const bcRes = await fetchBC(`${process.env.BANCO_URL}/persons/${encodeURIComponent(cbu)}/alias`, {
+    // La caja en ARS actualiza el alias en /persons; cualquier otra moneda (ej. USD) vive en /accounts
+    const recurso = moneda && moneda !== 'ARS' ? 'accounts' : 'persons';
+    const bcRes = await fetchBC(`${process.env.BANCO_URL}/${recurso}/${encodeURIComponent(cbu)}/alias`, {
       method: 'PUT',
       headers: {
         'x-api-key': process.env.BANCO_TOKEN,

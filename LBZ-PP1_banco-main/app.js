@@ -72,6 +72,10 @@ app.post('/api/reenviar-codigo', personaController.reenviarCodigo);
 app.post('/api/depositar', personaController.depositar);
 app.post('/api/solicitar-cambio-password', personaController.solicitarCambioPassword);
 app.put('/api/confirmar-cambio-password', personaController.confirmarCambioPassword);
+app.get('/api/cotizacion-dolar', personaController.cotizacionDolar);
+app.post('/api/cuenta-usd/solicitar-verificacion', personaController.solicitarAperturaUsd);
+app.post('/api/cuenta-usd', personaController.abrirCuentaUsd);
+app.post('/api/cambiar-divisa', personaController.cambiarDivisa);
 
 // Endpoints sin joins (tablas crudas)
 app.get('/api/tablas/:tabla', tablaController.obtenerTabla);

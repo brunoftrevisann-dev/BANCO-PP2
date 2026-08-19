@@ -27,10 +27,33 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* ── TICKER DE COTIZACIÓN ── */
+        .usd-ticker {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 101;
+            height: 34px; overflow: hidden;
+            background: var(--text); color: var(--bg);
+            display: flex; align-items: center;
+        }
+        .usd-ticker-track {
+            display: flex; align-items: center; gap: 40px;
+            white-space: nowrap; flex-shrink: 0;
+            animation: tickerScroll 28s linear infinite;
+            padding-left: 40px;
+        }
+        .usd-ticker-track span { font-size: 0.76rem; font-weight: 500; }
+        .usd-ticker-track b { font-weight: 700; }
+        @keyframes tickerScroll {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .usd-ticker-track { animation: none; }
+        }
+
         /* ── HEADER ── */
         header {
             position: fixed;
-            top: 0; left: 0; right: 0;
+            top: 34px; left: 0; right: 0;
             z-index: 100;
             background: rgba(249,249,249,0.88);
             backdrop-filter: blur(12px);
@@ -108,7 +131,7 @@
             min-height: 100vh;
             display: flex;
             align-items: center;
-            padding: 64px 48px 0;
+            padding: 98px 48px 0;
             max-width: 1200px;
             margin: 0 auto;
             gap: 64px;
@@ -420,7 +443,7 @@
         @media (max-width: 768px) {
             header { padding: 0 24px; }
             nav { display: none; }
-            .hero { flex-direction: column; padding: 100px 24px 60px; gap: 48px; }
+            .hero { flex-direction: column; padding: 134px 24px 60px; gap: 48px; }
             .hero-visual { width: 100%; }
             .card-mockup { width: 290px; height: 178px; padding: 22px 24px; }
             .features { padding: 80px 24px; }
@@ -483,6 +506,12 @@
             <div class="splash-dot"></div>
             <div class="splash-dot"></div>
             <div class="splash-dot"></div>
+        </div>
+    </div>
+
+    <div class="usd-ticker">
+        <div class="usd-ticker-track" id="usdTickerTrack">
+            <span>Cargando cotización del dólar...</span>
         </div>
     </div>
 
@@ -576,6 +605,24 @@
     </footer>
 
     <script>
+        // ── TICKER DE COTIZACIÓN ──
+        (async function cargarTickerDolar() {
+            const fmt = v => Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            try {
+                const res = await fetch('/api/cotizacion-dolar');
+                const data = await res.json();
+                if (!res.ok) throw new Error();
+                const contenido =
+                    `<span>Dólar Oficial: <b>$${fmt(data.oficial.compra)} / $${fmt(data.oficial.venta)}</b></span>` +
+                    `<span>Dólar MEP: <b>$${fmt(data.mep.compra)} / $${fmt(data.mep.venta)}</b></span>` +
+                    `<span>Dólar Blue: <b>$${fmt(data.blue.compra)} / $${fmt(data.blue.venta)}</b></span>`;
+                // se duplica el contenido para que el loop de la animación sea continuo
+                document.getElementById('usdTickerTrack').innerHTML = contenido + contenido;
+            } catch {
+                document.getElementById('usdTickerTrack').innerHTML = '<span>No se pudo cargar la cotización del dólar</span>';
+            }
+        })();
+
         const splash = document.getElementById('splash');
         const yaLogueado = !!localStorage.getItem('usuarioLogueado');
 

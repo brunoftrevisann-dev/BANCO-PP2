@@ -45,14 +45,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 32px 24px;
+            padding: 68px 24px 32px;
             -webkit-font-smoothing: antialiased;
             transition: background 0.3s, color 0.3s;
         }
 
         .btn-theme {
             position: fixed;
-            top: 20px; right: 24px;
+            top: 56px; right: 24px;
             background: none;
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -67,6 +67,28 @@
             z-index: 50;
         }
         .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        .usd-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+            height: 34px; overflow: hidden;
+            background: var(--text); color: var(--bg);
+            display: flex; align-items: center;
+        }
+        .usd-banner-track {
+            display: flex; align-items: center; gap: 40px;
+            white-space: nowrap; flex-shrink: 0;
+            animation: tickerScroll 28s linear infinite;
+            padding-left: 40px;
+        }
+        .usd-banner-track span { font-size: 0.76rem; font-weight: 500; }
+        .usd-banner-track b { font-weight: 700; }
+        @keyframes tickerScroll {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .usd-banner-track { animation: none; }
+        }
 
         .logo {
             font-size: 1.8rem;
@@ -263,6 +285,10 @@
 </head>
 <body>
 
+    <div class="usd-banner">
+        <div class="usd-banner-track" id="usdBannerTrack"><span>Cargando cotización del dólar...</span></div>
+    </div>
+
     <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema"></button>
 
     <a href="/" class="logo">tuo</a>
@@ -313,6 +339,23 @@
     </div>
 
     <script>
+        // ── COTIZACIÓN DEL DÓLAR ─────────────────────────────────────────
+        (async function cargarBannerDolar() {
+            const fmt = v => Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            try {
+                const res = await fetch('/api/cotizacion-dolar');
+                const data = await res.json();
+                if (!res.ok) throw new Error();
+                const contenido =
+                    `<span>Dólar Oficial: <b>$${fmt(data.oficial.compra)} / $${fmt(data.oficial.venta)}</b></span>` +
+                    `<span>Dólar MEP: <b>$${fmt(data.mep.compra)} / $${fmt(data.mep.venta)}</b></span>` +
+                    `<span>Dólar Blue: <b>$${fmt(data.blue.compra)} / $${fmt(data.blue.venta)}</b></span>`;
+                document.getElementById('usdBannerTrack').innerHTML = contenido + contenido;
+            } catch {
+                document.getElementById('usdBannerTrack').innerHTML = '<span>No se pudo cargar la cotización del dólar</span>';
+            }
+        })();
+
         // ── DARK MODE ────────────────────────────────────────────────────
         const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
         const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;

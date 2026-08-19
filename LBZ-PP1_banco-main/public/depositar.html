@@ -83,6 +83,15 @@
         }
         .input-dep:focus { border-bottom-color: var(--accent); }
         .input-dep::placeholder { color: var(--muted); }
+        .input-dep:-webkit-autofill,
+        .input-dep:-webkit-autofill:hover,
+        .input-dep:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px var(--white) inset;
+            -webkit-text-fill-color: var(--text);
+            caret-color: var(--text);
+            transition: background-color 5000s ease-in-out 0s;
+            border-bottom-color: var(--accent) !important;
+        }
         .importe-preview {
             font-size: 1.9rem; font-weight: 700; color: var(--text);
             letter-spacing: -0.03em; text-align: center;

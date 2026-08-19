@@ -59,7 +59,7 @@ const Persona = {
              tp.nombre AS tipo_producto
       FROM Personas p
       LEFT JOIN Productos pr ON p.id = pr.id_persona
-      LEFT JOIN Cuentas_Bancarias cb ON pr.id_producto = cb.id_producto
+      LEFT JOIN Cuentas_Bancarias cb ON pr.id_producto = cb.id_producto AND cb.moneda = 'ARS'
       LEFT JOIN Tipos_Producto tp ON pr.id_tipo_producto = tp.id_tipo_producto
       WHERE p.email = $1 AND p.password = $2 AND p.verificado = TRUE
       LIMIT 1
@@ -87,6 +87,109 @@ const Persona = {
 
   updateAlias: async (cbu, nuevoAlias) => {
     await db.query('UPDATE Cuentas_Bancarias SET alias = $1 WHERE cbu = $2', [nuevoAlias, cbu]);
+  },
+
+  getDni: async (idPersona) => {
+    const { rows } = await db.query('SELECT dni FROM Personas WHERE id = $1', [idPersona]);
+    return rows[0]?.dni || null;
+  },
+
+  getDatosBasicos: async (idPersona) => {
+    const { rows } = await db.query('SELECT dni, nombre, apellido FROM Personas WHERE id = $1', [idPersona]);
+    return rows[0] || null;
+  },
+
+  // Verifica que dni/telefono/email coincidan exactamente con los datos ya registrados de esa persona
+  verificarDatosPersona: async (idPersona, dni, telefono, email) => {
+    const { rows } = await db.query(
+      `SELECT id FROM Personas WHERE id = $1 AND dni = $2 AND telefono = $3 AND LOWER(email) = LOWER($4)`,
+      [idPersona, dni, telefono, email]
+    );
+    return !!rows[0];
+  },
+
+  limpiarTokenPorEmail: async (email) => {
+    await db.query(
+      `UPDATE Personas SET token_verificacion = NULL, token_expira = NULL WHERE LOWER(email) = LOWER($1)`,
+      [email]
+    );
+  },
+
+  getCuentaPorMoneda: async (idPersona, moneda) => {
+    const query = `
+      SELECT cb.id_cuenta, cb.cbu, cb.alias, cb.moneda, cb.saldo
+      FROM Cuentas_Bancarias cb
+      JOIN Productos pr ON cb.id_producto = pr.id_producto
+      WHERE pr.id_persona = $1 AND cb.moneda = $2
+      LIMIT 1
+    `;
+    const { rows } = await db.query(query, [idPersona, moneda]);
+    return rows[0] || null;
+  },
+
+  // Crea la caja de ahorro en USD localmente (la cuenta ya fue abierta en el Banco Central antes de llamar esto)
+  crearCuentaUsd: async (idPersona, cbu, alias) => {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const productoResult = await client.query(
+        `INSERT INTO Productos (id_persona, id_tipo_producto, id_estado_producto)
+         VALUES ($1, 1, 1) RETURNING *`,
+        [idPersona]
+      );
+      const cuentaResult = await client.query(
+        `INSERT INTO Cuentas_Bancarias (id_producto, cbu, alias, moneda, saldo)
+         VALUES ($1, $2, $3, 'USD', 0) RETURNING *`,
+        [productoResult.rows[0].id_producto, cbu, alias]
+      );
+      await client.query('COMMIT');
+      return cuentaResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  // Compra o vende USD moviendo saldo entre la caja ARS y la caja USD de la misma persona
+  cambiarDivisa: async (idPersona, direccion, importeUsd, tasaCompra, tasaVenta) => {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `SELECT cb.id_cuenta, cb.moneda, cb.saldo
+         FROM Cuentas_Bancarias cb
+         JOIN Productos pr ON cb.id_producto = pr.id_producto
+         WHERE pr.id_persona = $1 AND cb.moneda IN ('ARS', 'USD')
+         FOR UPDATE`,
+        [idPersona]
+      );
+      const ars = rows.find(r => r.moneda === 'ARS');
+      const usd = rows.find(r => r.moneda === 'USD');
+      if (!ars || !usd) throw Object.assign(new Error('Necesitás una caja en ARS y otra en USD para operar'), { code: 'NO_CUENTA' });
+
+      let nuevoArs, nuevoUsd;
+      if (direccion === 'compra') {
+        const costoArs = importeUsd * tasaVenta;
+        if (Number(ars.saldo) < costoArs) throw Object.assign(new Error('Saldo insuficiente en ARS'), { code: 'SALDO_INSUFICIENTE' });
+        nuevoArs = Number(ars.saldo) - costoArs;
+        nuevoUsd = Number(usd.saldo) + importeUsd;
+      } else {
+        if (Number(usd.saldo) < importeUsd) throw Object.assign(new Error('Saldo insuficiente en USD'), { code: 'SALDO_INSUFICIENTE' });
+        nuevoArs = Number(ars.saldo) + importeUsd * tasaCompra;
+        nuevoUsd = Number(usd.saldo) - importeUsd;
+      }
+      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoArs, ars.id_cuenta]);
+      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoUsd, usd.id_cuenta]);
+      await client.query('COMMIT');
+      return { saldoArs: nuevoArs, saldoUsd: nuevoUsd };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   upsertTransaccion: async (tx) => {

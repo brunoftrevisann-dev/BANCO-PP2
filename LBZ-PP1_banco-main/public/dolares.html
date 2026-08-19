@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Dólares</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="tuo-i18n.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9; --text: #1A1A1B; --accent: #0052FF;
+            --muted: #6B6B6B; --border: #E5E5E5; --white: #FFFFFF;
+            --green: #16a34a; --green-bg: #F0FDF4;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E; --green-bg: #0F2318;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 40px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .btn-back {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 12px; cursor: pointer; color: var(--muted);
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
+        .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+        .page-title {
+            font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em;
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            white-space: nowrap;
+        }
+
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        .main {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 40px 24px 80px; gap: 20px;
+        }
+
+        .card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 20px; padding: 28px 28px;
+            width: 100%; max-width: 420px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .card-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+        /* Cotizaciones */
+        .cotiz-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 0; border-bottom: 1px solid var(--border);
+        }
+        .cotiz-row:last-child { border-bottom: none; }
+        .cotiz-nombre { font-size: 0.88rem; font-weight: 600; }
+        .cotiz-precios { display: flex; gap: 16px; font-size: 0.82rem; }
+        .cotiz-precios span { color: var(--muted); }
+        .cotiz-precios b { color: var(--text); font-weight: 600; }
+        .cotiz-loading { color: var(--muted); font-size: 0.84rem; text-align: center; padding: 8px 0; }
+
+        /* Estado sin cuenta */
+        .empty-icon {
+            width: 56px; height: 56px; background: var(--bg); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+        }
+        .btn-primary {
+            width: 100%; padding: 13px; background: var(--accent); color: white;
+            border: none; border-radius: 10px; font-size: 0.92rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+            letter-spacing: -0.01em;
+        }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        /* Cuenta USD abierta */
+        .usd-balance-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; font-weight: 500; }
+        .usd-balance-val { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.03em; margin: 6px 0 18px; }
+        .usd-detail { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 6px 0; color: var(--muted); }
+        .usd-detail b { color: var(--text); font-weight: 500; font-family: monospace; }
+
+        .toggle-wrap { display: flex; background: var(--bg); border-radius: 10px; padding: 4px; margin: 20px 0 16px; }
+        .toggle-btn {
+            flex: 1; padding: 9px; border: none; background: none; border-radius: 8px;
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--muted);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .toggle-btn.active { background: var(--white); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+        .importe-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px; font-weight: 500; }
+        .importe-input-wrap { position: relative; }
+        .importe-symbol { position: absolute; left: 0; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--muted); font-weight: 500; }
+        .input-dep {
+            width: 100%; padding: 12px 0 12px 42px;
+            border: none; border-bottom: 1.5px solid var(--border);
+            font-size: 0.95rem; font-family: 'Inter', sans-serif;
+            color: var(--text); background: transparent; outline: none;
+            box-sizing: border-box; transition: border-color 0.2s;
+        }
+        .input-dep:focus { border-bottom-color: var(--accent); }
+        .input-dep:-webkit-autofill,
+        .input-dep:-webkit-autofill:hover,
+        .input-dep:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px var(--white) inset;
+            -webkit-text-fill-color: var(--text);
+            caret-color: var(--text);
+            transition: background-color 5000s ease-in-out 0s;
+            border-bottom-color: var(--accent) !important;
+        }
+        .conversion-preview { font-size: 0.85rem; color: var(--muted); margin-top: 12px; min-height: 1.2rem; }
+        .conversion-preview b { color: var(--text); }
+        .dep-error { color: #B91C1C; font-size: 0.8rem; margin-top: 10px; display: none; }
+
+        .result-wrap { text-align: center; padding: 8px 0; display: none; }
+        .result-icon { width: 56px; height: 56px; background: var(--green-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        .result-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.02em; }
+        .btn-volver {
+            width: 100%; padding: 12px; background: var(--bg); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; margin-top: 10px;
+        }
+        .btn-volver:hover { opacity: 0.8; }
+
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; }
+            .main { padding: 24px 16px 60px; }
+            .card { padding: 22px 20px; }
+        }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+            </button>
+            <span class="header-logo">tuo</span>
+        </div>
+        <span class="page-title">Caja de ahorro en USD</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main">
+
+        <!-- Cotizaciones del día -->
+        <div class="card">
+            <div class="card-title">Cotización del dólar</div>
+            <div class="card-subtitle">Precios de referencia de hoy, en pesos.</div>
+            <div id="cotizLoading" class="cotiz-loading">Cargando cotizaciones...</div>
+            <div id="cotizList" style="display:none;"></div>
+        </div>
+
+        <!-- Sin cuenta USD todavía: wizard de verificación -->
+        <div class="card" id="cardSinCuenta" style="display:none;">
+
+            <!-- Paso A: intro -->
+            <div id="pasoIntro" style="text-align:center;">
+                <div class="empty-icon" style="margin:0 auto 18px;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M15.5 9.5a2.5 2.5 0 0 0-2.5-2.5h-2a2.5 2.5 0 0 0 0 5h2a2.5 2.5 0 0 1 0 5h-2a2.5 2.5 0 0 1-2.5-2.5"/></svg>
+                </div>
+                <div class="card-title" style="margin-bottom:8px;">Todavía no tenés caja en USD</div>
+                <div class="card-subtitle">Abrila para poder comprar y vender dólares al instante, con tu propio CBU en USD. Primero necesitamos verificar tu identidad.</div>
+                <button class="btn-primary" onclick="mostrarPasoDatos()">Empezar</button>
+            </div>
+
+            <!-- Paso B: confirmar dni/telefono/email -->
+            <div id="pasoDatos" style="display:none;">
+                <div class="card-title" style="margin-bottom:4px;">Verificá tu identidad</div>
+                <div class="card-subtitle">Ingresá tus datos tal como los registraste en tuo.</div>
+
+                <div class="importe-label">DNI</div>
+                <input id="verifDni" class="input-dep" type="text" inputmode="numeric" placeholder="Sin puntos" style="padding-left:0; margin-bottom:16px;">
+
+                <div class="importe-label">Teléfono</div>
+                <input id="verifTelefono" class="input-dep" type="text" placeholder="Como lo registraste" style="padding-left:0; margin-bottom:16px;">
+
+                <div class="importe-label">Email (Gmail)</div>
+                <input id="verifEmail" class="input-dep" type="email" placeholder="tu@gmail.com" style="padding-left:0;">
+
+                <div id="datosError" class="dep-error"></div>
+                <button id="btnEnviarCodigo" class="btn-primary" style="margin-top:20px;" onclick="solicitarCodigoApertura()">Enviar código</button>
+            </div>
+
+            <!-- Paso C: confirmar código recibido por email -->
+            <div id="pasoCodigo" style="display:none;">
+                <div class="card-title" style="margin-bottom:4px;">Confirmá el código</div>
+                <div class="card-subtitle">Te enviamos un código de 6 dígitos a tu email. Vence en 5 minutos.</div>
+
+                <div class="importe-label">Código</div>
+                <input id="verifCodigo" class="input-dep" type="text" inputmode="numeric" maxlength="6" placeholder="000000" style="padding-left:0; text-align:center; letter-spacing:0.3em; font-size:1.3rem;">
+
+                <div id="codigoError" class="dep-error"></div>
+                <button id="btnConfirmarCodigo" class="btn-primary" style="margin-top:20px;" onclick="confirmarAperturaConCodigo()">Confirmar y abrir cuenta</button>
+                <button class="btn-volver" style="margin-top:10px;" onclick="mostrarPasoDatos()">← Volver</button>
+            </div>
+        </div>
+
+        <!-- Cuenta USD ya abierta -->
+        <div class="card" id="cardCuenta" style="display:none;">
+            <div class="usd-balance-label">Saldo en USD</div>
+            <div class="usd-balance-val" id="saldoUsd">US$ 0,00</div>
+            <div class="usd-detail"><span>CBU</span><b id="cbuUsd">-</b></div>
+            <div class="usd-detail" style="align-items:center;">
+                <span>Alias</span>
+                <span id="aliasUsdDisplay" style="display:flex; align-items:center; gap:8px;">
+                    <b id="aliasUsd">-</b>
+                    <button id="btnEditAliasUsd" onclick="mostrarEditAliasUsd()" style="background:none; border:1px solid var(--border); border-radius:6px; padding:2px 8px; cursor:pointer; color:var(--muted); font-size:0.72rem; font-family:'Inter',sans-serif;">Editar</button>
+                </span>
+            </div>
+            <div id="editAliasUsdForm" style="display:none; margin:4px 0 10px;">
+                <input id="inputAliasUsd" type="text" placeholder="nuevo.alias.usd"
+                    style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; font-family:'Inter',sans-serif; outline:none; box-sizing:border-box;">
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button onclick="guardarAliasUsd()" style="flex:1; padding:8px; background:var(--accent); color:white; border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; font-family:'Inter',sans-serif; font-weight:600;">Guardar</button>
+                    <button onclick="cancelarEditAliasUsd()" style="flex:1; padding:8px; background:var(--bg); color:var(--muted); border:1px solid var(--border); border-radius:7px; cursor:pointer; font-size:0.8rem; font-family:'Inter',sans-serif;">Cancelar</button>
+                </div>
+                <div id="aliasUsdError" class="dep-error"></div>
+            </div>
+
+            <div class="toggle-wrap">
+                <button class="toggle-btn active" id="btnToggleCompra" onclick="setDireccion('compra')">Comprar USD</button>
+                <button class="toggle-btn" id="btnToggleVenta" onclick="setDireccion('venta')">Vender USD</button>
+            </div>
+
+            <div id="pasoForm">
+                <div class="importe-label">Cuánto querés operar</div>
+                <div class="importe-input-wrap">
+                    <span class="importe-symbol">US$</span>
+                    <input id="importeUsd" class="input-dep" type="number" min="0.01" step="0.01"
+                        placeholder="0,00" oninput="previsualizar()" onkeydown="if(event.key==='Enter') operar()">
+                </div>
+                <div id="conversionPreview" class="conversion-preview"></div>
+                <div id="opError" class="dep-error"></div>
+                <button id="btnOperar" class="btn-primary" style="margin-top:20px;" onclick="operar()" disabled>Comprar dólares</button>
+            </div>
+
+            <div class="result-wrap" id="pasoResultado">
+                <div class="result-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="result-title" id="resultadoMsg">¡Operación exitosa!</div>
+                <button class="btn-volver" onclick="volverAFormulario()">Hacer otra operación</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm]=(s.desde||'20:00').split(':').map(Number);
+                const [hh,hm]=(s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        const savedTheme = resolverTema();
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
+        }
+
+        const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+        if (!u) { navTo('login.html'); }
+
+        let cotizacion = null;
+        let direccion = 'compra';
+        let cuentaUsd = null;
+        let _emailVerificacionUsd = null;
+
+        function fmtArs(v) { return '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function fmtUsd(v) { return 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function formatCbu(cbu) {
+            if (!cbu || cbu.length !== 22) return cbu;
+            return `${cbu.slice(0,4)} ${cbu.slice(4,8)} ${cbu.slice(8,12)} ${cbu.slice(12,16)} ${cbu.slice(16,20)} ${cbu.slice(20)}`;
+        }
+
+        async function cargarCotizacion() {
+            try {
+                const res = await fetch('/api/cotizacion-dolar');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                cotizacion = data;
+                const filas = [
+                    ['Oficial', data.oficial],
+                    ['MEP', data.mep],
+                ];
+                document.getElementById('cotizList').innerHTML = filas.map(([nombre, d]) => `
+                    <div class="cotiz-row">
+                        <div class="cotiz-nombre">${nombre}</div>
+                        <div class="cotiz-precios">
+                            <span>Compra <b>${fmtArs(d.compra)}</b></span>
+                            <span>Venta <b>${fmtArs(d.venta)}</b></span>
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('cotizLoading').style.display = 'none';
+                document.getElementById('cotizList').style.display = 'block';
+            } catch {
+                document.getElementById('cotizLoading').textContent = 'No se pudo cargar la cotización. Intentá de nuevo más tarde.';
+            }
+        }
+
+        async function cargarCuentaUsd() {
+            try {
+                const res = await fetch(`/api/personas/${u.id}/productos`);
+                const productos = await res.json();
+                const usd = Array.isArray(productos) ? productos.find(p => p.moneda === 'USD') : null;
+                if (usd) {
+                    cuentaUsd = usd;
+                    mostrarCuenta();
+                } else {
+                    document.getElementById('cardSinCuenta').style.display = 'block';
+                }
+            } catch {
+                document.getElementById('cardSinCuenta').style.display = 'block';
+            }
+        }
+
+        function mostrarCuenta() {
+            document.getElementById('cardSinCuenta').style.display = 'none';
+            document.getElementById('cardCuenta').style.display = 'block';
+            document.getElementById('saldoUsd').textContent = fmtUsd(cuentaUsd.saldo || 0);
+            document.getElementById('cbuUsd').textContent = formatCbu(cuentaUsd.cbu) || '-';
+            document.getElementById('aliasUsd').textContent = cuentaUsd.alias || 'Sin alias';
+        }
+
+        // ── WIZARD DE VERIFICACIÓN PARA ABRIR LA CAJA EN USD ────────────────
+        function mostrarPasoDatos() {
+            document.getElementById('pasoIntro').style.display = 'none';
+            document.getElementById('pasoCodigo').style.display = 'none';
+            document.getElementById('pasoDatos').style.display = 'block';
+        }
+
+        async function solicitarCodigoApertura() {
+            const dni = document.getElementById('verifDni').value.trim();
+            const telefono = document.getElementById('verifTelefono').value.trim();
+            const email = document.getElementById('verifEmail').value.trim();
+            const err = document.getElementById('datosError');
+            const btn = document.getElementById('btnEnviarCodigo');
+            err.style.display = 'none';
+            if (!dni || !telefono || !email) { err.textContent = 'Completá los tres campos'; err.style.display = 'block'; return; }
+
+            btn.disabled = true; btn.textContent = 'Verificando...';
+            try {
+                const res = await fetch('/api/cuenta-usd/solicitar-verificacion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idPersona: u.id, dni, telefono, email })
+                });
+                const data = await res.json();
+                if (!res.ok) { err.textContent = data.error || 'No se pudo verificar tus datos'; err.style.display = 'block'; return; }
+
+                if (data.cbu) { // ya tenía cuenta USD (idempotente)
+                    cuentaUsd = data;
+                    mostrarCuenta();
+                    return;
+                }
+
+                _emailVerificacionUsd = email;
+                document.getElementById('pasoDatos').style.display = 'none';
+                document.getElementById('pasoCodigo').style.display = 'block';
+                document.getElementById('verifCodigo').focus();
+            } catch {
+                err.textContent = 'Error de conexión. Intentá de nuevo.';
+                err.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Enviar código';
+            }
+        }
+
+        async function confirmarAperturaConCodigo() {
+            const token = document.getElementById('verifCodigo').value.trim();
+            const err = document.getElementById('codigoError');
+            const btn = document.getElementById('btnConfirmarCodigo');
+            err.style.display = 'none';
+            if (!token) { err.textContent = 'Ingresá el código que te enviamos'; err.style.display = 'block'; return; }
+
+            btn.disabled = true; btn.textContent = 'Abriendo caja en USD...';
+            try {
+                const res = await fetch('/api/cuenta-usd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idPersona: u.id, email: _emailVerificacionUsd, token })
+                });
+                const data = await res.json();
+                if (!res.ok) { err.textContent = data.error || 'No se pudo abrir la caja en USD'; err.style.display = 'block'; return; }
+                cuentaUsd = data;
+                mostrarCuenta();
+            } catch {
+                err.textContent = 'Error de conexión. Intentá de nuevo.';
+                err.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Confirmar y abrir cuenta';
+            }
+        }
+
+        // ── ALIAS DE LA CAJA EN USD ──────────────────────────────────────────
+        function mostrarEditAliasUsd() {
+            document.getElementById('inputAliasUsd').value = cuentaUsd.alias || '';
+            document.getElementById('editAliasUsdForm').style.display = 'block';
+            document.getElementById('aliasUsdDisplay').style.display = 'none';
+            document.getElementById('inputAliasUsd').focus();
+        }
+
+        function cancelarEditAliasUsd() {
+            document.getElementById('editAliasUsdForm').style.display = 'none';
+            document.getElementById('aliasUsdDisplay').style.display = 'flex';
+        }
+
+        async function guardarAliasUsd() {
+            const nuevoAlias = document.getElementById('inputAliasUsd').value.trim();
+            const err = document.getElementById('aliasUsdError');
+            err.style.display = 'none';
+            if (!nuevoAlias) { err.textContent = 'El alias no puede estar vacío'; err.style.display = 'block'; return; }
+            if (!/^[a-zA-Z0-9.\-]+$/.test(nuevoAlias)) { err.textContent = 'Solo letras, números, puntos y guiones'; err.style.display = 'block'; return; }
+            try {
+                const res = await fetch('/api/actualizar-alias', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbu: cuentaUsd.cbu, alias: nuevoAlias, moneda: 'USD' })
+                });
+                const data = await res.json();
+                if (!res.ok) { err.textContent = data.error || 'No se pudo actualizar el alias'; err.style.display = 'block'; return; }
+                cuentaUsd.alias = nuevoAlias;
+                document.getElementById('aliasUsd').textContent = nuevoAlias;
+                cancelarEditAliasUsd();
+            } catch {
+                err.textContent = 'Error de conexión. Intentá de nuevo.';
+                err.style.display = 'block';
+            }
+        }
+
+        function setDireccion(d) {
+            direccion = d;
+            document.getElementById('btnToggleCompra').classList.toggle('active', d === 'compra');
+            document.getElementById('btnToggleVenta').classList.toggle('active', d === 'venta');
+            document.getElementById('btnOperar').textContent = d === 'compra' ? 'Comprar dólares' : 'Vender dólares';
+            previsualizar();
+        }
+
+        function previsualizar() {
+            const val = Number(document.getElementById('importeUsd').value);
+            const preview = document.getElementById('conversionPreview');
+            const btn = document.getElementById('btnOperar');
+            if (!val || val <= 0 || !cotizacion) {
+                preview.textContent = '';
+                btn.disabled = true;
+                return;
+            }
+            const tasa = direccion === 'compra' ? cotizacion.mep.venta : cotizacion.mep.compra;
+            const totalArs = val * tasa;
+            preview.innerHTML = direccion === 'compra'
+                ? `Vas a pagar <b>${fmtArs(totalArs)}</b> por ${fmtUsd(val)} (cotización MEP venta: ${fmtArs(tasa)})`
+                : `Vas a recibir <b>${fmtArs(totalArs)}</b> por ${fmtUsd(val)} (cotización MEP compra: ${fmtArs(tasa)})`;
+            btn.disabled = false;
+        }
+
+        async function operar() {
+            const importeUsd = Number(document.getElementById('importeUsd').value);
+            const err = document.getElementById('opError');
+            const btn = document.getElementById('btnOperar');
+            err.style.display = 'none';
+            if (!importeUsd || importeUsd <= 0) { err.textContent = 'Ingresá un importe válido'; err.style.display = 'block'; return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
+            try {
+                const res = await fetch('/api/cambiar-divisa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idPersona: u.id, direccion, importeUsd })
+                });
+                const data = await res.json();
+                if (!res.ok) { err.textContent = data.error || 'No se pudo realizar la operación'; err.style.display = 'block'; return; }
+
+                cuentaUsd.saldo = data.saldoUsd;
+                u.saldo = data.saldoArs;
+                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+
+                document.getElementById('resultadoMsg').textContent = direccion === 'compra'
+                    ? `Compraste ${fmtUsd(importeUsd)}`
+                    : `Vendiste ${fmtUsd(importeUsd)}`;
+                document.getElementById('saldoUsd').textContent = fmtUsd(cuentaUsd.saldo);
+                document.getElementById('pasoForm').style.display = 'none';
+                document.getElementById('pasoResultado').style.display = 'block';
+            } catch {
+                err.textContent = 'Error de conexión. Intentá de nuevo.';
+                err.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = direccion === 'compra' ? 'Comprar dólares' : 'Vender dólares';
+            }
+        }
+
+        function volverAFormulario() {
+            document.getElementById('importeUsd').value = '';
+            document.getElementById('conversionPreview').textContent = '';
+            document.getElementById('btnOperar').disabled = true;
+            document.getElementById('pasoResultado').style.display = 'none';
+            document.getElementById('pasoForm').style.display = 'block';
+        }
+
+        if (u) {
+            cargarCotizacion();
+            cargarCuentaUsd();
+        }
+
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('blob:')) return;
+            e.preventDefault();
+            navTo(href);
+        });
+    </script>
+</body>
+</html>

@@ -186,6 +186,15 @@
         }
         .copy-tooltip.show { opacity: 1; }
 
+        /* ── NAV ENTRE TARJETAS ARS/USD ── */
+        .card-nav-strip { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 12px 0 4px; }
+        .card-nav-btn { background: var(--white); border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; }
+        .card-nav-btn:hover:not(:disabled) { color: var(--text); border-color: #aaa; }
+        .card-nav-btn:disabled { opacity: 0.3; cursor: default; }
+        .card-nav-dots { display: flex; gap: 6px; }
+        .card-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.15s, transform 0.15s; }
+        .card-nav-dot.active { background: var(--accent); transform: scale(1.3); }
+
         /* ── SECTION TITLE ── */
         .section-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 16px; }
 
@@ -560,6 +569,19 @@
         .input-modal { width: 100%; padding: 12px 0; border: none; border-bottom: 1.5px solid var(--border); font-size: 0.95rem; font-family: 'Inter', sans-serif; color: var(--text); background: transparent; outline: none; box-sizing: border-box; transition: border-color 0.2s; }
         .input-modal:focus { border-bottom-color: var(--accent); }
         .input-modal::placeholder { color: var(--muted); }
+        .input-modal:-webkit-autofill,
+        .input-modal:-webkit-autofill:hover,
+        .input-modal:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px var(--white) inset;
+            -webkit-text-fill-color: var(--text);
+            caret-color: var(--text);
+            transition: background-color 5000s ease-in-out 0s;
+            border-bottom-color: var(--accent) !important;
+        }
+
+        .origen-toggle-wrap { display: flex; background: var(--bg); border-radius: 10px; padding: 4px; margin-bottom: 18px; }
+        .origen-toggle-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+        .origen-toggle-btn.active { background: var(--white); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
         .modal-error { color: #B91C1C; font-size: 0.8rem; margin-top: 10px; display: none; font-family: 'Inter', sans-serif; }
 
@@ -793,6 +815,11 @@
                         <span data-i18n="dashboard.menu.deposit">Depositar</span>
                     </button>
                     <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="navTo('dolares.html')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M15.5 9.5a2.5 2.5 0 0 0-2.5-2.5h-2a2.5 2.5 0 0 0 0 5h2a2.5 2.5 0 0 1 0 5h-2a2.5 2.5 0 0 1-2.5-2.5"/></svg>
+                        <span data-i18n="dashboard.menu.usd">Dólares</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="navTo('contactos.html')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <span data-i18n="dashboard.menu.contacts">Contactos</span>
@@ -820,7 +847,7 @@
     <main class="main">
 
         <!-- Tarjeta de cuenta -->
-        <div class="account-card">
+        <div class="account-card" id="accountCardArs">
             <div class="account-card-top">
                 <span class="account-card-brand">tuo</span>
                 <span class="account-type" id="tipoCuenta">Caja de Ahorro</span>
@@ -867,6 +894,73 @@
             </div>
         </div>
 
+        <!-- Tarjeta gemela: Caja de ahorro en USD -->
+        <div class="account-card" id="accountCardUsd" style="display:none;">
+            <div class="account-card-top">
+                <span class="account-card-brand">tuo</span>
+                <span class="account-type">Caja de Ahorro USD</span>
+            </div>
+
+            <!-- Sin cuenta USD todavía -->
+            <div id="usdCardEmpty" style="display:none; padding: 10px 0 4px;">
+                <p style="font-size:0.86rem; color:rgba(255,255,255,0.72); margin-bottom:20px; line-height:1.5; max-width:320px;">Todavía no abriste tu caja de ahorro en dólares.</p>
+                <button onclick="navTo('dolares.html')" style="padding:11px 18px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; font-size:0.85rem;">Abrir caja en USD</button>
+            </div>
+
+            <!-- Con cuenta USD -->
+            <div id="usdCardBody" style="display:none;">
+                <div class="balance-row">
+                    <div class="account-balance-label">Saldo disponible</div>
+                </div>
+                <div class="account-balance" id="saldoUsdCard">US$ 0,00</div>
+                <div class="account-details">
+                    <div class="account-detail-item">
+                        <label>CBU</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div class="copy-wrap" onclick="copiarUsdCard('cbu')" title="Copiar CBU">
+                                <span id="cbuUsdCard">-</span>
+                                <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                <div class="copy-tooltip" id="tooltipCbuUsdCard">¡Copiado!</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="account-detail-item">
+                        <label>Alias</label>
+                        <div id="aliasUsdCardDisplay" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <div class="copy-wrap" onclick="copiarUsdCard('alias')" title="Copiar alias">
+                                <span id="aliasUsdCard">-</span>
+                                <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                <div class="copy-tooltip" id="tooltipAliasUsdCard">¡Copiado!</div>
+                            </div>
+                            <button id="btnEditAliasUsdCard" onclick="mostrarEditAliasUsdCard()" title="Editar alias"
+                                style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.18); border-radius:6px; padding:3px 8px; cursor:pointer; color:rgba(255,255,255,0.65); font-size:0.72rem; font-family:'Inter',sans-serif;">Editar</button>
+                        </div>
+                        <div id="editAliasUsdCardForm" style="display:none; margin-top:10px;">
+                            <input id="inputAliasUsdCard" type="text" placeholder="nuevo.alias"
+                                style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); color:white; font-size:0.85rem; width:152px; font-family:'Inter',sans-serif; outline:none;">
+                            <button onclick="guardarAliasUsdCard()" style="padding:6px 12px; background:#0052FF; color:white; border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:6px; font-family:'Inter',sans-serif; font-weight:600;">OK</button>
+                            <button onclick="cancelarEditAliasUsdCard()" style="padding:6px 8px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.65); border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:3px; font-family:'Inter',sans-serif;">Cancelar</button>
+                            <div id="aliasUsdCardError" style="color:#FF8A8A; font-size:0.78rem; margin-top:6px; display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navegación entre tarjetas ARS / USD -->
+        <div class="card-nav-strip">
+            <button class="card-nav-btn" id="cardNavLeft" onclick="mostrarVistaCuenta('ars')" disabled title="Caja en ARS">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <span class="card-nav-dots">
+                <span class="card-nav-dot active" id="dotArs"></span>
+                <span class="card-nav-dot" id="dotUsd"></span>
+            </span>
+            <button class="card-nav-btn" id="cardNavRight" onclick="mostrarVistaCuenta('usd')" title="Caja en USD" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+        </div>
+
         <!-- Acciones rápidas -->
         <div>
             <div class="section-title" data-i18n="dashboard.actions">Acciones rápidas</div>
@@ -882,6 +976,10 @@
                 <button class="action-btn" onclick="abrirHistorial()" data-tooltip="Ver todos los movimientos">
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div>
                     <span class="action-label" data-i18n="dashboard.history">Historial</span>
+                </button>
+                <button class="action-btn" onclick="navTo('dolares.html')" data-tooltip="Caja de ahorro en USD">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><path d="M15 9.5a2.5 2.5 0 0 0-2.5-2.5h-1.5a2.2 2.2 0 0 0 0 4.4h1.5a2.2 2.2 0 0 1 0 4.6H11a2.5 2.5 0 0 1-2.5-2.5"/></svg></div>
+                    <span class="action-label" data-i18n="dashboard.usd">Dólares</span>
                 </button>
             </div>
         </div>
@@ -977,6 +1075,10 @@
 
                 <!-- PASO 1 -->
                 <div id="paso1" class="paso">
+                    <div id="origenSelector" class="origen-toggle-wrap" style="display:none;">
+                        <button type="button" class="origen-toggle-btn active" id="btnOrigenArs" onclick="setOrigenTransferencia('ARS')">Desde ARS</button>
+                        <button type="button" class="origen-toggle-btn" id="btnOrigenUsd" onclick="setOrigenTransferencia('USD')">Desde USD</button>
+                    </div>
                     <p class="modal-desc">Ingresá el <strong>alias</strong> o el <strong>CBU</strong> del destinatario.</p>
                     <input id="inputBusqueda" class="input-modal" type="text" placeholder="Ej: sol.luna.rio  ó  CBU de 22 dígitos" onkeydown="if(event.key==='Enter') buscarDestinatario()">
                     <div id="errorBusqueda" class="modal-error"></div>
@@ -1001,7 +1103,7 @@
                     </div>
                     <div class="importe-label">Importe a transferir</div>
                     <div class="importe-input-wrap">
-                        <span class="importe-symbol">$</span>
+                        <span class="importe-symbol" id="importeSymboloTransfer">$</span>
                         <input id="inputImporte" class="input-modal" type="number" min="1" placeholder="0,00" style="padding-left:18px;" oninput="actualizarImportePreview(this.value)">
                     </div>
                     <div id="importePreview" class="importe-preview"></div>
@@ -1486,6 +1588,7 @@
             document.getElementById('alias').textContent = u.alias || '-';
             document.getElementById('tipoCuenta').textContent = (u.tipo_producto || 'CAJA_AHORRO').replace(/_/g, ' ');
             actualizarSaldoDisplay(parseFloat(u.saldo) || 0, true);
+            cargarCuentaUsdDashboard();
 
             // Detect pending deposit from depositar.html and animate saldo
             const _pendingDepKey = 'tuo_pending_deposit_' + u.cbu;
@@ -2507,6 +2610,42 @@
             cerrarModalMotivo();
         }
 
+        let cuentaUsdModal   = null;
+        let origenTransferencia = 'ARS';
+        let cbuOrigenActual  = null;
+
+        async function cargarCuentasParaTransferencia() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            origenTransferencia = 'ARS';
+            cbuOrigenActual = u.cbu;
+            cuentaUsdModal = null;
+            document.getElementById('origenSelector').style.display = 'none';
+            document.getElementById('btnOrigenArs').classList.add('active');
+            document.getElementById('btnOrigenUsd').classList.remove('active');
+            document.getElementById('importeSymboloTransfer').textContent = '$';
+            try {
+                const res = await fetch(`/api/personas/${u.id}/productos`);
+                const productos = await res.json();
+                const usd = Array.isArray(productos) ? productos.find(p => p.moneda === 'USD') : null;
+                if (usd && usd.cbu) {
+                    cuentaUsdModal = usd;
+                    document.getElementById('origenSelector').style.display = 'flex';
+                }
+            } catch { /* si falla, seguimos solo con ARS */ }
+        }
+
+        function setOrigenTransferencia(moneda) {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            origenTransferencia = moneda;
+            cbuOrigenActual = moneda === 'ARS' ? u.cbu : (cuentaUsdModal ? cuentaUsdModal.cbu : u.cbu);
+            document.getElementById('btnOrigenArs').classList.toggle('active', moneda === 'ARS');
+            document.getElementById('btnOrigenUsd').classList.toggle('active', moneda === 'USD');
+            document.getElementById('importeSymboloTransfer').textContent = moneda === 'ARS' ? '$' : 'US$';
+            document.getElementById('inputBusqueda').placeholder = moneda === 'ARS'
+                ? 'Ej: sol.luna.rio  ó  CBU de 22 dígitos'
+                : 'Alias o CBU en USD del destinatario';
+        }
+
         function abrirModalTransferencia() {
             document.getElementById('modalTransferencia').style.display = 'flex';
             mostrarPaso(1);
@@ -2524,6 +2663,7 @@
             document.getElementById('mensajeInput').value = '';
             document.getElementById('mensajeChar').textContent = '0/120';
             renderizarFavoritos();
+            cargarCuentasParaTransferencia();
         }
 
         function cerrarModal() {
@@ -2580,8 +2720,9 @@
         function actualizarImportePreview(val) {
             const n  = parseFloat(val);
             const el = document.getElementById('importePreview');
+            const simbolo = origenTransferencia === 'ARS' ? '$' : 'US$';
             if (n > 0) {
-                el.textContent = '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                el.textContent = simbolo + ' ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 el.style.opacity = '1';
             } else {
                 el.textContent = '';
@@ -2598,17 +2739,16 @@
             btn.disabled = true; btn.textContent = 'Buscando...';
             errEl.style.display = 'none';
             try {
-                const res  = await fetch(`/api/buscar-persona?tipo=${tipo}&valor=${encodeURIComponent(valor)}`);
+                const res  = await fetch(`/api/buscar-persona?tipo=${tipo}&valor=${encodeURIComponent(valor)}&moneda=${origenTransferencia}`);
                 const data = await res.json();
                 if (!res.ok) {
                     errEl.textContent = res.status === 404
-                        ? 'No se encontró ninguna persona con ese ' + (tipo === 'cbu' ? 'CBU' : 'alias')
+                        ? `No se encontró ninguna cuenta en ${origenTransferencia} con ese ` + (tipo === 'cbu' ? 'CBU' : 'alias')
                         : (data.error || 'Error al buscar');
                     errEl.style.display = 'block';
                     return;
                 }
-                const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-                if (data.cbu === u.cbu) {
+                if (data.cbu === cbuOrigenActual) {
                     errEl.textContent = 'No podés transferirte a tu propia cuenta';
                     errEl.style.display = 'block';
                     return;
@@ -2662,6 +2802,7 @@
                 return;
             }
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            const simbolo = origenTransferencia === 'ARS' ? '$' : 'US$';
             btn.disabled = true; btn.textContent = 'Procesando...';
             errEl.style.display = 'none';
             try {
@@ -2669,7 +2810,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        cbuOrigen:   u.cbu,
+                        cbuOrigen:   cbuOrigenActual,
                         cbuDestino:  destinatarioCbuSeleccionado,
                         importe,
                         descripcion: mensajeTransferencia || undefined
@@ -2683,18 +2824,22 @@
                 }
                 // Save motivo to localStorage scoped by sender CBU
                 const registro = { motivo: motivoSeleccionado || 'Otros motivos', importe, fecha: new Date().toISOString() };
-                const txKey = 'tuo_transferencias_' + u.cbu;
+                const txKey = 'tuo_transferencias_' + cbuOrigenActual;
                 const lista = JSON.parse(localStorage.getItem(txKey) || '[]');
                 lista.push(registro);
                 localStorage.setItem(txKey, JSON.stringify(lista));
 
-                u.saldo = data.nuevoSaldo;
-                localStorage.setItem('usuarioLogueado', JSON.stringify(u));
-                actualizarSaldoDisplay(data.nuevoSaldo, true);
-                const fmt        = '$ ' + data.nuevoSaldo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                // El saldo principal del dashboard es siempre el de la caja en ARS.
+                // Si la transferencia salió de la caja en USD, no lo tocamos acá — se refleja al entrar a dolares.html.
+                if (origenTransferencia === 'ARS') {
+                    u.saldo = data.nuevoSaldo;
+                    localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+                    actualizarSaldoDisplay(data.nuevoSaldo, true);
+                }
+                const fmt        = simbolo + ' ' + data.nuevoSaldo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const nombreDest = document.getElementById('destinatarioNombre').textContent;
                 document.getElementById('mensajeResultado').textContent =
-                    `Enviaste $ ${importe.toLocaleString('es-AR', { minimumFractionDigits: 2 })} a ${nombreDest}`;
+                    `Enviaste ${simbolo} ${importe.toLocaleString('es-AR', { minimumFractionDigits: 2 })} a ${nombreDest}`;
                 document.getElementById('nuevoSaldoDisplay').textContent = fmt;
                 playSound('egreso');
                 mostrarPaso(3);
@@ -2766,6 +2911,102 @@
                 localStorage.setItem('usuarioLogueado', JSON.stringify(u));
                 document.getElementById('alias').textContent = nuevoAlias;
                 cancelarEditAlias();
+                showToast('Alias actualizado correctamente');
+            } catch (err) {
+                errEl.textContent = 'Error de conexión: ' + err.message;
+                errEl.style.display = 'block';
+            }
+        }
+
+        // ── TARJETA GEMELA EN USD ────────────────────────────────────────────
+        let cuentaUsdDashboard = null;
+
+        function fmtUsdCard(v) { return 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        async function cargarCuentaUsdDashboard() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            try {
+                const res = await fetch(`/api/personas/${u.id}/productos`);
+                const productos = await res.json();
+                cuentaUsdDashboard = Array.isArray(productos) ? productos.find(p => p.moneda === 'USD') : null;
+            } catch {
+                cuentaUsdDashboard = null;
+            } finally {
+                document.getElementById('cardNavRight').disabled = false;
+            }
+        }
+
+        function mostrarVistaCuenta(vista) {
+            const esUsd = vista === 'usd';
+            document.getElementById('accountCardArs').style.display = esUsd ? 'none' : 'block';
+            document.getElementById('accountCardUsd').style.display = esUsd ? 'block' : 'none';
+            document.getElementById('cardNavLeft').disabled = !esUsd;
+            document.getElementById('cardNavRight').disabled = esUsd;
+            document.getElementById('dotArs').classList.toggle('active', !esUsd);
+            document.getElementById('dotUsd').classList.toggle('active', esUsd);
+
+            if (esUsd) {
+                const tieneCuenta = !!(cuentaUsdDashboard && cuentaUsdDashboard.cbu);
+                document.getElementById('usdCardEmpty').style.display = tieneCuenta ? 'none' : 'block';
+                document.getElementById('usdCardBody').style.display = tieneCuenta ? 'block' : 'none';
+                if (tieneCuenta) {
+                    document.getElementById('saldoUsdCard').textContent = fmtUsdCard(cuentaUsdDashboard.saldo || 0);
+                    document.getElementById('cbuUsdCard').textContent = formatCbu(cuentaUsdDashboard.cbu);
+                    document.getElementById('aliasUsdCard').textContent = cuentaUsdDashboard.alias || 'Sin alias';
+                }
+            }
+        }
+
+        async function copiarUsdCard(campo) {
+            if (!cuentaUsdDashboard) return;
+            const valor = campo === 'cbu' ? cuentaUsdDashboard.cbu : cuentaUsdDashboard.alias;
+            const tooltipId = campo === 'cbu' ? 'tooltipCbuUsdCard' : 'tooltipAliasUsdCard';
+            if (!valor) return;
+            try {
+                await navigator.clipboard.writeText(valor);
+                const tt = document.getElementById(tooltipId);
+                tt.classList.add('show');
+                setTimeout(() => tt.classList.remove('show'), 1600);
+            } catch {
+                showToast('No se pudo copiar al portapapeles', 'error');
+            }
+        }
+
+        function mostrarEditAliasUsdCard() {
+            document.getElementById('inputAliasUsdCard').value = cuentaUsdDashboard.alias || '';
+            document.getElementById('editAliasUsdCardForm').style.display = 'block';
+            document.getElementById('aliasUsdCardDisplay').style.display = 'none';
+            document.getElementById('inputAliasUsdCard').focus();
+        }
+
+        function cancelarEditAliasUsdCard() {
+            document.getElementById('editAliasUsdCardForm').style.display = 'none';
+            document.getElementById('aliasUsdCardDisplay').style.display = 'flex';
+        }
+
+        async function guardarAliasUsdCard() {
+            const nuevoAlias = document.getElementById('inputAliasUsdCard').value.trim();
+            const errEl = document.getElementById('aliasUsdCardError');
+            errEl.style.display = 'none';
+            if (!nuevoAlias) { errEl.textContent = 'El alias no puede estar vacío'; errEl.style.display = 'block'; return; }
+            if (!/^[a-zA-Z0-9.\-]+$/.test(nuevoAlias)) { errEl.textContent = 'Solo letras, números, puntos y guiones'; errEl.style.display = 'block'; return; }
+            try {
+                const res = await fetch('/api/actualizar-alias', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cbu: cuentaUsdDashboard.cbu, alias: nuevoAlias, moneda: 'USD' })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errEl.textContent = res.status === 409
+                        ? 'Ese alias ya está en uso, elegí otro'
+                        : (data.error || 'Error al actualizar el alias');
+                    errEl.style.display = 'block';
+                    return;
+                }
+                cuentaUsdDashboard.alias = nuevoAlias;
+                document.getElementById('aliasUsdCard').textContent = nuevoAlias;
+                cancelarEditAliasUsdCard();
                 showToast('Alias actualizado correctamente');
             } catch (err) {
                 errEl.textContent = 'Error de conexión: ' + err.message;
