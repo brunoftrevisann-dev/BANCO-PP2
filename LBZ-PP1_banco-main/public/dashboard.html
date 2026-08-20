@@ -935,6 +935,10 @@
                                 <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                 <div class="copy-tooltip" id="tooltipCbuUsdCard">¡Copiado!</div>
                             </div>
+                            <button class="btn-qr" onclick="abrirQR(cuentaUsdDashboard && cuentaUsdDashboard.cbu)" title="Ver QR de CBU">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3m4-3v.01M14 21h.01M17 21h3M21 18v3"/></svg>
+                                QR
+                            </button>
                         </div>
                     </div>
                     <div class="account-detail-item">
@@ -3412,18 +3416,20 @@
         document.querySelectorAll('.modal-confirm-btn, .btn-next, .btn-back').forEach(addRipple);
 
         // ── QR DEL CBU ──────────────────────────────────────────────────
-        function abrirQR() {
-            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-            if (!u?.cbu) return;
+        let _qrCbuActual = null;
+        function abrirQR(cbu) {
+            const objetivo = cbu || JSON.parse(localStorage.getItem('usuarioLogueado'))?.cbu;
+            if (!objetivo) return;
+            _qrCbuActual = objetivo;
             const modal = document.getElementById('qrModal');
             const canvas = document.getElementById('qrCanvas');
             const label  = document.getElementById('qrCbuVal');
             canvas.innerHTML = '';
-            label.textContent = u.cbu;
+            label.textContent = objetivo;
             modal.classList.add('open');
             setTimeout(() => {
                 if (typeof QRCode !== 'undefined') {
-                    new QRCode(canvas, { text: u.cbu, width: 200, height: 200, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                    new QRCode(canvas, { text: objetivo, width: 200, height: 200, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
                 } else {
                     canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Cargando QR…</div>';
                 }
@@ -3431,10 +3437,9 @@
         }
         function cerrarQR() { document.getElementById('qrModal').classList.remove('open'); }
         async function copiarCbuDesdeQR() {
-            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-            if (!u?.cbu) return;
+            if (!_qrCbuActual) return;
             try {
-                await navigator.clipboard.writeText(u.cbu);
+                await navigator.clipboard.writeText(_qrCbuActual);
                 showToast('CBU copiado al portapapeles');
             } catch { showToast('No se pudo copiar', 'error'); }
         }
