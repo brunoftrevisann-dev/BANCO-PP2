@@ -139,6 +139,18 @@
         .main { max-width: 860px; margin: 36px auto; padding: 0 24px; display: flex; flex-direction: column; gap: 28px; }
 
         /* ── TARJETA DE CUENTA ── */
+        /* ── STACK ARS/USD: ambas tarjetas ocupan la misma celda, así el contenedor siempre mide lo que la más alta de las dos ── */
+        .account-card-wrap { position: relative; display: grid; }
+        .account-card-wrap > .account-card {
+            grid-area: 1 / 1;
+            opacity: 0; z-index: 1; pointer-events: none;
+            transform: translateX(0);
+            transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), opacity 0.28s ease, background 0.3s;
+        }
+        .account-card-wrap > .account-card.is-active { opacity: 1; z-index: 2; pointer-events: auto; transform: translateX(0); }
+        .account-card-wrap > .account-card.pos-right { transform: translateX(36px); }
+        .account-card-wrap > .account-card.pos-left  { transform: translateX(-36px); }
+
         .account-card {
             background: var(--card-dark); color: white; border-radius: 20px;
             padding: 36px; position: relative; overflow: hidden; transition: background 0.3s;
@@ -847,7 +859,8 @@
     <main class="main">
 
         <!-- Tarjeta de cuenta -->
-        <div class="account-card" id="accountCardArs">
+        <div class="account-card-wrap">
+        <div class="account-card is-active" id="accountCardArs">
             <div class="account-card-top">
                 <span class="account-card-brand">tuo</span>
                 <span class="account-type" id="tipoCuenta">Caja de Ahorro</span>
@@ -884,7 +897,7 @@
                             style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.18); border-radius:6px; padding:3px 8px; cursor:pointer; color:rgba(255,255,255,0.65); font-size:0.72rem; font-family:'Inter',sans-serif; transition:background 0.15s;">Editar</button>
                     </div>
                     <div id="editAliasForm" style="display:none; margin-top:10px;">
-                        <input id="inputAlias" type="text" placeholder="nuevo.alias"
+                        <input id="inputAlias" type="text" placeholder="nuevo.alias" autocapitalize="off" autocorrect="off" spellcheck="false"
                             style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); color:white; font-size:0.85rem; width:152px; font-family:'Inter',sans-serif; outline:none;">
                         <button onclick="guardarAlias()" style="padding:6px 12px; background:#0052FF; color:white; border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:6px; font-family:'Inter',sans-serif; font-weight:600;">OK</button>
                         <button onclick="cancelarEditAlias()" style="padding:6px 8px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.65); border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:3px; font-family:'Inter',sans-serif;">Cancelar</button>
@@ -895,7 +908,7 @@
         </div>
 
         <!-- Tarjeta gemela: Caja de ahorro en USD -->
-        <div class="account-card" id="accountCardUsd" style="display:none;">
+        <div class="account-card" id="accountCardUsd">
             <div class="account-card-top">
                 <span class="account-card-brand">tuo</span>
                 <span class="account-type">Caja de Ahorro USD</span>
@@ -936,7 +949,7 @@
                                 style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.18); border-radius:6px; padding:3px 8px; cursor:pointer; color:rgba(255,255,255,0.65); font-size:0.72rem; font-family:'Inter',sans-serif;">Editar</button>
                         </div>
                         <div id="editAliasUsdCardForm" style="display:none; margin-top:10px;">
-                            <input id="inputAliasUsdCard" type="text" placeholder="nuevo.alias"
+                            <input id="inputAliasUsdCard" type="text" placeholder="nuevo.alias" autocapitalize="off" autocorrect="off" spellcheck="false"
                                 style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); color:white; font-size:0.85rem; width:152px; font-family:'Inter',sans-serif; outline:none;">
                             <button onclick="guardarAliasUsdCard()" style="padding:6px 12px; background:#0052FF; color:white; border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:6px; font-family:'Inter',sans-serif; font-weight:600;">OK</button>
                             <button onclick="cancelarEditAliasUsdCard()" style="padding:6px 8px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.65); border:none; border-radius:7px; cursor:pointer; font-size:0.8rem; margin-left:3px; font-family:'Inter',sans-serif;">Cancelar</button>
@@ -945,6 +958,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- Navegación entre tarjetas ARS / USD -->
@@ -1080,7 +1094,7 @@
                         <button type="button" class="origen-toggle-btn" id="btnOrigenUsd" onclick="setOrigenTransferencia('USD')">Desde USD</button>
                     </div>
                     <p class="modal-desc">Ingresá el <strong>alias</strong> o el <strong>CBU</strong> del destinatario.</p>
-                    <input id="inputBusqueda" class="input-modal" type="text" placeholder="Ej: sol.luna.rio  ó  CBU de 22 dígitos" onkeydown="if(event.key==='Enter') buscarDestinatario()">
+                    <input id="inputBusqueda" class="input-modal" type="text" placeholder="Ej: sol.luna.rio  ó  CBU de 22 dígitos" autocapitalize="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter') buscarDestinatario()">
                     <div id="errorBusqueda" class="modal-error"></div>
                     <button onclick="buscarDestinatario()" id="btnBuscar" class="modal-btn-primary">Buscar</button>
                     <div class="fav-section" id="favSection" style="display:none;">
@@ -2938,8 +2952,28 @@
 
         function mostrarVistaCuenta(vista) {
             const esUsd = vista === 'usd';
-            document.getElementById('accountCardArs').style.display = esUsd ? 'none' : 'block';
-            document.getElementById('accountCardUsd').style.display = esUsd ? 'block' : 'none';
+            const cardArs = document.getElementById('accountCardArs');
+            const cardUsd = document.getElementById('accountCardUsd');
+            const entrante = esUsd ? cardUsd : cardArs;
+            const saliente = esUsd ? cardArs : cardUsd;
+            const claseEntrada = esUsd ? 'pos-right' : 'pos-left'; // de qué lado viene la que entra
+            const claseSalida  = esUsd ? 'pos-left'  : 'pos-right'; // hacia qué lado se va la que sale
+
+            if (entrante.classList.contains('is-active')) {
+                // ya estamos en esa vista, no animar de nuevo
+            } else {
+                saliente.classList.remove('is-active', 'pos-left', 'pos-right');
+                saliente.classList.add(claseSalida);
+
+                entrante.classList.remove('is-active', 'pos-left', 'pos-right');
+                entrante.style.transition = 'none';
+                entrante.classList.add(claseEntrada);
+                void entrante.offsetWidth; // forzar reflow para poder animar desde esa posición
+                entrante.style.transition = '';
+                entrante.classList.remove('pos-left', 'pos-right');
+                entrante.classList.add('is-active');
+            }
+
             document.getElementById('cardNavLeft').disabled = !esUsd;
             document.getElementById('cardNavRight').disabled = esUsd;
             document.getElementById('dotArs').classList.toggle('active', !esUsd);

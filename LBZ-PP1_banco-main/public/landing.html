@@ -37,7 +37,7 @@
         .usd-ticker-track {
             display: flex; align-items: center; gap: 40px;
             white-space: nowrap; flex-shrink: 0;
-            animation: tickerScroll 28s linear infinite;
+            animation: tickerScroll 220s linear infinite;
             padding-left: 40px;
         }
         .usd-ticker-track span { font-size: 0.76rem; font-weight: 500; }
@@ -612,11 +612,13 @@
                 const res = await fetch('/api/cotizacion-dolar');
                 const data = await res.json();
                 if (!res.ok) throw new Error();
-                const contenido =
+                const bloque =
                     `<span>Dólar Oficial: <b>$${fmt(data.oficial.compra)} / $${fmt(data.oficial.venta)}</b></span>` +
                     `<span>Dólar MEP: <b>$${fmt(data.mep.compra)} / $${fmt(data.mep.venta)}</b></span>` +
                     `<span>Dólar Blue: <b>$${fmt(data.blue.compra)} / $${fmt(data.blue.venta)}</b></span>`;
-                // se duplica el contenido para que el loop de la animación sea continuo
+                // se repite muchas veces y se duplica ese bloque completo: así el "tramo" nunca es
+                // más angosto que la pantalla (sea cual sea su ancho) y el loop nunca se ve cortado
+                const contenido = bloque.repeat(8);
                 document.getElementById('usdTickerTrack').innerHTML = contenido + contenido;
             } catch {
                 document.getElementById('usdTickerTrack').innerHTML = '<span>No se pudo cargar la cotización del dólar</span>';

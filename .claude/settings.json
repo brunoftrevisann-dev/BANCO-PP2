@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\\\\n\" \"http://localhost:3001/api/buscar-persona?tipo=alias&valor=diego.urenda.usd&moneda=USD\")",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' -X PUT -H 'Content-Type: application/json' -d '{\"cbu\":\"0120001047598632002907\",\"alias\":\"diego.urenda.usd\",\"moneda\":\"USD\"}' http://localhost:3001/api/actualizar-alias)"
+    ]
+  }
+}

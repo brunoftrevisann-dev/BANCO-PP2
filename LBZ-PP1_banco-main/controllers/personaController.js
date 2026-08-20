@@ -16,27 +16,36 @@ function normalizarParaAlias(texto) {
     .replace(/[^a-z0-9]/g, '');
 }
 
+const esperar = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Intenta asignar un alias a una cuenta USD recién creada. Si el candidato base ya está en uso,
-// prueba una vez más con un sufijo numérico. Si todo falla, devuelve null (el usuario lo asigna a mano después).
+// prueba una vez más con un sufijo numérico. Ante un error que no sea "alias en uso" (puede ser
+// que el Banco Central todavía no haya terminado de propagar la cuenta recién creada) reintenta
+// una vez más antes de rendirse. Si todo falla, devuelve null (el usuario lo asigna a mano después).
 async function intentarAsignarAliasUsd(cbu, nombre, apellido) {
   const base = `${normalizarParaAlias(nombre)}.${normalizarParaAlias(apellido)}.usd`;
   const candidatos = [base, `${base}.${Math.floor(100 + Math.random() * 900)}`];
   for (const alias of candidatos) {
-    if (!alias || alias === '.usd') return null;
-    try {
-      const res = await fetchBC(`${process.env.BANCO_URL}/accounts/${encodeURIComponent(cbu)}/alias`, {
-        method: 'PUT',
-        headers: {
-          'x-api-key': process.env.BANCO_TOKEN,
-          'x-environment': process.env.BANCO_ENV,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ alias })
-      });
-      if (res.ok) return alias;
-      if (res.status !== 409) return null; // error distinto a "alias en uso": no insistimos
-    } catch {
-      return null;
+    if (!alias || alias === '.usd') continue;
+    for (let intento = 1; intento <= 2; intento++) {
+      try {
+        const res = await fetchBC(`${process.env.BANCO_URL}/accounts/${encodeURIComponent(cbu)}/alias`, {
+          method: 'PUT',
+          headers: {
+            'x-api-key': process.env.BANCO_TOKEN,
+            'x-environment': process.env.BANCO_ENV,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ alias })
+        });
+        if (res.ok) return alias;
+        if (res.status === 409) break; // alias en uso: probar el siguiente candidato, no reintentar este
+        if (intento === 1) { await esperar(600); continue; }
+        console.error(`No se pudo asignar alias USD "${alias}" a ${cbu}: HTTP ${res.status}`);
+      } catch (err) {
+        if (intento === 1) { await esperar(600); continue; }
+        console.error(`Error de red asignando alias USD "${alias}" a ${cbu}:`, err.message);
+      }
     }
   }
   return null;
@@ -127,9 +136,12 @@ exports.buscarPersona = async (req, res) => {
     if (tipo !== 'cbu' && tipo !== 'alias') return res.status(400).json({ error: 'tipo debe ser cbu o alias' });
     // La caja en ARS se busca en /persons; cualquier otra moneda (ej. USD) vive en /accounts
     const recurso = moneda && moneda !== 'ARS' ? 'accounts' : 'persons';
+    // El alias en el Banco Central es sensible a mayúsculas/minúsculas; se normaliza a minúscula
+    // para que no falle por autocapitalización del navegador o por cómo lo haya tipeado el usuario.
+    const valorBusqueda = tipo === 'alias' ? valor.toLowerCase() : valor;
     const url = tipo === 'cbu'
-      ? `${process.env.BANCO_URL}/${recurso}/${encodeURIComponent(valor)}`
-      : `${process.env.BANCO_URL}/${recurso}/alias/${encodeURIComponent(valor)}`;
+      ? `${process.env.BANCO_URL}/${recurso}/${encodeURIComponent(valorBusqueda)}`
+      : `${process.env.BANCO_URL}/${recurso}/alias/${encodeURIComponent(valorBusqueda)}`;
     const response = await fetchBC(url, {
       headers: { 'x-api-key': process.env.BANCO_TOKEN, 'x-environment': process.env.BANCO_ENV }
     });
@@ -317,10 +329,15 @@ exports.cambiarDivisa = async (req, res) => {
 
 exports.actualizarAlias = async (req, res) => {
   try {
-    const { cbu, alias, moneda } = req.body;
+    const { cbu, moneda } = req.body;
+    let { alias } = req.body;
     if (!cbu || !alias) return res.status(400).json({ error: 'cbu y alias requeridos' });
     if (!/^[a-zA-Z0-9.\-]+$/.test(alias))
       return res.status(400).json({ error: 'El alias solo puede contener letras, números, puntos y guiones' });
+
+    // El Banco Central distingue mayúsculas/minúsculas en el alias: se normaliza a minúscula
+    // para que después siempre se pueda encontrar sin importar cómo lo haya tipeado quien busca.
+    alias = alias.toLowerCase();
 
     // La caja en ARS actualiza el alias en /persons; cualquier otra moneda (ej. USD) vive en /accounts
     const recurso = moneda && moneda !== 'ARS' ? 'accounts' : 'persons';

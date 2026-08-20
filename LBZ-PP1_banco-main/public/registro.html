@@ -51,7 +51,7 @@
         .usd-banner-track {
             display: flex; align-items: center; gap: 40px;
             white-space: nowrap; flex-shrink: 0;
-            animation: tickerScroll 28s linear infinite;
+            animation: tickerScroll 220s linear infinite;
             padding-left: 40px;
         }
         .usd-banner-track span { font-size: 0.76rem; font-weight: 500; }
@@ -523,10 +523,11 @@
                 const res = await fetch('/api/cotizacion-dolar');
                 const data = await res.json();
                 if (!res.ok) throw new Error();
-                const contenido =
+                const bloque =
                     `<span>Dólar Oficial: <b>$${fmt(data.oficial.compra)} / $${fmt(data.oficial.venta)}</b></span>` +
                     `<span>Dólar MEP: <b>$${fmt(data.mep.compra)} / $${fmt(data.mep.venta)}</b></span>` +
                     `<span>Dólar Blue: <b>$${fmt(data.blue.compra)} / $${fmt(data.blue.venta)}</b></span>`;
+                const contenido = bloque.repeat(8);
                 document.getElementById('usdBannerTrack').innerHTML = contenido + contenido;
             } catch {
                 document.getElementById('usdBannerTrack').innerHTML = '<span>No se pudo cargar la cotización del dólar</span>';
