@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="tuo-i18n.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -166,6 +167,13 @@
             cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; margin-top: 10px;
         }
         .btn-volver:hover { opacity: 0.8; }
+        .btn-comprobante {
+            width: 100%; padding: 12px; background: var(--white); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-comprobante:hover { opacity: 0.8; }
 
         @media (max-width: 600px) {
             .header { padding: 0 16px; }
@@ -306,6 +314,10 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <div class="result-title" id="resultadoMsg">¡Operación exitosa!</div>
+                <button class="btn-comprobante" onclick="imprimirComprobanteCambio()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Descargar comprobante
+                </button>
                 <button class="btn-volver" onclick="volverAFormulario()">Hacer otra operación</button>
             </div>
         </div>
@@ -351,6 +363,7 @@
         let direccion = 'compra';
         let cuentaUsd = null;
         let _emailVerificacionUsd = null;
+        let _ultimaOperacionCambio = null;
 
         function fmtArs(v) { return '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
         function fmtUsd(v) { return 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -579,6 +592,16 @@
                 u.saldo = data.saldoArs;
                 localStorage.setItem('usuarioLogueado', JSON.stringify(u));
 
+                _ultimaOperacionCambio = {
+                    direccion, importeUsd,
+                    importeArs: data.importeArs,
+                    tasaUsada: data.tasaUsada,
+                    saldoArs: data.saldoArs,
+                    saldoUsd: data.saldoUsd,
+                    cbuUsd: cuentaUsd.cbu,
+                    fecha: data.createdAt || new Date().toISOString()
+                };
+
                 document.getElementById('resultadoMsg').textContent = direccion === 'compra'
                     ? `Compraste ${fmtUsd(importeUsd)}`
                     : `Vendiste ${fmtUsd(importeUsd)}`;
@@ -592,6 +615,65 @@
                 btn.disabled = false;
                 btn.textContent = direccion === 'compra' ? 'Comprar dólares' : 'Vender dólares';
             }
+        }
+
+        function imprimirComprobanteCambio() {
+            const op = _ultimaOperacionCambio;
+            if (!op) return;
+            if (typeof window.jspdf === 'undefined') { alert('Librería PDF no disponible, intentá de nuevo en unos segundos.'); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const fmtA = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const fmtU = v => 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const ahora = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const fechaStr = op.fecha
+                ? new Date(op.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : ahora;
+            const esCompra = op.direccion === 'compra';
+            const L = 30, R = 180;
+            let y = 28;
+
+            doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 82, 255);
+            doc.text('tuo', L, y); y += 12;
+
+            doc.setFontSize(14); doc.setTextColor(26, 26, 27);
+            doc.text(esCompra ? 'Comprobante de compra de dolares' : 'Comprobante de venta de dolares', L, y); y += 7;
+
+            doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text(fechaStr, L, y); y += 14;
+
+            doc.setFontSize(26); doc.setFont('helvetica', 'bold'); doc.setTextColor(21, 128, 61);
+            doc.text(fmtU(op.importeUsd), L, y); y += 12;
+
+            doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(L, y, R, y); y += 10;
+
+            const rows = [
+                ['Tipo', esCompra ? 'Compra de dolares' : 'Venta de dolares'],
+                ['Estado', 'Aprobada'],
+                ['Cotizacion MEP', fmtA(op.tasaUsada)],
+                [esCompra ? 'Total pagado' : 'Total recibido', fmtA(op.importeArs)],
+                ['CBU cuenta USD', op.cbuUsd || '-'],
+                ['Titular', (u.nombre || '') + ' ' + (u.apellido || '')],
+                ['Nuevo saldo USD', fmtU(op.saldoUsd)],
+                ['Nuevo saldo ARS', fmtA(op.saldoArs)],
+            ];
+            doc.setFontSize(9);
+            rows.forEach(([lbl, val]) => {
+                doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107); doc.text(lbl, L, y);
+                doc.setFont('helvetica', 'bold'); doc.setTextColor(26, 26, 27); doc.text(val, R, y, { align: 'right' });
+                y += 9;
+            });
+            y += 8; doc.setDrawColor(220, 220, 220); doc.line(L, y, R, y); y += 8;
+            doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text('tuo - Banco digital - Comprobante generado el ' + ahora, 105, y, { align: 'center' });
+
+            const pdfBlob = doc.output('blob');
+            const pdfUrl  = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, '_blank');
+            const a = document.createElement('a');
+            a.href = pdfUrl; a.download = `comprobante-${esCompra ? 'compra' : 'venta'}-usd.pdf`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
         }
 
         function volverAFormulario() {

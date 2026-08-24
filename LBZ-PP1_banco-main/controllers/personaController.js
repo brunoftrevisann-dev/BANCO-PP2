@@ -318,7 +318,29 @@ exports.cambiarDivisa = async (req, res) => {
     const { compra, venta } = await rateRes.json();
 
     const resultado = await Persona.cambiarDivisa(idPersona, direccion, Number(importeUsd), compra, venta);
-    res.json({ ...resultado, tasaUsada: direccion === 'compra' ? venta : compra });
+    const tasaUsada = direccion === 'compra' ? venta : compra;
+
+    const fmtNum = v => Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const descripcion = direccion === 'compra'
+      ? `Compra de US$ ${fmtNum(importeUsd)} al dólar MEP ($ ${fmtNum(tasaUsada)})`
+      : `Venta de US$ ${fmtNum(importeUsd)} al dólar MEP ($ ${fmtNum(tasaUsada)})`;
+    const txId = 'CAMBIO-' + require('crypto').randomUUID();
+    const createdAt = new Date().toISOString();
+
+    // Se registra en el historial igual que un depósito o transferencia. Si falla el guardado,
+    // no bloqueamos la respuesta: la plata ya se movió correctamente entre las dos cuentas.
+    await Persona.upsertTransaccion({
+      _id: txId,
+      cbuOrigen: direccion === 'compra' ? resultado.cbuArs : resultado.cbuUsd,
+      cbuDestino: direccion === 'compra' ? resultado.cbuUsd : resultado.cbuArs,
+      importe: resultado.importeArs,
+      estado: 'aprobada',
+      descripcion,
+      tipo: 'cambio_divisa',
+      createdAt
+    }).catch(e => console.error('Error registrando cambio de divisa en el historial:', e.message));
+
+    res.json({ ...resultado, tasaUsada, txId, descripcion, createdAt });
   } catch (error) {
     if (error.code === 'NO_CUENTA') return res.status(404).json({ error: error.message });
     if (error.code === 'SALDO_INSUFICIENTE') return res.status(422).json({ error: error.message });

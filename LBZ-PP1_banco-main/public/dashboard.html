@@ -1041,6 +1041,7 @@
                     <button class="filter-chip active" data-tipo="todos" onclick="setFiltroTipo(this)" data-i18n="dashboard.historial.all">Todos</button>
                     <button class="filter-chip" data-tipo="enviados" onclick="setFiltroTipo(this)" data-i18n="dashboard.historial.sent">Enviados</button>
                     <button class="filter-chip" data-tipo="recibidos" onclick="setFiltroTipo(this)" data-i18n="dashboard.historial.received">Recibidos</button>
+                    <button class="filter-chip" data-tipo="cambios" onclick="setFiltroTipo(this)">Cambio USD</button>
                 </div>
                 <div class="filter-chips" id="filtroFechaChips">
                     <button class="filter-chip active" data-fecha="todos" onclick="setFiltroFecha(this)" data-i18n="dashboard.historial.all_time">Todo</button>
@@ -1809,8 +1810,9 @@
             const u = _usuarioHist;
             if (!u) return txs;
             let r = txs;
-            if (_filtroTipo === 'enviados')   r = r.filter(t => t.cbuOrigen === u.cbu && t.cbuOrigen !== 'DEPOSITO');
-            if (_filtroTipo === 'recibidos')  r = r.filter(t => t.cbuDestino === u.cbu);
+            if (_filtroTipo === 'enviados')   r = r.filter(t => t.cbuOrigen === u.cbu && t.cbuOrigen !== 'DEPOSITO' && t.tipo !== 'cambio_divisa');
+            if (_filtroTipo === 'recibidos')  r = r.filter(t => t.cbuDestino === u.cbu && t.tipo !== 'cambio_divisa');
+            if (_filtroTipo === 'cambios')    r = r.filter(t => t.tipo === 'cambio_divisa');
             if (_filtroFecha === 'rango') {
                 const desde = document.getElementById('filtroDesde')?.value;
                 const hasta = document.getElementById('filtroHasta')?.value;
@@ -1832,6 +1834,7 @@
             if (txt) {
                 r = r.filter(t => {
                     if (t.cbuOrigen === 'DEPOSITO') return 'depósito deposito'.includes(txt);
+                    if (t.tipo === 'cambio_divisa') return (t.descripcion || '').toLowerCase().includes(txt) || 'cambio dolar dólar usd'.includes(txt);
                     const esEnvio = t.cbuOrigen === u.cbu;
                     const cbuContra = esEnvio ? t.cbuDestino : t.cbuOrigen;
                     const nombre = (esEnvio
@@ -1860,28 +1863,35 @@
                 html += `<div class="date-sep"><div class="date-sep-line"></div><span class="date-sep-label">${fecha}</span><div class="date-sep-line"></div></div>`;
                 txs.forEach(t => {
                     const esDeposito  = t.cbuOrigen === 'DEPOSITO';
-                    const esEnvio     = !esDeposito && t.cbuOrigen === u.cbu;
+                    const esCambio    = t.tipo === 'cambio_divisa';
+                    const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
+                    const esEnvio     = !esDeposito && !esCambio && t.cbuOrigen === u.cbu;
                     const contraparte = esDeposito
                         ? (window.t ? window.t('dashboard.tx.deposit') : 'Depósito en efectivo')
+                        : esCambio
+                        ? (esCompraCambio ? 'Compra de dólares' : 'Venta de dólares')
                         : (esEnvio
                             ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || t.cbuDestino)
                             : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || t.cbuOrigen));
-                    const colorAmt    = esEnvio ? '#B91C1C' : '#15803D';
-                    const signo       = esEnvio ? '−' : '+';
-                    const etiqueta    = esDeposito ? (window.t ? window.t('dashboard.tx.deposito') : 'Depósito') : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
-                    const badgeBg     = esEnvio ? '#FEF2F2' : '#F0FDF4';
-                    const badgeFg     = esEnvio ? '#B91C1C' : '#15803D';
+                    const envioLike   = esCambio ? esCompraCambio : esEnvio;
+                    const colorAmt    = envioLike ? '#B91C1C' : '#15803D';
+                    const signo       = envioLike ? '−' : '+';
+                    const etiqueta    = esDeposito ? (window.t ? window.t('dashboard.tx.deposito') : 'Depósito') : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
+                    const badgeBg     = envioLike ? '#FEF2F2' : '#F0FDF4';
+                    const badgeFg     = envioLike ? '#B91C1C' : '#15803D';
                     const estadoOk    = t.estado === 'aprobada' || t.estado === 'approved';
                     const estadoStyle = estadoOk
                         ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;'
                         : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;';
                     const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
                     const fechaStr = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
-                    const bg  = esDeposito ? '#0052FF' : avatarColor(contraparte || '');
+                    const bg  = (esDeposito || esCambio) ? '#0052FF' : avatarColor(contraparte || '');
                     const ini = esDeposito
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`
+                        : esCambio
+                        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`
                         : initials(contraparte || '');
-                    const arrowSvg = esEnvio
+                    const arrowSvg = envioLike
                         ? `<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`
                         : `<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
                     const txId = (t._id || '').replace(/'/g, '');
@@ -1956,13 +1966,113 @@
             setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
         }
 
+        function imprimirComprobanteCambio(txId) {
+            const t = txId ? _txMap[txId] : null;
+            if (!t) return;
+            if (typeof window.jspdf === 'undefined') { showToast('Librería PDF no disponible, intentá en unos segundos.', 'error'); return; }
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const sa  = str => (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+            const ahora = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
+            const fechaStr = rawFecha
+                ? new Date(rawFecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : ahora;
+            const esCompra = t.cbuOrigen === u?.cbu;
+            const L = 30, R = 180;
+            let y = 28;
+
+            doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 82, 255);
+            doc.text('tuo', L, y); y += 12;
+
+            doc.setFontSize(14); doc.setTextColor(26, 26, 27);
+            doc.text(esCompra ? 'Comprobante de compra de dolares' : 'Comprobante de venta de dolares', L, y); y += 7;
+
+            doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text(fechaStr, L, y); y += 14;
+
+            doc.setFontSize(26); doc.setFont('helvetica', 'bold'); doc.setTextColor(21, 128, 61);
+            doc.text(fmt(t.importe), L, y); y += 12;
+
+            doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(L, y, R, y); y += 10;
+
+            const rows = [
+                ['Tipo', esCompra ? 'Compra de dolares' : 'Venta de dolares'],
+                ['Estado', (t.estado === 'aprobada' || t.estado === 'approved') ? 'Aprobada' : 'Rechazada'],
+                ['Titular', u ? sa(u.nombre + ' ' + u.apellido) : '-'],
+            ];
+            doc.setFontSize(9);
+            rows.forEach(([lbl, val]) => {
+                doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107); doc.text(lbl, L, y);
+                doc.setFont('helvetica', 'bold'); doc.setTextColor(26, 26, 27); doc.text(val, R, y, { align: 'right' });
+                y += 9;
+            });
+            if (t.descripcion) {
+                y += 2;
+                doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+                const lineas = doc.splitTextToSize(sa(t.descripcion), R - L);
+                doc.text(lineas, L, y);
+                y += lineas.length * 5 + 4;
+            }
+            y += 6; doc.setDrawColor(220, 220, 220); doc.line(L, y, R, y); y += 8;
+            doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(107, 107, 107);
+            doc.text('tuo - Banco digital - Comprobante generado el ' + sa(ahora), 105, y, { align: 'center' });
+
+            const pdfBlob = doc.output('blob');
+            const pdfUrl  = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, '_blank');
+            const a = document.createElement('a');
+            a.href = pdfUrl; a.download = `comprobante-${esCompra ? 'compra' : 'venta'}-usd.pdf`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
+        }
+
         // ── DETALLE TRANSACCIÓN ──────────────────────────────────────────
         async function abrirDetalleTx(id) {
             const t = _txMap[id];
             if (!t) return;
             const u          = _usuarioHist;
             const esDeposito = t.cbuOrigen === 'DEPOSITO';
-            const esEnvio    = !esDeposito && t.cbuOrigen === u.cbu;
+            const esCambio   = t.tipo === 'cambio_divisa';
+            const esEnvio    = !esDeposito && !esCambio && t.cbuOrigen === u.cbu;
+
+            if (esCambio) {
+                const esCompraCambio = t.cbuOrigen === u.cbu;
+                const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                const fechaHora = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+                const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const colorAmt = esCompraCambio ? '#B91C1C' : '#15803D';
+                const signo    = esCompraCambio ? '−' : '+';
+                const txId = t._id || '';
+                document.getElementById('detalleTxCuerpo').innerHTML = `
+                    <div class="detalle-tx-hero">
+                        <div class="detalle-tx-avatar" style="background:#0052FF;">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        </div>
+                        <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${fmt(t.importe)}</div>
+                        <div class="detalle-tx-label">${esCompraCambio ? 'Compra de dólares' : 'Venta de dólares'}</div>
+                        <span class="historial-estado" style="background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;">Aprobada</span>
+                    </div>
+                    <div class="detalle-tx-section">
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Fecha</span><span class="detalle-tx-value">${fechaHora}</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Tipo</span><span class="detalle-tx-value">${esCompraCambio ? 'Compra de dólares' : 'Venta de dólares'}</span></div>
+                    </div>
+                    ${t.descripcion ? `
+                    <div class="detalle-tx-section">
+                        <div class="detalle-tx-section-title">Detalle</div>
+                        <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
+                            ${t.descripcion}
+                        </div>
+                    </div>` : ''}
+                    <button class="btn-comprobante-hist" onclick="imprimirComprobanteCambio('${txId}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Descargar comprobante
+                    </button>`;
+                document.getElementById('modalDetalleTx').style.display = 'flex';
+                return;
+            }
 
             if (esDeposito) {
                 const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
@@ -2387,20 +2497,27 @@
                 }
                 await resolverNombresCbu(propias.slice(0, 3).map(t => t.cbuOrigen === u.cbu ? t.cbuDestino : t.cbuOrigen));
                 container.innerHTML = propias.slice(0, 3).map((t, idx) => {
-                    const esEnvio     = t.cbuOrigen === u.cbu;
-                    const contraparte = esEnvio
-                        ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || 'CBU ' + (t.cbuDestino || '').slice(-6))
-                        : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || 'CBU ' + (t.cbuOrigen  || '').slice(-6));
-                    const colorAmt = esEnvio ? '#B91C1C' : '#15803D';
-                    const signo    = esEnvio ? '−' : '+';
-                    const etiqueta = esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de');
+                    const esCambio    = t.tipo === 'cambio_divisa';
+                    const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
+                    const esEnvio     = !esCambio && t.cbuOrigen === u.cbu;
+                    const envioLike   = esCambio ? esCompraCambio : esEnvio;
+                    const contraparte = esCambio
+                        ? (esCompraCambio ? 'Compra de dólares' : 'Venta de dólares')
+                        : (esEnvio
+                            ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || 'CBU ' + (t.cbuDestino || '').slice(-6))
+                            : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || 'CBU ' + (t.cbuOrigen  || '').slice(-6)));
+                    const colorAmt = envioLike ? '#B91C1C' : '#15803D';
+                    const signo    = envioLike ? '−' : '+';
+                    const etiqueta = esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
                     const fecha    = t.fecha || t.createdAt || t.timestamp || t.created_at;
                     const fechaStr = fecha ? new Date(fecha).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
-                    const bg       = avatarColor(contraparte);
-                    const ini      = initials(contraparte);
-                    const badgeBg  = esEnvio ? '#FEF2F2' : '#F0FDF4';
-                    const badgeFg  = esEnvio ? '#B91C1C' : '#15803D';
-                    const arrowSvg = esEnvio
+                    const bg       = esCambio ? '#0052FF' : avatarColor(contraparte);
+                    const ini      = esCambio
+                        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`
+                        : initials(contraparte);
+                    const badgeBg  = envioLike ? '#FEF2F2' : '#F0FDF4';
+                    const badgeFg  = envioLike ? '#B91C1C' : '#15803D';
+                    const arrowSvg = envioLike
                         ? `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`
                         : `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="${badgeFg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`;
                     return `
@@ -3346,12 +3463,15 @@
                     const fecha  = fmtDate(raw);
                     const hora   = fmtTime(raw);
                     const esD    = t.cbuOrigen === 'DEPOSITO';
-                    const envio  = !esD && t.cbuOrigen === u?.cbu;
+                    const esCam  = t.tipo === 'cambio_divisa';
+                    const esCamCompra = esCam && t.cbuOrigen === u?.cbu;
+                    const envio  = !esD && !esCam && t.cbuOrigen === u?.cbu;
                     const nombre = sa(esD ? 'Deposito'
+                        : esCam ? (esCamCompra ? 'Compra de dolares' : 'Venta de dolares')
                         : envio
                             ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                             : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen));
-                    const signo  = (esD || !envio) ? '+' : '-';
+                    const signo  = esCam ? (esCamCompra ? '-' : '+') : ((esD || !envio) ? '+' : '-');
                     const imp    = `${signo}$ ${fmtAmt(t.importe)}`;
                     const color  = signo === '+' ? [21,128,61] : [185,28,28];
 
@@ -3456,12 +3576,15 @@
             const rows = datos.map(t => {
                 const fecha = new Date(t.fecha || t.createdAt || t.created_at).toLocaleString('es-AR');
                 const esDeposito = t.cbuOrigen === 'DEPOSITO';
-                const esEnvio = !esDeposito && t.cbuOrigen === u?.cbu;
-                const tipo = esDeposito ? 'Depósito' : esEnvio ? 'Enviado' : 'Recibido';
-                const nombre = esDeposito ? 'Depósito' : esEnvio
+                const esCambio = t.tipo === 'cambio_divisa';
+                const esCambioCompra = esCambio && t.cbuOrigen === u?.cbu;
+                const esEnvio = !esDeposito && !esCambio && t.cbuOrigen === u?.cbu;
+                const tipo = esDeposito ? 'Depósito' : esCambio ? (esCambioCompra ? 'Compra USD' : 'Venta USD') : esEnvio ? 'Enviado' : 'Recibido';
+                const nombre = esDeposito ? 'Depósito' : esCambio ? (t.descripcion || tipo) : esEnvio
                     ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                     : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
-                const importe = (esEnvio ? '-' : '+') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
+                const negativo = esCambio ? esCambioCompra : esEnvio;
+                const importe = (negativo ? '-' : '+') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
                 return [fecha, tipo, nombre, importe, t.estado || '', t.motivoRechazo || ''];
             });
             const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');

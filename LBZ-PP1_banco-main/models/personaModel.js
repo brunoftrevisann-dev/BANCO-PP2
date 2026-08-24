@@ -158,7 +158,7 @@ const Persona = {
     try {
       await client.query('BEGIN');
       const { rows } = await client.query(
-        `SELECT cb.id_cuenta, cb.moneda, cb.saldo
+        `SELECT cb.id_cuenta, cb.cbu, cb.moneda, cb.saldo
          FROM Cuentas_Bancarias cb
          JOIN Productos pr ON cb.id_producto = pr.id_producto
          WHERE pr.id_persona = $1 AND cb.moneda IN ('ARS', 'USD')
@@ -169,21 +169,22 @@ const Persona = {
       const usd = rows.find(r => r.moneda === 'USD');
       if (!ars || !usd) throw Object.assign(new Error('Necesitás una caja en ARS y otra en USD para operar'), { code: 'NO_CUENTA' });
 
-      let nuevoArs, nuevoUsd;
+      let nuevoArs, nuevoUsd, importeArs;
       if (direccion === 'compra') {
-        const costoArs = importeUsd * tasaVenta;
-        if (Number(ars.saldo) < costoArs) throw Object.assign(new Error('Saldo insuficiente en ARS'), { code: 'SALDO_INSUFICIENTE' });
-        nuevoArs = Number(ars.saldo) - costoArs;
+        importeArs = importeUsd * tasaVenta;
+        if (Number(ars.saldo) < importeArs) throw Object.assign(new Error('Saldo insuficiente en ARS'), { code: 'SALDO_INSUFICIENTE' });
+        nuevoArs = Number(ars.saldo) - importeArs;
         nuevoUsd = Number(usd.saldo) + importeUsd;
       } else {
+        importeArs = importeUsd * tasaCompra;
         if (Number(usd.saldo) < importeUsd) throw Object.assign(new Error('Saldo insuficiente en USD'), { code: 'SALDO_INSUFICIENTE' });
-        nuevoArs = Number(ars.saldo) + importeUsd * tasaCompra;
+        nuevoArs = Number(ars.saldo) + importeArs;
         nuevoUsd = Number(usd.saldo) - importeUsd;
       }
       await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoArs, ars.id_cuenta]);
       await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoUsd, usd.id_cuenta]);
       await client.query('COMMIT');
-      return { saldoArs: nuevoArs, saldoUsd: nuevoUsd };
+      return { saldoArs: nuevoArs, saldoUsd: nuevoUsd, importeArs, cbuArs: ars.cbu, cbuUsd: usd.cbu };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -196,8 +197,8 @@ const Persona = {
     await db.query(
       `INSERT INTO Transacciones
          (tx_id, cbu_origen, cbu_destino, importe, estado, motivo_rechazo,
-          bank_code_origen, bank_code_destino, persona_origen, persona_destino, created_at, descripcion)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+          bank_code_origen, bank_code_destino, persona_origen, persona_destino, created_at, descripcion, tipo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        ON CONFLICT (tx_id) DO UPDATE SET
          estado          = EXCLUDED.estado,
          motivo_rechazo  = EXCLUDED.motivo_rechazo,
@@ -213,7 +214,8 @@ const Persona = {
         JSON.stringify(tx.personaOrigen || null),
         JSON.stringify(tx.personaDestino || null),
         tx.createdAt || new Date().toISOString(),
-        tx.descripcion || null
+        tx.descripcion || null,
+        tx.tipo || null
       ]
     );
   },
@@ -232,7 +234,8 @@ const Persona = {
       personaOrigen:   r.persona_origen,
       personaDestino:  r.persona_destino,
       createdAt:       r.created_at,
-      descripcion:     r.descripcion || null
+      descripcion:     r.descripcion || null,
+      tipo:            r.tipo || null
     }));
   },
 

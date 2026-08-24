@@ -92,6 +92,10 @@ db.query(`
 db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS descripcion TEXT`)
   .catch(e => console.error('Error agregando columna descripcion:', e.message));
 
+// Agregar columna tipo si no existe (para distinguir compra/venta de USD de las transferencias normales)
+db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS tipo VARCHAR(20)`)
+  .catch(e => console.error('Error agregando columna tipo:', e.message));
+
 // Crear tabla Transacciones si no existe (historial persistente)
 db.query(`
   CREATE TABLE IF NOT EXISTS Transacciones (
