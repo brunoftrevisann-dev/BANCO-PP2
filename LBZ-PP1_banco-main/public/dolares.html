@@ -154,6 +154,14 @@
             transition: background-color 5000s ease-in-out 0s;
             border-bottom-color: var(--accent) !important;
         }
+        .input-dep::-webkit-outer-spin-button,
+        .input-dep::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .input-dep[type="number"] {
+            -moz-appearance: textfield;
+        }
         .conversion-preview { font-size: 0.85rem; color: var(--muted); margin-top: 12px; min-height: 1.2rem; }
         .conversion-preview b { color: var(--text); }
         .dep-error { color: #B91C1C; font-size: 0.8rem; margin-top: 10px; display: none; }

@@ -220,6 +220,72 @@ const Persona = {
     );
   },
 
+  // Se usa al sincronizar el lote de transacciones que llegan del Banco Central en cada poll de
+  // /api/historial. Antes se procesaba una por una (una conexión + varias consultas cada una, incluso
+  // para las cientos que ya conocíamos de polls anteriores) y eso volvía la carga del historial muy
+  // lenta. Ahora: 1) inserta todo el lote en una sola sentencia, ON CONFLICT DO NOTHING así las que ya
+  // existían no vuelven a tocarse; 2) de las que resultaron genuinamente nuevas, en un solo query
+  // adicional averigua cuáles NO vinieron de una cuenta propia (o sea, llegaron de otro banco) y
+  // recién a esas les acredita el saldo — así nunca se acredita una transferencia tuo→tuo dos veces
+  // (esas ya se acreditan al toque en transferir()) ni se vuelve a acreditar algo ya visto.
+  sincronizarTransacciones: async (txs) => {
+    if (!Array.isArray(txs) || txs.length === 0) return;
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      const cols = 13;
+      const values = [];
+      const params = [];
+      txs.forEach((tx, i) => {
+        const base = i * cols;
+        values.push(`(${Array.from({ length: cols }, (_, j) => `$${base + j + 1}`).join(',')})`);
+        params.push(
+          tx._id,
+          tx.cbuOrigen, tx.cbuDestino,
+          tx.importe, tx.estado,
+          tx.motivoRechazo || null,
+          tx.bankCodeOrigen || null, tx.bankCodeDestino || null,
+          JSON.stringify(tx.personaOrigen || null),
+          JSON.stringify(tx.personaDestino || null),
+          tx.createdAt || new Date().toISOString(),
+          tx.descripcion || null,
+          tx.tipo || null
+        );
+      });
+
+      const { rows: nuevas } = await client.query(
+        `INSERT INTO Transacciones
+           (tx_id, cbu_origen, cbu_destino, importe, estado, motivo_rechazo,
+            bank_code_origen, bank_code_destino, persona_origen, persona_destino, created_at, descripcion, tipo)
+         VALUES ${values.join(',')}
+         ON CONFLICT (tx_id) DO NOTHING
+         RETURNING tx_id, cbu_origen, cbu_destino, importe, estado`,
+        params
+      );
+
+      const aprobadas = nuevas.filter(r => r.estado === 'aprobada');
+      if (aprobadas.length > 0) {
+        const origenes = [...new Set(aprobadas.map(r => r.cbu_origen))];
+        const { rows: locales } = await client.query('SELECT cbu FROM Cuentas_Bancarias WHERE cbu = ANY($1)', [origenes]);
+        const setLocales = new Set(locales.map(r => r.cbu));
+        for (const r of aprobadas) {
+          if (!setLocales.has(r.cbu_origen)) {
+            // El origen no es una cuenta nuestra: vino de otro banco. Acreditamos al destino.
+            await client.query('UPDATE Cuentas_Bancarias SET saldo = saldo + $1 WHERE cbu = $2', [r.importe, r.cbu_destino]);
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
   getAllTransacciones: async () => {
     const { rows } = await db.query('SELECT * FROM Transacciones ORDER BY created_at DESC');
     return rows.map(r => ({

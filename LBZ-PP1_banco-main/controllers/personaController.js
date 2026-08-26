@@ -114,8 +114,8 @@ exports.obtenerHistorial = async (req, res) => {
     });
     if (response.ok) {
       const recent = await response.json();
-      if (Array.isArray(recent)) {
-        await Promise.all(recent.map(tx => Persona.upsertTransaccion(tx).catch(() => {})));
+      if (Array.isArray(recent) && recent.length) {
+        await Persona.sincronizarTransacciones(recent).catch(e => console.error('Error sincronizando transacciones:', e.message));
       }
     }
   } catch { /* BC puede estar caído, continuamos con datos locales */ }

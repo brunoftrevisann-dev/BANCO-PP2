@@ -71,6 +71,10 @@
             transition: background 0.3s, border-color 0.3s;
         }
 
+        .contacts-group-title {
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--muted); font-weight: 600; padding: 14px 18px 6px;
+        }
         .contact-item {
             display: flex; align-items: center; gap: 14px;
             padding: 14px 18px; border-bottom: 1px solid var(--border);
@@ -262,7 +266,7 @@
                 return;
             }
 
-            el.innerHTML = lista.map(f => `
+            const item = f => `
                 <div class="contact-item">
                     <div class="contact-avatar" style="background:${avatarColor(f.nombre)};">${initials(f.nombre)}</div>
                     <div class="contact-info">
@@ -270,18 +274,25 @@
                         <div class="contact-cbu">CBU ...${f.cbu.slice(-6)}</div>
                     </div>
                     <div class="contact-actions">
-                        <button class="btn-eliminar" onclick="pedirEliminar('${f.cbu}','${f.nombre.replace(/'/g,"\\'")}')
-" title="Eliminar contacto">
+                        <button class="btn-eliminar" onclick="pedirEliminar('${f.cbu}','${f.nombre.replace(/'/g,"\\'")}')" title="Eliminar contacto">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
-                        <button class="btn-transferir" onclick="irATransferir('${f.cbu}')">Transferir</button>
+                        <button class="btn-transferir" onclick="irATransferir('${f.cbu}','${f.moneda === 'USD' ? 'USD' : 'ARS'}')">Transferir</button>
                     </div>
                 </div>
-            `).join('');
+            `;
+
+            // Los contactos guardados antes de esta división no tienen moneda guardada: quedan como ARS.
+            const ars = lista.filter(f => f.moneda !== 'USD');
+            const usd = lista.filter(f => f.moneda === 'USD');
+            let html = '';
+            if (ars.length) html += `<div class="contacts-group-title">Pesos</div>` + ars.map(item).join('');
+            if (usd.length) html += `<div class="contacts-group-title" style="margin-top:${ars.length ? '18px' : '0'};">Dólares</div>` + usd.map(item).join('');
+            el.innerHTML = html;
         }
 
-        function irATransferir(cbu) {
-            navTo('dashboard.html?transferir=' + encodeURIComponent(cbu));
+        function irATransferir(cbu, moneda) {
+            navTo('dashboard.html?transferir=' + encodeURIComponent(cbu) + '&moneda=' + encodeURIComponent(moneda || 'ARS'));
         }
 
         // ── ELIMINAR ──

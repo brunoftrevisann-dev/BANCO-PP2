@@ -590,6 +590,16 @@
             transition: background-color 5000s ease-in-out 0s;
             border-bottom-color: var(--accent) !important;
         }
+        /* Ocultar las flechas nativas del input number: el navegador las dibuja en blanco/gris del
+           sistema, sin respetar el tema del banco, y quedan visualmente rotas. */
+        .input-modal::-webkit-outer-spin-button,
+        .input-modal::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .input-modal[type="number"] {
+            -moz-appearance: textfield;
+        }
 
         .origen-toggle-wrap { display: flex; background: var(--bg); border-radius: 10px; padding: 4px; margin-bottom: 18px; }
         .origen-toggle-btn { flex: 1; padding: 8px; border: none; background: none; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
@@ -1423,6 +1433,19 @@
             return `${cbu.slice(0,4)} ${cbu.slice(4,8)} ${cbu.slice(8,12)} ${cbu.slice(12,16)} ${cbu.slice(16,20)} ${cbu.slice(20)}`;
         }
 
+        // Un movimiento es "mío" si involucra mi CBU en ARS o mi CBU en USD (si tengo caja abierta).
+        // Antes solo se comparaba contra el CBU en ARS, así que las transferencias en USD nunca aparecían.
+        function esMiCbu(cbu) {
+            if (!cbu) return false;
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+            if (!u) return false;
+            return cbu === u.cbu || !!(cuentaUsdDashboard && cbu === cuentaUsdDashboard.cbu);
+        }
+        // Una transacción (que no sea depósito ni cambio de divisa) es en USD si mi caja en USD participa.
+        function esTxUsd(t) {
+            return !!(cuentaUsdDashboard && cuentaUsdDashboard.cbu && (t.cbuOrigen === cuentaUsdDashboard.cbu || t.cbuDestino === cuentaUsdDashboard.cbu));
+        }
+
         // ── NOMBRE CACHE ─────────────────────────────────────────────────
         function guardarNombreCbu(cbu, nombre) {
             const cache = JSON.parse(localStorage.getItem('tuo_nombres') || '{}');
@@ -1441,7 +1464,8 @@
             if (faltantes.length === 0) return;
             await Promise.all(faltantes.map(async cbu => {
                 try {
-                    const res = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbu)}`);
+                    let res = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbu)}`);
+                    if (!res.ok) res = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbu)}&moneda=USD`);
                     if (res.ok) {
                         const d = await res.json();
                         if (d.nombre) guardarNombreCbu(cbu, `${d.nombre} ${d.apellido}`);
@@ -1629,9 +1653,14 @@
             // Abrir transferencia pre-cargada si viene desde contactos.html
             const params = new URLSearchParams(window.location.search);
             const cbuParam = params.get('transferir');
+            const monedaParam = params.get('moneda');
             if (cbuParam) {
-                setTimeout(() => {
+                setTimeout(async () => {
                     abrirModalTransferencia();
+                    if (monedaParam === 'USD') {
+                        await cargarCuentasParaTransferencia();
+                        setOrigenTransferencia('USD');
+                    }
                     document.getElementById('inputBusqueda').value = decodeURIComponent(cbuParam);
                     buscarDestinatario();
                     history.replaceState({}, '', window.location.pathname);
@@ -1657,10 +1686,10 @@
         function getFavoritos() {
             return JSON.parse(localStorage.getItem(_favKey()) || '[]');
         }
-        function guardarFavorito(cbu, nombre) {
+        function guardarFavorito(cbu, nombre, moneda) {
             const lista = getFavoritos();
             if (!lista.find(f => f.cbu === cbu)) {
-                lista.push({ cbu, nombre });
+                lista.push({ cbu, nombre, moneda: moneda || 'ARS' });
                 localStorage.setItem(_favKey(), JSON.stringify(lista));
             }
         }
@@ -1677,10 +1706,12 @@
             if (!section) return;
             if (lista.length === 0) { section.style.display = 'none'; return; }
             section.style.display = 'block';
-            listEl.innerHTML = lista.map(f => {
+
+            const itemHtml = f => {
+                const moneda     = f.moneda === 'USD' ? 'USD' : 'ARS';
                 const safeNombre = f.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 const safeCbu    = f.cbu.replace(/'/g, "\\'");
-                return `<div class="fav-item" onclick="seleccionarFavorito('${safeCbu}','${safeNombre}')">
+                return `<div class="fav-item" onclick="seleccionarFavorito('${safeCbu}','${safeNombre}','${moneda}')">
                     <div class="fav-avatar-sm" style="background:${avatarColor(f.nombre)};">${initials(f.nombre)}</div>
                     <div style="flex:1;min-width:0;">
                         <div class="fav-name">${f.nombre}</div>
@@ -1690,9 +1721,21 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>`;
-            }).join('');
+            };
+
+            // Separamos en pesos y dólares. Los contactos guardados antes de esta división quedan
+            // como ARS por default (f.moneda === 'USD' es la única forma de marcar dólares).
+            const ars = lista.filter(f => f.moneda !== 'USD');
+            const usd = lista.filter(f => f.moneda === 'USD');
+
+            let html = '';
+            if (ars.length) html += `<div class="fav-section-title" style="margin-top:2px;">Pesos</div>` + ars.map(itemHtml).join('');
+            if (usd.length) html += `<div class="fav-section-title" style="margin-top:${ars.length ? '14px' : '2px'};">Dólares</div>` + usd.map(itemHtml).join('');
+            listEl.innerHTML = html;
         }
-        function seleccionarFavorito(cbu, nombre) {
+        function seleccionarFavorito(cbu, nombre, moneda) {
+            if (moneda === 'USD' && origenTransferencia !== 'USD') setOrigenTransferencia('USD');
+            else if (moneda !== 'USD' && origenTransferencia !== 'ARS') setOrigenTransferencia('ARS');
             document.getElementById('inputBusqueda').value = cbu;
             buscarDestinatario();
         }
@@ -1725,7 +1768,7 @@
             document.getElementById('modalAgregarContacto').style.display = 'none';
         }
         function confirmarContacto() {
-            guardarFavorito(_cbuPendienteContacto, _nombrePendienteContacto);
+            guardarFavorito(_cbuPendienteContacto, _nombrePendienteContacto, origenTransferencia);
             cerrarModalContacto();
             showToast(`${_nombrePendienteContacto} agregado a contactos`);
             renderizarFavoritos();
@@ -1810,8 +1853,8 @@
             const u = _usuarioHist;
             if (!u) return txs;
             let r = txs;
-            if (_filtroTipo === 'enviados')   r = r.filter(t => t.cbuOrigen === u.cbu && t.cbuOrigen !== 'DEPOSITO' && t.tipo !== 'cambio_divisa');
-            if (_filtroTipo === 'recibidos')  r = r.filter(t => t.cbuDestino === u.cbu && t.tipo !== 'cambio_divisa');
+            if (_filtroTipo === 'enviados')   r = r.filter(t => esMiCbu(t.cbuOrigen) && t.cbuOrigen !== 'DEPOSITO' && t.tipo !== 'cambio_divisa');
+            if (_filtroTipo === 'recibidos')  r = r.filter(t => esMiCbu(t.cbuDestino) && t.tipo !== 'cambio_divisa');
             if (_filtroTipo === 'cambios')    r = r.filter(t => t.tipo === 'cambio_divisa');
             if (_filtroFecha === 'rango') {
                 const desde = document.getElementById('filtroDesde')?.value;
@@ -1835,7 +1878,7 @@
                 r = r.filter(t => {
                     if (t.cbuOrigen === 'DEPOSITO') return 'depósito deposito'.includes(txt);
                     if (t.tipo === 'cambio_divisa') return (t.descripcion || '').toLowerCase().includes(txt) || 'cambio dolar dólar usd'.includes(txt);
-                    const esEnvio = t.cbuOrigen === u.cbu;
+                    const esEnvio = esMiCbu(t.cbuOrigen);
                     const cbuContra = esEnvio ? t.cbuDestino : t.cbuOrigen;
                     const nombre = (esEnvio
                         ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : '')
@@ -1865,7 +1908,8 @@
                     const esDeposito  = t.cbuOrigen === 'DEPOSITO';
                     const esCambio    = t.tipo === 'cambio_divisa';
                     const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
-                    const esEnvio     = !esDeposito && !esCambio && t.cbuOrigen === u.cbu;
+                    const esEnvio     = !esDeposito && !esCambio && esMiCbu(t.cbuOrigen);
+                    const esUsd       = !esDeposito && !esCambio && esTxUsd(t);
                     const contraparte = esDeposito
                         ? (window.t ? window.t('dashboard.tx.deposit') : 'Depósito en efectivo')
                         : esCambio
@@ -1902,7 +1946,7 @@
                             ${fechaStr ? `<div class="historial-date">${fechaStr}</div>` : ''}
                             <span class="historial-estado" style="${estadoStyle}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>
                         </div>
-                        <div class="historial-amount" style="color:${colorAmt};">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        <div class="historial-amount" style="color:${colorAmt};">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:4px;"><path d="M9 18l6-6-6-6"/></svg>
                     </div>`;
                     globalIdx++;
@@ -2036,7 +2080,8 @@
             const u          = _usuarioHist;
             const esDeposito = t.cbuOrigen === 'DEPOSITO';
             const esCambio   = t.tipo === 'cambio_divisa';
-            const esEnvio    = !esDeposito && !esCambio && t.cbuOrigen === u.cbu;
+            const esEnvio    = !esDeposito && !esCambio && esMiCbu(t.cbuOrigen);
+            const esUsd      = !esDeposito && !esCambio && esTxUsd(t);
 
             if (esCambio) {
                 const esCompraCambio = t.cbuOrigen === u.cbu;
@@ -2117,7 +2162,7 @@
             // Si todavía no tenemos DNI, buscarlo en la API (enriquecida con DB local)
             if (!dni && cbuContraparte && cbuContraparte !== 'DEPOSITO') {
                 try {
-                    const r = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbuContraparte)}`);
+                    const r = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbuContraparte)}&moneda=${esUsd ? 'USD' : 'ARS'}`);
                     if (r.ok) {
                         const p = await r.json();
                         if (p.dni) { dni = p.dni; guardarDniCbu(cbuContraparte, p.dni); }
@@ -2153,7 +2198,7 @@
                     <div class="detalle-tx-role">${labelDir}</div>
                     <div class="detalle-tx-nombre">${nombre}</div>
                 </div>
-                <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
 
                 <div class="detalle-tx-section">
                     <div class="detalle-tx-section-title">${labelRole}</div>
@@ -2187,7 +2232,7 @@
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.amount') : 'Monto'}</span>
-                        <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                        <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.status') : 'Estado'}</span>
@@ -2237,7 +2282,8 @@
             const btn    = document.getElementById('btnDescargarPdf');
             if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.querySelector('span') && (btn.querySelector('span').textContent = 'Generando...'); }
 
-            const esEnvio       = t.cbuOrigen === u.cbu;
+            const esEnvio       = esMiCbu(t.cbuOrigen);
+            const esUsd         = esTxUsd(t);
             const persona       = esEnvio ? t.personaDestino : t.personaOrigen;
             const cbuContra     = esEnvio ? t.cbuDestino : t.cbuOrigen;
             const labelRole     = esEnvio ? (window.t ? window.t('dashboard.tx.recipient') : 'Destinatario') : (window.t ? window.t('dashboard.tx.sender_role') : 'Emisor');
@@ -2254,7 +2300,7 @@
             const signo         = esEnvio ? '−' : '+';
             const rawFecha      = t.fecha || t.createdAt || t.timestamp || t.created_at;
             const fechaHora     = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-            const amtFmt        = `${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+            const amtFmt        = `${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
 
             const row = (label, value, vs = '') =>
                 `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;border-bottom:1px solid #E5E5E5;font-size:0.81rem;gap:14px;background:#fff;">
@@ -2486,7 +2532,7 @@
                     setTimeout(() => clearInterval(waitChart), 10000);
                 }
 
-                const propias = deduplicarTxs(all.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu));
+                const propias = deduplicarTxs(all.filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
                 propias.forEach(t => {
                     if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
                     if (t.personaDestino?.nombre) guardarNombreCbu(t.cbuDestino, `${t.personaDestino.nombre} ${t.personaDestino.apellido}`);
@@ -2495,11 +2541,12 @@
                     container.innerHTML = emptyState(window.t ? window.t('dashboard.historial.no_transactions') : 'No tenés movimientos aún.');
                     return;
                 }
-                await resolverNombresCbu(propias.slice(0, 3).map(t => t.cbuOrigen === u.cbu ? t.cbuDestino : t.cbuOrigen));
+                await resolverNombresCbu(propias.slice(0, 3).map(t => esMiCbu(t.cbuOrigen) ? t.cbuDestino : t.cbuOrigen));
                 container.innerHTML = propias.slice(0, 3).map((t, idx) => {
                     const esCambio    = t.tipo === 'cambio_divisa';
                     const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
-                    const esEnvio     = !esCambio && t.cbuOrigen === u.cbu;
+                    const esEnvio     = !esCambio && esMiCbu(t.cbuOrigen);
+                    const esUsd       = !esCambio && esTxUsd(t);
                     const envioLike   = esCambio ? esCompraCambio : esEnvio;
                     const contraparte = esCambio
                         ? (esCompraCambio ? 'Compra de dólares' : 'Venta de dólares')
@@ -2530,7 +2577,7 @@
                                 <div class="tx-name">${etiqueta}: ${contraparte}</div>
                                 ${fechaStr ? `<div class="tx-date">${fechaStr}</div>` : ''}
                             </div>
-                            <div class="tx-amount" style="color:${colorAmt};">${signo} $${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                            <div class="tx-amount" style="color:${colorAmt};">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                         </div>`;
                 }).join('');
             } catch (err) {
@@ -2591,16 +2638,41 @@
                 if (!res.ok) return;
                 const data = await res.json();
                 const all  = Array.isArray(data) ? data : (data.transactions || data.data || []);
+                const cbuUsd = cuentaUsdDashboard && cuentaUsdDashboard.cbu;
 
-                // Buscar transferencias recibidas que no hayamos visto aún
+                // Buscar transferencias recibidas que no hayamos visto aún, en ARS y en USD por separado
+                // (el saldo en ARS y el saldo en USD son campos distintos, no se pueden sumar juntos)
                 const nuevas = all.filter(t =>
                     t.cbuDestino === u.cbu &&
                     (t.estado === 'aprobada' || t.estado === 'approved') &&
                     t._id && !_txsVistas.has(t._id)
                 );
+                const nuevasUsd = cbuUsd ? all.filter(t =>
+                    t.cbuDestino === cbuUsd && t.tipo !== 'cambio_divisa' &&
+                    (t.estado === 'aprobada' || t.estado === 'approved') &&
+                    t._id && !_txsVistas.has(t._id)
+                ) : [];
 
                 // Marcar todas como vistas
                 all.forEach(t => t._id && _txsVistas.add(t._id));
+
+                if (nuevasUsd.length) {
+                    const totalUsd = nuevasUsd.reduce((sum, t) => sum + Number(t.importe), 0);
+                    if (cuentaUsdDashboard) {
+                        cuentaUsdDashboard.saldo = Number(cuentaUsdDashboard.saldo || 0) + totalUsd;
+                        const elSaldoUsd = document.getElementById('saldoUsdCard');
+                        if (elSaldoUsd) elSaldoUsd.textContent = fmtUsdCard(cuentaUsdDashboard.saldo);
+                    }
+                    playSound('ingreso');
+                    nuevasUsd.forEach(t => {
+                        const nombre = (t.personaOrigen?.nombre && t.personaOrigen?.apellido)
+                            ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`
+                            : (getNombrePorCbu(t.cbuOrigen) || 'Alguien');
+                        const monto = Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+                        showToast(`+ US$${monto} recibido de ${nombre}`);
+                        if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
+                    });
+                }
 
                 if (nuevas.length === 0) return;
 
@@ -2632,7 +2704,7 @@
                 // Si el historial modal está abierto, refrescarlo
                 const mh = document.getElementById('modalHistorial');
                 if (mh && mh.style.display === 'flex') {
-                    _todasPropias = deduplicarTxs(all.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu));
+                    _todasPropias = deduplicarTxs(all.filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
                     renderHistorialFiltrado();
                 }
             } catch {}
@@ -2684,7 +2756,7 @@
                     return;
                 }
                 const all    = Array.isArray(data) ? data : (data.transactions || data.data || []);
-                const propias = deduplicarTxs(all.filter(t => t.cbuOrigen === u.cbu || t.cbuDestino === u.cbu));
+                const propias = deduplicarTxs(all.filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
                 if (propias.length === 0) {
                     cuerpo.innerHTML = emptyState(window.t ? window.t('dashboard.historial.no_transactions') : 'No tenés movimientos aún.');
                     return;
@@ -2693,7 +2765,7 @@
                     if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
                     if (t.personaDestino?.nombre) guardarNombreCbu(t.cbuDestino, `${t.personaDestino.nombre} ${t.personaDestino.apellido}`);
                 });
-                await resolverNombresCbu(propias.map(t => t.cbuOrigen === u.cbu ? t.cbuDestino : t.cbuOrigen));
+                await resolverNombresCbu(propias.map(t => esMiCbu(t.cbuOrigen) ? t.cbuDestino : t.cbuOrigen));
                 _todasPropias = propias;
                 renderHistorialFiltrado();
             } catch (err) {
@@ -2758,6 +2830,7 @@
             document.getElementById('btnOrigenArs').classList.add('active');
             document.getElementById('btnOrigenUsd').classList.remove('active');
             document.getElementById('importeSymboloTransfer').textContent = '$';
+            document.getElementById('inputImporte').style.paddingLeft = '18px';
             try {
                 const res = await fetch(`/api/personas/${u.id}/productos`);
                 const productos = await res.json();
@@ -2776,6 +2849,9 @@
             document.getElementById('btnOrigenArs').classList.toggle('active', moneda === 'ARS');
             document.getElementById('btnOrigenUsd').classList.toggle('active', moneda === 'USD');
             document.getElementById('importeSymboloTransfer').textContent = moneda === 'ARS' ? '$' : 'US$';
+            // "US$" es más ancho que "$": si no le hacemos lugar al input, el símbolo queda pisando
+            // los dígitos escritos (se veía "bugueado").
+            document.getElementById('inputImporte').style.paddingLeft = moneda === 'ARS' ? '18px' : '38px';
             document.getElementById('inputBusqueda').placeholder = moneda === 'ARS'
                 ? 'Ej: sol.luna.rio  ó  CBU de 22 dígitos'
                 : 'Alias o CBU en USD del destinatario';
@@ -3367,7 +3443,7 @@
             // Collect data: prefer filtered historial, fallback to recent cache
             let datos = _todasPropias.length ? aplicarFiltros(_todasPropias) : [];
             if (!datos.length && window._txsCache) {
-                datos = deduplicarTxs((window._txsCache || []).filter(t => t.cbuOrigen === u?.cbu || t.cbuDestino === u?.cbu));
+                datos = deduplicarTxs((window._txsCache || []).filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
             }
 
             // If still empty, auto-fetch then generate
@@ -3377,7 +3453,7 @@
                     .then(r => r.ok ? r.json() : Promise.reject(r))
                     .then(data => {
                         const all = Array.isArray(data) ? data : (data.transactions || data.data || []);
-                        const propias = deduplicarTxs(all.filter(t => t.cbuOrigen === u?.cbu || t.cbuDestino === u?.cbu));
+                        const propias = deduplicarTxs(all.filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
                         if (!propias.length) { showToast('Sin movimientos para exportar', 'info'); return; }
                         _todasPropias = propias;
                         _usuarioHist  = u;
@@ -3465,14 +3541,15 @@
                     const esD    = t.cbuOrigen === 'DEPOSITO';
                     const esCam  = t.tipo === 'cambio_divisa';
                     const esCamCompra = esCam && t.cbuOrigen === u?.cbu;
-                    const envio  = !esD && !esCam && t.cbuOrigen === u?.cbu;
-                    const nombre = sa(esD ? 'Deposito'
+                    const esUsdRow = !esD && !esCam && esTxUsd(t);
+                    const envio  = !esD && !esCam && esMiCbu(t.cbuOrigen);
+                    const nombre = sa((esD ? 'Deposito'
                         : esCam ? (esCamCompra ? 'Compra de dolares' : 'Venta de dolares')
                         : envio
                             ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
-                            : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen));
+                            : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen)) + (esUsdRow ? ' (USD)' : ''));
                     const signo  = esCam ? (esCamCompra ? '-' : '+') : ((esD || !envio) ? '+' : '-');
-                    const imp    = `${signo}$ ${fmtAmt(t.importe)}`;
+                    const imp    = `${signo}${esUsdRow ? 'US$' : '$'} ${fmtAmt(t.importe)}`;
                     const color  = signo === '+' ? [21,128,61] : [185,28,28];
 
                     if (i % 2 === 0) { doc.setFillColor(249, 250, 251); doc.rect(40, y - 9, W - 80, 24, 'F'); }
@@ -3578,13 +3655,14 @@
                 const esDeposito = t.cbuOrigen === 'DEPOSITO';
                 const esCambio = t.tipo === 'cambio_divisa';
                 const esCambioCompra = esCambio && t.cbuOrigen === u?.cbu;
-                const esEnvio = !esDeposito && !esCambio && t.cbuOrigen === u?.cbu;
-                const tipo = esDeposito ? 'Depósito' : esCambio ? (esCambioCompra ? 'Compra USD' : 'Venta USD') : esEnvio ? 'Enviado' : 'Recibido';
+                const esUsdRow = !esDeposito && !esCambio && esTxUsd(t);
+                const esEnvio = !esDeposito && !esCambio && esMiCbu(t.cbuOrigen);
+                const tipo = esDeposito ? 'Depósito' : esCambio ? (esCambioCompra ? 'Compra USD' : 'Venta USD') : esEnvio ? (esUsdRow ? 'Enviado (USD)' : 'Enviado') : (esUsdRow ? 'Recibido (USD)' : 'Recibido');
                 const nombre = esDeposito ? 'Depósito' : esCambio ? (t.descripcion || tipo) : esEnvio
                     ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                     : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
                 const negativo = esCambio ? esCambioCompra : esEnvio;
-                const importe = (negativo ? '-' : '+') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
+                const importe = (negativo ? '-' : '+') + (esUsdRow ? 'US$' : '') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
                 return [fecha, tipo, nombre, importe, t.estado || '', t.motivoRechazo || ''];
             });
             const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
