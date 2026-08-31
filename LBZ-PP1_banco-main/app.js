@@ -64,6 +64,7 @@ app.post('/api/personas', personaController.crearPersona);
 app.post('/api/personas/registrar', personaController.registrarPersona);
 app.get('/api/historial', personaController.obtenerHistorial);
 app.get('/api/buscar-persona', personaController.buscarPersona);
+app.get('/api/otra-moneda-persona', personaController.otraMonedaPersona);
 app.post('/api/transferencia', personaController.transferir);
 app.put('/api/actualizar-alias', personaController.actualizarAlias);
 app.put('/api/sincronizar-saldo', personaController.sincronizarSaldo);

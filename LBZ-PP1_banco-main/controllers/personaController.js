@@ -161,6 +161,27 @@ exports.buscarPersona = async (req, res) => {
   }
 };
 
+// Dado el cbu de un destinatario, indica si esa misma persona (cliente local de tuo)
+// también tiene una cuenta abierta en la otra moneda, para ofrecer transferirle a esa en su lugar.
+// Cuentas de otros bancos (resueltas solo vía Banco Central, sin fila local) no tienen equivalente: disponible=false.
+exports.otraMonedaPersona = async (req, res) => {
+  try {
+    const { cbu, monedaActual } = req.query;
+    if (!cbu || !monedaActual) return res.status(400).json({ error: 'cbu y monedaActual son requeridos' });
+
+    const local = await Persona.getByCbu(cbu);
+    if (!local) return res.json({ disponible: false });
+
+    const otraMoneda = monedaActual === 'ARS' ? 'USD' : 'ARS';
+    const cuentaOtra = await Persona.getCuentaPorMoneda(local.id_persona, otraMoneda);
+    if (!cuentaOtra) return res.json({ disponible: false });
+
+    res.json({ disponible: true, cbu: cuentaOtra.cbu, alias: cuentaOtra.alias, moneda: cuentaOtra.moneda });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.transferir = async (req, res) => {
   try {
     const { cbuOrigen, cbuDestino, importe, descripcion } = req.body;

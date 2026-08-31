@@ -274,6 +274,7 @@
             .main { padding: 20px 16px 60px; gap: 14px; }
             .avatar-card { padding: 20px 18px; gap: 14px; }
             .avatar-circle { width: 52px; height: 52px; font-size: 1.1rem; }
+            #leafletMap { height: 200px; }
         }
 
         @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -458,6 +459,30 @@
     </div>
 
     <script>
+        // ── SCROLL LOCK DE FONDO CUANDO HAY UN MODAL ABIERTO ──────────────
+        (function () {
+            const overlays = document.querySelectorAll('#mapModal');
+            let bloqueado = false;
+            function algunoAbierto() {
+                return Array.from(overlays).some(el => getComputedStyle(el).display !== 'none');
+            }
+            function actualizar() {
+                const abierto = algunoAbierto();
+                if (abierto && !bloqueado) {
+                    bloqueado = true;
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.overflow = 'hidden';
+                } else if (!abierto && bloqueado) {
+                    bloqueado = false;
+                    document.documentElement.style.overflow = '';
+                    document.body.style.overflow = '';
+                }
+            }
+            const observer = new MutationObserver(actualizar);
+            overlays.forEach(el => observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] }));
+            actualizar();
+        })();
+
         function resolverTema() {
             const t = localStorage.getItem('tuo-theme');
             if (t === 'light' || t === 'dark') return t;

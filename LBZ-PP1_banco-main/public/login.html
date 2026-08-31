@@ -277,6 +277,14 @@
         }
         .footer-signup a:hover { text-decoration: underline; }
 
+        @media (max-width: 768px) {
+            body { padding: 56px 20px 24px; }
+            .logo { margin-bottom: 36px; font-size: 1.6rem; }
+            .card-heading { margin-bottom: 28px; }
+            .form-group { margin-bottom: 20px; }
+            .footer-signup { margin-top: 36px; }
+        }
+
         @keyframes pageIn  { from { opacity:0; transform:translateY(12px) scale(0.99); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes pageOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-8px) scale(0.99); } }
         body { animation: pageIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }

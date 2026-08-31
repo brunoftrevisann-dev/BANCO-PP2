@@ -314,6 +314,9 @@
         .filter-monto-wrap { display: flex; align-items: center; gap: 6px; }
         .filter-monto-input { width: 82px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.74rem; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
         .filter-monto-input:focus { border-color: var(--accent); }
+        .filter-monto-input::-webkit-outer-spin-button,
+        .filter-monto-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .filter-monto-input[type=number] { -moz-appearance: textfield; }
         .filter-date-wrap { display: flex; align-items: center; gap: 6px; width: 100%; }
         .filter-date-label { font-size: 0.7rem; color: var(--muted); white-space: nowrap; font-weight: 500; }
         .filter-date-input {
@@ -535,7 +538,7 @@
         .btn-export:hover { color: var(--accent); border-color: var(--accent); }
 
         /* ── MODAL CONTACTOS ── */
-        .contact-modal-list { max-height: 420px; overflow-y: auto; }
+        .contact-modal-list { max-height: 420px; overflow-y: auto; overscroll-behavior: contain; }
         .contact-modal-item { display: flex; align-items: center; gap: 12px; padding: 13px 24px; border-bottom: 1px solid var(--border); transition: background 0.12s; }
         .contact-modal-item:last-child { border-bottom: none; }
         .contact-modal-item:hover { background: rgba(0,82,255,0.03); }
@@ -658,7 +661,7 @@
 
         /* ── HISTORIAL MODAL ── */
         .historial-panel { max-height: 90vh; display: flex; flex-direction: column; }
-        .historial-body { padding: 8px 20px; overflow-y: auto; flex: 1; font-family: 'Inter', sans-serif; }
+        .historial-body { padding: 8px 20px; overflow-y: auto; overscroll-behavior: contain; flex: 1; font-family: 'Inter', sans-serif; }
         .historial-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); animation: txFadeIn 0.3s ease both; cursor: pointer; border-radius: 8px; transition: background 0.12s; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
         .historial-item:last-child { border-bottom: none; }
         .historial-item:hover { background: rgba(0,82,255,0.04); }
@@ -684,7 +687,7 @@
         .detalle-tx-row:last-child { border-bottom: none; }
         .detalle-tx-label { color: var(--muted); flex-shrink: 0; }
         .detalle-tx-value { font-weight: 600; color: var(--text); text-align: right; word-break: break-all; }
-        .detalle-tx-body { padding: 4px 24px 24px; overflow-y: auto; max-height: calc(90vh - 60px); }
+        .detalle-tx-body { padding: 4px 24px 24px; overflow-y: auto; overscroll-behavior: contain; max-height: calc(90vh - 60px); }
 
         /* ── DATOS PERSONALES MODAL ── */
         .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
@@ -934,6 +937,7 @@
             <div id="usdCardBody" style="display:none;">
                 <div class="balance-row">
                     <div class="account-balance-label">Saldo disponible</div>
+                    <button class="btn-eye" id="btnEyeUsd" onclick="toggleSaldoUsd()" title="Mostrar/ocultar saldo"></button>
                 </div>
                 <div class="account-balance" id="saldoUsdCard">US$ 0,00</div>
                 <div class="account-details">
@@ -1128,6 +1132,11 @@
                             <div class="dest-detail-row"><span class="det-lbl">DNI</span><span class="det-val" id="destinatarioDni">—</span></div>
                             <div class="dest-detail-row"><span class="det-lbl">Alias</span><span class="det-val" id="destinatarioAlias">—</span></div>
                             <div class="dest-detail-row" id="destinatarioBancoRow" style="display:none;"><span class="det-lbl">Banco</span><span class="det-val" id="destinatarioBanco">—</span></div>
+                        </div>
+                        <div id="destinatarioMonedaToggle" style="display:none;margin-top:12px;">
+                            <button type="button" class="origen-toggle-btn" style="width:100%;background:var(--bg);border:1px dashed var(--border);" onclick="elegirMonedaDestino()">
+                                <span id="destinatarioMonedaToggleTexto"></span>
+                            </button>
                         </div>
                     </div>
                     <div class="importe-label">Importe a transferir</div>
@@ -1361,6 +1370,33 @@
     </div>
 
     <script>
+        // ── SCROLL LOCK DE FONDO CUANDO HAY UN MODAL ABIERTO ──────────────
+        // No engancha con cada apertura/cierre individual (son muchos call sites distintos):
+        // observa los overlays existentes y reacciona a los mismos cambios de style/class que
+        // ya se les aplica hoy para mostrarlos/ocultarlos.
+        (function () {
+            const overlays = document.querySelectorAll('.modal-overlay, .confirm-overlay');
+            let bloqueado = false;
+            function algunoAbierto() {
+                return Array.from(overlays).some(el => getComputedStyle(el).display !== 'none');
+            }
+            function actualizar() {
+                const abierto = algunoAbierto();
+                if (abierto && !bloqueado) {
+                    bloqueado = true;
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.overflow = 'hidden';
+                } else if (!abierto && bloqueado) {
+                    bloqueado = false;
+                    document.documentElement.style.overflow = '';
+                    document.body.style.overflow = '';
+                }
+            }
+            const observer = new MutationObserver(actualizar);
+            overlays.forEach(el => observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] }));
+            actualizar();
+        })();
+
         // ── DARK MODE ────────────────────────────────────────────────────
         const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
         const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
@@ -1445,6 +1481,10 @@
         function esTxUsd(t) {
             return !!(cuentaUsdDashboard && cuentaUsdDashboard.cbu && (t.cbuOrigen === cuentaUsdDashboard.cbu || t.cbuDestino === cuentaUsdDashboard.cbu));
         }
+        // Símbolo de moneda para un MOVIMIENTO (historial/detalle/exportaciones) — no confundir con
+        // el símbolo de "mi propia cuenta" del selector de origen en el modal de transferencia, que
+        // intencionalmente sigue mostrando "US$" (ver plan: alcance limitado a la lista de movimientos).
+        function simboloMoneda(esUsd) { return esUsd ? 'USD $' : '$'; }
 
         // ── NOMBRE CACHE ─────────────────────────────────────────────────
         function guardarNombreCbu(cbu, nombre) {
@@ -1508,9 +1548,13 @@
         // ── EYE ICONS ────────────────────────────────────────────────────
         const EYE_OPEN   = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
         const EYE_CLOSED = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-        document.getElementById('btnEye').innerHTML = EYE_OPEN;
-
         let saldoVisible = localStorage.getItem('tuo_ocultar_saldo') !== '1';
+        let saldoUsdVisible = localStorage.getItem('tuo_ocultar_saldo_usd') !== '1';
+        document.getElementById('btnEye').innerHTML = saldoVisible ? EYE_OPEN : EYE_CLOSED;
+        document.getElementById('btnEyeUsd').innerHTML = saldoUsdVisible ? EYE_OPEN : EYE_CLOSED;
+        if (!saldoVisible) document.getElementById('saldo').textContent = '$ ******';
+        if (!saldoUsdVisible) document.getElementById('saldoUsdCard').textContent = 'US$ ******';
+
         let saldoReal = 0;
         let _lastVisitChecked = false;
         let _txsVistas = new Set();
@@ -1520,10 +1564,22 @@
 
         function toggleSaldo() {
             saldoVisible = !saldoVisible;
+            localStorage.setItem('tuo_ocultar_saldo', saldoVisible ? '0' : '1');
             document.getElementById('btnEye').innerHTML = saldoVisible ? EYE_OPEN : EYE_CLOSED;
             document.getElementById('saldo').textContent = saldoVisible
                 ? '$ ' + saldoReal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                : '$ ••••••';
+                : '$ ******';
+        }
+
+        function toggleSaldoUsd() {
+            saldoUsdVisible = !saldoUsdVisible;
+            localStorage.setItem('tuo_ocultar_saldo_usd', saldoUsdVisible ? '0' : '1');
+            document.getElementById('btnEyeUsd').innerHTML = saldoUsdVisible ? EYE_OPEN : EYE_CLOSED;
+            if (cuentaUsdDashboard) {
+                document.getElementById('saldoUsdCard').textContent = saldoUsdVisible
+                    ? fmtUsdCard(cuentaUsdDashboard.saldo || 0)
+                    : 'US$ ******';
+            }
         }
 
         // ── COUNT UP ─────────────────────────────────────────────────────
@@ -1946,7 +2002,7 @@
                             ${fechaStr ? `<div class="historial-date">${fechaStr}</div>` : ''}
                             <span class="historial-estado" style="${estadoStyle}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>
                         </div>
-                        <div class="historial-amount" style="color:${colorAmt};">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        <div class="historial-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:4px;"><path d="M9 18l6-6-6-6"/></svg>
                     </div>`;
                     globalIdx++;
@@ -2198,7 +2254,7 @@
                     <div class="detalle-tx-role">${labelDir}</div>
                     <div class="detalle-tx-nombre">${nombre}</div>
                 </div>
-                <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
 
                 <div class="detalle-tx-section">
                     <div class="detalle-tx-section-title">${labelRole}</div>
@@ -2232,7 +2288,7 @@
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.amount') : 'Monto'}</span>
-                        <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                        <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.status') : 'Estado'}</span>
@@ -2300,7 +2356,7 @@
             const signo         = esEnvio ? '−' : '+';
             const rawFecha      = t.fecha || t.createdAt || t.timestamp || t.created_at;
             const fechaHora     = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-            const amtFmt        = `${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+            const amtFmt        = `${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
 
             const row = (label, value, vs = '') =>
                 `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;border-bottom:1px solid #E5E5E5;font-size:0.81rem;gap:14px;background:#fff;">
@@ -2577,7 +2633,7 @@
                                 <div class="tx-name">${etiqueta}: ${contraparte}</div>
                                 ${fechaStr ? `<div class="tx-date">${fechaStr}</div>` : ''}
                             </div>
-                            <div class="tx-amount" style="color:${colorAmt};">${signo} ${esUsd ? 'US$' : '$'}${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                            <div class="tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                         </div>`;
                 }).join('');
             } catch (err) {
@@ -2661,7 +2717,7 @@
                     if (cuentaUsdDashboard) {
                         cuentaUsdDashboard.saldo = Number(cuentaUsdDashboard.saldo || 0) + totalUsd;
                         const elSaldoUsd = document.getElementById('saldoUsdCard');
-                        if (elSaldoUsd) elSaldoUsd.textContent = fmtUsdCard(cuentaUsdDashboard.saldo);
+                        if (elSaldoUsd) elSaldoUsd.textContent = saldoUsdVisible ? fmtUsdCard(cuentaUsdDashboard.saldo) : 'US$ ******';
                     }
                     playSound('ingreso');
                     nuevasUsd.forEach(t => {
@@ -2820,6 +2876,7 @@
         let cuentaUsdModal   = null;
         let origenTransferencia = 'ARS';
         let cbuOrigenActual  = null;
+        let _otraMonedaDestino = null;
 
         async function cargarCuentasParaTransferencia() {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
@@ -2857,6 +2914,29 @@
                 : 'Alias o CBU en USD del destinatario';
         }
 
+        // Si el destinatario encontrado también tiene cuenta local en la otra moneda, ofrece
+        // cambiarse a esa cuenta (y a mi propio origen en esa moneda) con un solo toque.
+        function revisarOtraMonedaDestino(cbu, monedaActual) {
+            _otraMonedaDestino = null;
+            document.getElementById('destinatarioMonedaToggle').style.display = 'none';
+            fetch(`/api/otra-moneda-persona?cbu=${encodeURIComponent(cbu)}&monedaActual=${monedaActual}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.disponible) return;
+                    _otraMonedaDestino = { cbu: data.cbu, moneda: data.moneda };
+                    document.getElementById('destinatarioMonedaToggleTexto').textContent = `Enviar a su cuenta en ${data.moneda}`;
+                    document.getElementById('destinatarioMonedaToggle').style.display = 'block';
+                })
+                .catch(() => {});
+        }
+
+        function elegirMonedaDestino() {
+            if (!_otraMonedaDestino) return;
+            setOrigenTransferencia(_otraMonedaDestino.moneda);
+            document.getElementById('inputBusqueda').value = _otraMonedaDestino.cbu;
+            buscarDestinatario();
+        }
+
         function abrirModalTransferencia() {
             document.getElementById('modalTransferencia').style.display = 'flex';
             mostrarPaso(1);
@@ -2867,6 +2947,8 @@
             document.getElementById('errorTransferencia').style.display = 'none';
             destinatarioCbuSeleccionado = null;
             _cbuPendienteContacto = null;
+            _otraMonedaDestino = null;
+            document.getElementById('destinatarioMonedaToggle').style.display = 'none';
             motivoSeleccionado   = null;
             mensajeTransferencia = null;
             document.getElementById('motivoLabel').textContent = 'Motivo (opcional)';
@@ -2926,6 +3008,8 @@
             document.getElementById('errorBusqueda').style.display = 'none';
             document.getElementById('destinatarioDetails').style.display = 'none';
             document.getElementById('destinatarioBancoRow').style.display = 'none';
+            document.getElementById('destinatarioMonedaToggle').style.display = 'none';
+            _otraMonedaDestino = null;
         }
 
         function actualizarImportePreview(val) {
@@ -2994,6 +3078,7 @@
                 }
 
                 document.getElementById('errorTransferencia').style.display = 'none';
+                revisarOtraMonedaDestino(data.cbu, origenTransferencia);
                 mostrarPaso(2);
             } catch (err) {
                 errEl.textContent = 'Error de conexión: ' + err.message;
@@ -3181,7 +3266,7 @@
                 document.getElementById('usdCardEmpty').style.display = tieneCuenta ? 'none' : 'block';
                 document.getElementById('usdCardBody').style.display = tieneCuenta ? 'block' : 'none';
                 if (tieneCuenta) {
-                    document.getElementById('saldoUsdCard').textContent = fmtUsdCard(cuentaUsdDashboard.saldo || 0);
+                    document.getElementById('saldoUsdCard').textContent = saldoUsdVisible ? fmtUsdCard(cuentaUsdDashboard.saldo || 0) : 'US$ ******';
                     document.getElementById('cbuUsdCard').textContent = formatCbu(cuentaUsdDashboard.cbu);
                     document.getElementById('aliasUsdCard').textContent = cuentaUsdDashboard.alias || 'Sin alias';
                 }
@@ -3549,7 +3634,7 @@
                             ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                             : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen)) + (esUsdRow ? ' (USD)' : ''));
                     const signo  = esCam ? (esCamCompra ? '-' : '+') : ((esD || !envio) ? '+' : '-');
-                    const imp    = `${signo}${esUsdRow ? 'US$' : '$'} ${fmtAmt(t.importe)}`;
+                    const imp    = `${signo}${simboloMoneda(esUsdRow)} ${fmtAmt(t.importe)}`;
                     const color  = signo === '+' ? [21,128,61] : [185,28,28];
 
                     if (i % 2 === 0) { doc.setFillColor(249, 250, 251); doc.rect(40, y - 9, W - 80, 24, 'F'); }
@@ -3662,7 +3747,7 @@
                     ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                     : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
                 const negativo = esCambio ? esCambioCompra : esEnvio;
-                const importe = (negativo ? '-' : '+') + (esUsdRow ? 'US$' : '') + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
+                const importe = (negativo ? '-' : '+') + simboloMoneda(esUsdRow) + ' ' + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
                 return [fecha, tipo, nombre, importe, t.estado || '', t.motivoRechazo || ''];
             });
             const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
