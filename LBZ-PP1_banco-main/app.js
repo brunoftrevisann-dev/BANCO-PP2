@@ -4,7 +4,6 @@ const path = require('path');
 const cors = require('cors');
 const app = express();
 const personaController = require('./controllers/personaController');
-const tablaController = require('./controllers/tablaController');
 
 app.use(cors({
     origin: '*',
@@ -77,9 +76,6 @@ app.get('/api/cotizacion-dolar', personaController.cotizacionDolar);
 app.post('/api/cuenta-usd/solicitar-verificacion', personaController.solicitarAperturaUsd);
 app.post('/api/cuenta-usd', personaController.abrirCuentaUsd);
 app.post('/api/cambiar-divisa', personaController.cambiarDivisa);
-
-// Endpoints sin joins (tablas crudas)
-app.get('/api/tablas/:tabla', tablaController.obtenerTabla);
 
 // Columnas de verificación de email
 const db = require('./config/db');
