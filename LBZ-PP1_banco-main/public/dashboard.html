@@ -538,7 +538,7 @@
         .btn-export:hover { color: var(--accent); border-color: var(--accent); }
 
         /* ── MODAL CONTACTOS ── */
-        .contact-modal-list { max-height: 420px; overflow-y: auto; overscroll-behavior: contain; }
+        .contact-modal-list { max-height: 420px; overflow-y: auto; }
         .contact-modal-item { display: flex; align-items: center; gap: 12px; padding: 13px 24px; border-bottom: 1px solid var(--border); transition: background 0.12s; }
         .contact-modal-item:last-child { border-bottom: none; }
         .contact-modal-item:hover { background: rgba(0,82,255,0.03); }
@@ -661,7 +661,7 @@
 
         /* ── HISTORIAL MODAL ── */
         .historial-panel { max-height: 90vh; display: flex; flex-direction: column; }
-        .historial-body { padding: 8px 20px; overflow-y: auto; overscroll-behavior: contain; flex: 1; font-family: 'Inter', sans-serif; }
+        .historial-body { padding: 8px 20px; overflow-y: auto; flex: 1; font-family: 'Inter', sans-serif; }
         .historial-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); animation: txFadeIn 0.3s ease both; cursor: pointer; border-radius: 8px; transition: background 0.12s; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
         .historial-item:last-child { border-bottom: none; }
         .historial-item:hover { background: rgba(0,82,255,0.04); }
@@ -687,7 +687,7 @@
         .detalle-tx-row:last-child { border-bottom: none; }
         .detalle-tx-label { color: var(--muted); flex-shrink: 0; }
         .detalle-tx-value { font-weight: 600; color: var(--text); text-align: right; word-break: break-all; }
-        .detalle-tx-body { padding: 4px 24px 24px; overflow-y: auto; overscroll-behavior: contain; max-height: calc(90vh - 60px); }
+        .detalle-tx-body { padding: 4px 24px 24px; overflow-y: auto; max-height: calc(90vh - 60px); }
 
         /* ── DATOS PERSONALES MODAL ── */
         .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
@@ -1370,33 +1370,6 @@
     </div>
 
     <script>
-        // ── SCROLL LOCK DE FONDO CUANDO HAY UN MODAL ABIERTO ──────────────
-        // No engancha con cada apertura/cierre individual (son muchos call sites distintos):
-        // observa los overlays existentes y reacciona a los mismos cambios de style/class que
-        // ya se les aplica hoy para mostrarlos/ocultarlos.
-        (function () {
-            const overlays = document.querySelectorAll('.modal-overlay, .confirm-overlay');
-            let bloqueado = false;
-            function algunoAbierto() {
-                return Array.from(overlays).some(el => getComputedStyle(el).display !== 'none');
-            }
-            function actualizar() {
-                const abierto = algunoAbierto();
-                if (abierto && !bloqueado) {
-                    bloqueado = true;
-                    document.documentElement.style.overflow = 'hidden';
-                    document.body.style.overflow = 'hidden';
-                } else if (!abierto && bloqueado) {
-                    bloqueado = false;
-                    document.documentElement.style.overflow = '';
-                    document.body.style.overflow = '';
-                }
-            }
-            const observer = new MutationObserver(actualizar);
-            overlays.forEach(el => observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] }));
-            actualizar();
-        })();
-
         // ── DARK MODE ────────────────────────────────────────────────────
         const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
         const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
@@ -3367,6 +3340,8 @@
             }
         ];
         let _obStep = 0;
+        let _obScrollHandler = null;
+        let _obScrollTimeout = null;
 
         function iniciarOnboarding() {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
@@ -3392,18 +3367,32 @@
             // Spotlight
             const spotlight = document.getElementById('obSpotlight');
             const backdrop  = document.getElementById('obBackdrop');
+            if (_obScrollHandler) { window.removeEventListener('scroll', _obScrollHandler); _obScrollHandler = null; }
+            clearTimeout(_obScrollTimeout);
             if (step.target) {
                 const el  = document.querySelector(step.target);
                 if (el) {
-                    const r   = el.getBoundingClientRect();
-                    const pad = 10;
-                    spotlight.style.top    = (r.top  - pad) + 'px';
-                    spotlight.style.left   = (r.left - pad) + 'px';
-                    spotlight.style.width  = (r.width  + pad * 2) + 'px';
-                    spotlight.style.height = (r.height + pad * 2) + 'px';
+                    const posicionarSpotlight = () => {
+                        const r   = el.getBoundingClientRect();
+                        const pad = 10;
+                        spotlight.style.top    = (r.top  - pad) + 'px';
+                        spotlight.style.left   = (r.left - pad) + 'px';
+                        spotlight.style.width  = (r.width  + pad * 2) + 'px';
+                        spotlight.style.height = (r.height + pad * 2) + 'px';
+                    };
                     spotlight.style.borderRadius = step.target === '#avatarEl' ? '12px' : '16px';
+                    posicionarSpotlight();
                     spotlight.classList.add('visible');
                     backdrop.classList.remove('dim');
+                    // Si la sección no está a la vista, la pantalla se desplaza sola hasta ella;
+                    // mientras dura ese scroll, el spotlight se recalcula en cada frame para que
+                    // "acompañe" a la sección en vez de quedar apuntando a donde estaba antes.
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    _obScrollHandler = () => posicionarSpotlight();
+                    window.addEventListener('scroll', _obScrollHandler, { passive: true });
+                    _obScrollTimeout = setTimeout(() => {
+                        if (_obScrollHandler) { window.removeEventListener('scroll', _obScrollHandler); _obScrollHandler = null; }
+                    }, 600);
                 } else {
                     spotlight.classList.remove('visible');
                     backdrop.classList.add('dim');
@@ -3422,6 +3411,8 @@
 
         function finalizarOnboarding() {
             document.getElementById('onboardingOverlay').classList.remove('open');
+            if (_obScrollHandler) { window.removeEventListener('scroll', _obScrollHandler); _obScrollHandler = null; }
+            clearTimeout(_obScrollTimeout);
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             if (u) localStorage.setItem('tuo_onboarding_' + u.cbu, '1');
         }

@@ -343,30 +343,6 @@
     </div>
 
     <script>
-        // ── SCROLL LOCK DE FONDO CUANDO HAY UN MODAL ABIERTO ──────────────
-        (function () {
-            const overlays = document.querySelectorAll('.qr-overlay');
-            let bloqueado = false;
-            function algunoAbierto() {
-                return Array.from(overlays).some(el => getComputedStyle(el).display !== 'none');
-            }
-            function actualizar() {
-                const abierto = algunoAbierto();
-                if (abierto && !bloqueado) {
-                    bloqueado = true;
-                    document.documentElement.style.overflow = 'hidden';
-                    document.body.style.overflow = 'hidden';
-                } else if (!abierto && bloqueado) {
-                    bloqueado = false;
-                    document.documentElement.style.overflow = '';
-                    document.body.style.overflow = '';
-                }
-            }
-            const observer = new MutationObserver(actualizar);
-            overlays.forEach(el => observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] }));
-            actualizar();
-        })();
-
         function resolverTema() {
             const t = localStorage.getItem('tuo-theme');
             if (t === 'light' || t === 'dark') return t;
