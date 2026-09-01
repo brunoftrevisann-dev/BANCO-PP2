@@ -5,6 +5,21 @@ const cors = require('cors');
 const app = express();
 const personaController = require('./controllers/personaController');
 
+// Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
+// la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
+// Vercel Hobby, donde "Deployment Protection: All Deployments" es una función paga y
+// "Standard Protection" no cubre el dominio de producción.
+app.use((req, res, next) => {
+    if (process.env.MAINTENANCE_MODE !== 'true') return next();
+    res.status(503).send(`<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>tuo — En mantenimiento</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#111113;color:#F0F0F0;font-family:-apple-system,sans-serif;text-align:center;padding:24px;">
+<div><div style="font-size:2rem;font-weight:800;letter-spacing:-0.05em;color:#3D7BFF;margin-bottom:16px;">tuo</div>
+<h1 style="font-size:1.2rem;margin:0 0 8px;">Estamos en mantenimiento</h1>
+<p style="color:#9C9C9F;font-size:0.9rem;margin:0;">Volvemos enseguida. Gracias por tu paciencia.</p></div></body></html>`);
+});
+
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
