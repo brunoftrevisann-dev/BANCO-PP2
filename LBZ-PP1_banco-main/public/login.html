@@ -410,10 +410,19 @@
             btnLogin.textContent = 'Verificando...';
 
             try {
+                // Identificador propio y estable del navegador (no confundir con detectarDispositivo(),
+                // que da una etiqueta legible pero no es única) — así el backend puede saber si este
+                // dispositivo ya iniciaba sesión antes en esta cuenta o es la primera vez.
+                let deviceId = localStorage.getItem('tuo_device_id');
+                if (!deviceId) {
+                    deviceId = crypto.randomUUID();
+                    localStorage.setItem('tuo_device_id', deviceId);
+                }
+
                 const response = await fetch('/api/personas/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password, deviceId, dispositivoDescripcion: detectarDispositivo() })
                 });
 
                 const result = await response.json();

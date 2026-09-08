@@ -183,9 +183,9 @@
                 <div class="importe-label">Importe a depositar</div>
                 <div class="importe-input-wrap">
                     <span class="importe-symbol">$</span>
-                    <input id="importeDeposito" class="input-dep" type="number" min="1" max="1000000"
+                    <input id="importeDeposito" class="input-dep" type="text" inputmode="decimal"
                         placeholder="0,00" autofocus
-                        oninput="previsualizar()"
+                        oninput="formatearMonto(this); previsualizar();"
                         onkeydown="if(event.key==='Enter') depositar()">
                 </div>
                 <div id="preview" class="importe-preview" style="opacity:0;"></div>
@@ -295,8 +295,21 @@
             setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
         }
 
+        // Formatea el monto con puntos de miles mientras se escribe (estilo es-AR: "1.234.567,89").
+        // El input queda como texto (no se puede mostrar separadores en un <input type="number">),
+        // así que hay que leerlo con valorNumerico() en vez de Number()/parseFloat() directo.
+        function formatearMonto(input) {
+            const crudo = input.value.replace(/[^\d,]/g, '');
+            const [entero, decimal] = crudo.split(',');
+            const enteroFmt = (entero || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            input.value = decimal !== undefined ? `${enteroFmt},${decimal.slice(0, 2)}` : enteroFmt;
+        }
+        function valorNumerico(input) {
+            return parseFloat((input.value || '').replace(/\./g, '').replace(',', '.')) || 0;
+        }
+
         function previsualizar() {
-            const val = Number(document.getElementById('importeDeposito').value);
+            const val = valorNumerico(document.getElementById('importeDeposito'));
             const preview = document.getElementById('preview');
             const err = document.getElementById('depError');
             err.style.display = 'none';
@@ -311,7 +324,7 @@
         }
 
         async function depositar() {
-            const importe = Number(document.getElementById('importeDeposito').value);
+            const importe = valorNumerico(document.getElementById('importeDeposito'));
             const err = document.getElementById('depError');
             const btn = document.getElementById('btnDepositar');
             err.style.display = 'none';

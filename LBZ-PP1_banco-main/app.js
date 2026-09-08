@@ -4,6 +4,8 @@ const path = require('path');
 const cors = require('cors');
 const app = express();
 const personaController = require('./controllers/personaController');
+const prestamoController = require('./controllers/prestamoController');
+const cronController = require('./controllers/cronController');
 
 // Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
 // la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
@@ -11,6 +13,12 @@ const personaController = require('./controllers/personaController');
 // "Standard Protection" no cubre el dominio de producción.
 app.use((req, res, next) => {
     if (process.env.MAINTENANCE_MODE !== 'true') return next();
+    // Excepción: el cron diario de préstamos tiene que poder correr aunque el sitio
+    // esté pausado. Solo pasa si además trae el secreto correcto (el propio handler
+    // lo vuelve a chequear, así esto no queda como una puerta trasera pública).
+    if (req.path.startsWith('/api/cron/') && req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`) {
+        return next();
+    }
     res.status(503).send(`<!doctype html><html lang="es"><head><meta charset="utf-8">
 <title>tuo — En mantenimiento</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -92,6 +100,20 @@ app.post('/api/cuenta-usd/solicitar-verificacion', personaController.solicitarAp
 app.post('/api/cuenta-usd', personaController.abrirCuentaUsd);
 app.post('/api/cambiar-divisa', personaController.cambiarDivisa);
 
+// Préstamos
+app.get('/api/prestamos/tasas', prestamoController.obtenerTasas);
+app.get('/api/prestamos/perfil-crediticio', prestamoController.perfilCrediticio);
+app.post('/api/prestamos/simular', prestamoController.simular);
+app.post('/api/prestamos/solicitar', prestamoController.solicitar);
+app.get('/api/prestamos', prestamoController.listar);
+app.get('/api/prestamos/proxima-cuota', prestamoController.proximaCuota);
+app.get('/api/prestamos/:id/cuotas', prestamoController.cuotas);
+app.post('/api/prestamos/:id/pagar-cuota', prestamoController.pagarCuota);
+app.post('/api/prestamos/:id/cancelar', prestamoController.cancelarAnticipado);
+
+// Cron diario (recordatorios de cuota + escalada a Central de Deudores)
+app.get('/api/cron/prestamos-diario', cronController.diario);
+
 // Columnas de verificación de email
 const db = require('./config/db');
 db.query(`
@@ -125,6 +147,58 @@ db.query(`
     created_at        TIMESTAMPTZ DEFAULT NOW()
   )
 `).catch(e => console.error('Error creando tabla Transacciones:', e.message));
+
+// Préstamos: tipo de producto nuevo + tablas de préstamos/cuotas
+db.query(`INSERT INTO Tipos_Producto (nombre) VALUES ('PRESTAMO') ON CONFLICT (nombre) DO NOTHING`)
+  .catch(e => console.error('Error agregando tipo de producto PRESTAMO:', e.message));
+
+db.query(`
+  CREATE TABLE IF NOT EXISTS Prestamos (
+    id_prestamo       SERIAL PRIMARY KEY,
+    id_producto       INTEGER NOT NULL UNIQUE REFERENCES Productos(id_producto),
+    monto             DECIMAL(15,2) NOT NULL,
+    plazo_meses       INTEGER NOT NULL,
+    tna               DECIMAL(8,5) NOT NULL,
+    cft               DECIMAL(8,5),
+    cuota_monto       DECIMAL(15,2) NOT NULL,
+    estado            VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+    fecha_alta        TIMESTAMP DEFAULT NOW(),
+    fecha_cancelacion TIMESTAMP
+  )
+`).catch(e => console.error('Error creando tabla Prestamos:', e.message));
+
+db.query(`
+  CREATE TABLE IF NOT EXISTS Cuotas (
+    id_cuota          SERIAL PRIMARY KEY,
+    id_prestamo       INTEGER NOT NULL REFERENCES Prestamos(id_prestamo),
+    numero_cuota      INTEGER NOT NULL,
+    capital           DECIMAL(15,2) NOT NULL,
+    interes           DECIMAL(15,2) NOT NULL,
+    monto             DECIMAL(15,2) NOT NULL,
+    fecha_vencimiento DATE NOT NULL,
+    estado            VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    fecha_pago        TIMESTAMP,
+    UNIQUE(id_prestamo, numero_cuota)
+  )
+`).catch(e => console.error('Error creando tabla Cuotas:', e.message));
+
+db.query(`CREATE INDEX IF NOT EXISTS idx_cuotas_estado_venc ON Cuotas(estado, fecha_vencimiento)`)
+  .catch(e => console.error('Error creando indice idx_cuotas_estado_venc:', e.message));
+db.query(`CREATE INDEX IF NOT EXISTS idx_cuotas_prestamo ON Cuotas(id_prestamo)`)
+  .catch(e => console.error('Error creando indice idx_cuotas_prestamo:', e.message));
+
+// Dispositivos conocidos, para el aviso de "nuevo inicio de sesión desde otro dispositivo"
+db.query(`
+  CREATE TABLE IF NOT EXISTS Dispositivos_Conocidos (
+    id            SERIAL PRIMARY KEY,
+    id_persona    INTEGER NOT NULL REFERENCES Personas(id),
+    device_id     VARCHAR(100) NOT NULL,
+    descripcion   VARCHAR(100),
+    primer_login  TIMESTAMP DEFAULT NOW(),
+    ultimo_login  TIMESTAMP DEFAULT NOW(),
+    UNIQUE(id_persona, device_id)
+  )
+`).catch(e => console.error('Error creando tabla Dispositivos_Conocidos:', e.message));
 
 // Proxy para obtener nombre de banco por código
 app.get('/api/banco/:code', async (req, res) => {

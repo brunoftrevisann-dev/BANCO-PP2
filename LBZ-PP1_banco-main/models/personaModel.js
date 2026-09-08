@@ -94,6 +94,28 @@ const Persona = {
     return rows[0]?.dni || null;
   },
 
+  // Registra (o actualiza) el dispositivo con el que se logueó esta persona. `tenia_dispositivos`
+  // indica si YA existía algún dispositivo conocido para esta cuenta antes de este mismo login
+  // (para no mandar el aviso de "nuevo dispositivo" justo en el primer login de la cuenta, que
+  // siempre parecería "nuevo" sin serlo realmente). `es_nuevo` indica si ESTE dispositivo puntual
+  // no estaba entre los ya conocidos.
+  registrarDispositivo: async (idPersona, deviceId, descripcion) => {
+    if (!deviceId) return { tenia_dispositivos: true, es_nuevo: false };
+    const previosResult = await db.query(
+      'SELECT 1 FROM Dispositivos_Conocidos WHERE id_persona = $1 LIMIT 1',
+      [idPersona]
+    );
+    const teniaDispositivos = previosResult.rows.length > 0;
+    const { rows } = await db.query(
+      `INSERT INTO Dispositivos_Conocidos (id_persona, device_id, descripcion)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (id_persona, device_id) DO UPDATE SET ultimo_login = NOW(), descripcion = EXCLUDED.descripcion
+       RETURNING (xmax = 0) AS es_nuevo`,
+      [idPersona, deviceId, descripcion || null]
+    );
+    return { tenia_dispositivos: teniaDispositivos, es_nuevo: rows[0]?.es_nuevo || false };
+  },
+
   getDatosBasicos: async (idPersona) => {
     const { rows } = await db.query('SELECT dni, nombre, apellido FROM Personas WHERE id = $1', [idPersona]);
     return rows[0] || null;

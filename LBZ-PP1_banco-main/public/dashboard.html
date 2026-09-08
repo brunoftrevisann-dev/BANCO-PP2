@@ -141,6 +141,25 @@
         /* ── TARJETA DE CUENTA ── */
         /* ── STACK ARS/USD: ambas tarjetas ocupan la misma celda, así el contenedor siempre mide lo que la más alta de las dos ── */
         .account-card-wrap { position: relative; display: grid; }
+
+        /* ── AVISO DE CUOTA DE PRÉSTAMO ── */
+        .banner-cuota {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; border-radius: 14px; margin-bottom: 16px;
+            font-size: 0.85rem; cursor: pointer; transition: opacity 0.15s;
+        }
+        .banner-cuota:hover { opacity: 0.92; }
+        .banner-cuota.por-vencer { background: var(--accent); color: white; }
+        .banner-cuota.vencida { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+        [data-theme="dark"] .banner-cuota.vencida { background: #2D0A0A; color: #FF6B6B; border-color: #5C1A1A; }
+        .banner-cuota-icon { flex-shrink: 0; display: flex; }
+        .banner-cuota-text { flex: 1; line-height: 1.35; }
+        .banner-cuota-text b { font-weight: 700; }
+        .banner-cuota-close {
+            background: none; border: none; color: inherit; opacity: 0.7; cursor: pointer;
+            padding: 4px; flex-shrink: 0; display: flex;
+        }
+        .banner-cuota-close:hover { opacity: 1; }
         .account-card-wrap > .account-card {
             grid-area: 1 / 1;
             opacity: 0; z-index: 1; pointer-events: none;
@@ -850,6 +869,11 @@
                         <span data-i18n="dashboard.menu.contacts">Contactos</span>
                     </button>
                     <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="navTo('prestamos.html')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        <span data-i18n="dashboard.menu.loans">Préstamos</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="abrirEstadisticas()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                         <span data-i18n="dashboard.menu.stats">Estadísticas</span>
@@ -870,6 +894,9 @@
     </header>
 
     <main class="main">
+
+        <!-- Aviso de cuota de préstamo (aparece si hay una por vencer o vencida) -->
+        <div id="bannerCuota" style="display:none;"></div>
 
         <!-- Tarjeta de cuenta -->
         <div class="account-card-wrap">
@@ -1013,6 +1040,10 @@
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><path d="M15 9.5a2.5 2.5 0 0 0-2.5-2.5h-1.5a2.2 2.2 0 0 0 0 4.4h1.5a2.2 2.2 0 0 1 0 4.6H11a2.5 2.5 0 0 1-2.5-2.5"/></svg></div>
                     <span class="action-label" data-i18n="dashboard.usd">Dólares</span>
                 </button>
+                <button class="action-btn" onclick="navTo('prestamos.html')" data-tooltip="Préstamos">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg></div>
+                    <span class="action-label" data-i18n="dashboard.menu.loans">Préstamos</span>
+                </button>
             </div>
         </div>
 
@@ -1142,7 +1173,7 @@
                     <div class="importe-label">Importe a transferir</div>
                     <div class="importe-input-wrap">
                         <span class="importe-symbol" id="importeSymboloTransfer">$</span>
-                        <input id="inputImporte" class="input-modal" type="number" min="1" placeholder="0,00" style="padding-left:18px;" oninput="actualizarImportePreview(this.value)">
+                        <input id="inputImporte" class="input-modal" type="text" inputmode="decimal" placeholder="0,00" style="padding-left:18px;" oninput="formatearMonto(this); actualizarImportePreview(this.value);">
                     </div>
                     <div id="importePreview" class="importe-preview"></div>
 
@@ -1454,6 +1485,12 @@
         function esTxUsd(t) {
             return !!(cuentaUsdDashboard && cuentaUsdDashboard.cbu && (t.cbuOrigen === cuentaUsdDashboard.cbu || t.cbuDestino === cuentaUsdDashboard.cbu));
         }
+        // Movimientos de Préstamos (otorgamiento, pago de cuota, cancelación anticipada) usan
+        // el CBU sentinela "PRESTAMO" de un lado — no es una cuenta real, así que en vez de
+        // intentar resolverle un nombre de contraparte, el movimiento se etiqueta "Préstamos".
+        function esPrestamoTx(t) {
+            return t.tipo === 'otorgamiento_prestamo' || t.tipo === 'pago_cuota' || t.tipo === 'cancelacion_prestamo';
+        }
         // Símbolo de moneda para un MOVIMIENTO (historial/detalle/exportaciones) — no confundir con
         // el símbolo de "mi propia cuenta" del selector de origen en el modal de transferencia, que
         // intencionalmente sigue mostrando "US$" (ver plan: alcance limitado a la lista de movimientos).
@@ -1661,6 +1698,7 @@
             document.getElementById('tipoCuenta').textContent = (u.tipo_producto || 'CAJA_AHORRO').replace(/_/g, ' ');
             actualizarSaldoDisplay(parseFloat(u.saldo) || 0, true);
             cargarCuentaUsdDashboard();
+            cargarBannerCuota();
 
             // Detect pending deposit from depositar.html and animate saldo
             const _pendingDepKey = 'tuo_pending_deposit_' + u.cbu;
@@ -1936,20 +1974,23 @@
                 txs.forEach(t => {
                     const esDeposito  = t.cbuOrigen === 'DEPOSITO';
                     const esCambio    = t.tipo === 'cambio_divisa';
+                    const esPrestamo  = esPrestamoTx(t);
                     const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
-                    const esEnvio     = !esDeposito && !esCambio && esMiCbu(t.cbuOrigen);
-                    const esUsd       = !esDeposito && !esCambio && esTxUsd(t);
+                    const esEnvio     = !esDeposito && !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
+                    const esUsd       = !esDeposito && !esCambio && !esPrestamo && esTxUsd(t);
                     const contraparte = esDeposito
                         ? (window.t ? window.t('dashboard.tx.deposit') : 'Depósito en efectivo')
+                        : esPrestamo
+                        ? 'Préstamos'
                         : esCambio
                         ? (esCompraCambio ? 'Compra de dólares' : 'Venta de dólares')
                         : (esEnvio
                             ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || t.cbuDestino)
                             : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || t.cbuOrigen));
-                    const envioLike   = esCambio ? esCompraCambio : esEnvio;
+                    const envioLike   = esCambio ? esCompraCambio : (esPrestamo ? t.cbuOrigen !== 'PRESTAMO' : esEnvio);
                     const colorAmt    = envioLike ? '#B91C1C' : '#15803D';
                     const signo       = envioLike ? '−' : '+';
-                    const etiqueta    = esDeposito ? (window.t ? window.t('dashboard.tx.deposito') : 'Depósito') : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
+                    const etiqueta    = esDeposito ? (window.t ? window.t('dashboard.tx.deposito') : 'Depósito') : esPrestamo ? 'Préstamos' : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
                     const badgeBg     = envioLike ? '#FEF2F2' : '#F0FDF4';
                     const badgeFg     = envioLike ? '#B91C1C' : '#15803D';
                     const estadoOk    = t.estado === 'aprobada' || t.estado === 'approved';
@@ -1958,9 +1999,11 @@
                         : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;';
                     const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
                     const fechaStr = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
-                    const bg  = (esDeposito || esCambio) ? '#0052FF' : avatarColor(contraparte || '');
+                    const bg  = (esDeposito || esCambio || esPrestamo) ? '#0052FF' : avatarColor(contraparte || '');
                     const ini = esDeposito
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`
+                        : esPrestamo
+                        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>`
                         : esCambio
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`
                         : initials(contraparte || '');
@@ -2109,8 +2152,41 @@
             const u          = _usuarioHist;
             const esDeposito = t.cbuOrigen === 'DEPOSITO';
             const esCambio   = t.tipo === 'cambio_divisa';
-            const esEnvio    = !esDeposito && !esCambio && esMiCbu(t.cbuOrigen);
-            const esUsd      = !esDeposito && !esCambio && esTxUsd(t);
+            const esPrestamo = esPrestamoTx(t);
+            const esEnvio    = !esDeposito && !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
+            const esUsd      = !esDeposito && !esCambio && !esPrestamo && esTxUsd(t);
+
+            if (esPrestamo) {
+                const envioLike = t.cbuOrigen !== 'PRESTAMO';
+                const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                const fechaHora = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+                const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const colorAmt = envioLike ? '#B91C1C' : '#15803D';
+                const signo    = envioLike ? '−' : '+';
+                document.getElementById('detalleTxCuerpo').innerHTML = `
+                    <div class="detalle-tx-hero">
+                        <div class="detalle-tx-avatar" style="background:#0052FF;">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>
+                        </div>
+                        <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${fmt(t.importe)}</div>
+                        <div class="detalle-tx-label">Préstamos</div>
+                        <span class="historial-estado" style="background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;">Aprobada</span>
+                    </div>
+                    <div class="detalle-tx-section">
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Fecha</span><span class="detalle-tx-value">${fechaHora}</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Tipo</span><span class="detalle-tx-value">Préstamos</span></div>
+                    </div>
+                    ${t.descripcion ? `
+                    <div class="detalle-tx-section">
+                        <div class="detalle-tx-section-title">Detalle</div>
+                        <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
+                            ${t.descripcion}
+                        </div>
+                    </div>` : ''}
+                    <button class="btn-comprobante-hist" onclick="navTo('prestamos.html')">Ver mis préstamos</button>`;
+                document.getElementById('modalDetalleTx').style.display = 'flex';
+                return;
+            }
 
             if (esCambio) {
                 const esCompraCambio = t.cbuOrigen === u.cbu;
@@ -2573,22 +2649,27 @@
                 await resolverNombresCbu(propias.slice(0, 3).map(t => esMiCbu(t.cbuOrigen) ? t.cbuDestino : t.cbuOrigen));
                 container.innerHTML = propias.slice(0, 3).map((t, idx) => {
                     const esCambio    = t.tipo === 'cambio_divisa';
+                    const esPrestamo  = esPrestamoTx(t);
                     const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
-                    const esEnvio     = !esCambio && esMiCbu(t.cbuOrigen);
-                    const esUsd       = !esCambio && esTxUsd(t);
-                    const envioLike   = esCambio ? esCompraCambio : esEnvio;
-                    const contraparte = esCambio
+                    const esEnvio     = !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
+                    const esUsd       = !esCambio && !esPrestamo && esTxUsd(t);
+                    const envioLike   = esCambio ? esCompraCambio : (esPrestamo ? t.cbuOrigen !== 'PRESTAMO' : esEnvio);
+                    const contraparte = esPrestamo
+                        ? 'Préstamos'
+                        : esCambio
                         ? (esCompraCambio ? 'Compra de dólares' : 'Venta de dólares')
                         : (esEnvio
                             ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || 'CBU ' + (t.cbuDestino || '').slice(-6))
                             : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || 'CBU ' + (t.cbuOrigen  || '').slice(-6)));
                     const colorAmt = envioLike ? '#B91C1C' : '#15803D';
                     const signo    = envioLike ? '−' : '+';
-                    const etiqueta = esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
+                    const etiqueta = esPrestamo ? '' : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
                     const fecha    = t.fecha || t.createdAt || t.timestamp || t.created_at;
                     const fechaStr = fecha ? new Date(fecha).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
-                    const bg       = esCambio ? '#0052FF' : avatarColor(contraparte);
-                    const ini      = esCambio
+                    const bg       = (esCambio || esPrestamo) ? '#0052FF' : avatarColor(contraparte);
+                    const ini      = esPrestamo
+                        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>`
+                        : esCambio
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`
                         : initials(contraparte);
                     const badgeBg  = envioLike ? '#FEF2F2' : '#F0FDF4';
@@ -2603,7 +2684,7 @@
                                 <div class="tx-badge" style="background:${badgeBg};">${arrowSvg}</div>
                             </div>
                             <div class="tx-label">
-                                <div class="tx-name">${etiqueta}: ${contraparte}</div>
+                                <div class="tx-name">${etiqueta ? etiqueta + ': ' : ''}${contraparte}</div>
                                 ${fechaStr ? `<div class="tx-date">${fechaStr}</div>` : ''}
                             </div>
                             <div class="tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
@@ -2670,25 +2751,43 @@
                 const cbuUsd = cuentaUsdDashboard && cuentaUsdDashboard.cbu;
 
                 // Buscar transferencias recibidas que no hayamos visto aún, en ARS y en USD por separado
-                // (el saldo en ARS y el saldo en USD son campos distintos, no se pueden sumar juntos)
+                // (el saldo en ARS y el saldo en USD son campos distintos, no se pueden sumar juntos).
+                // Los movimientos de Préstamos quedan afuera a propósito: esos ya mueven el saldo del
+                // lado del servidor en el momento mismo de la operación (otorgar/pagar/cancelar), así
+                // que sumarlos acá de nuevo duplicaría el crédito/débito sobre un saldo que ya está bien.
                 const nuevas = all.filter(t =>
                     t.cbuDestino === u.cbu &&
                     (t.estado === 'aprobada' || t.estado === 'approved') &&
+                    !esPrestamoTx(t) &&
                     t._id && !_txsVistas.has(t._id)
                 );
                 const nuevasUsd = cbuUsd ? all.filter(t =>
                     t.cbuDestino === cbuUsd && t.tipo !== 'cambio_divisa' &&
                     (t.estado === 'aprobada' || t.estado === 'approved') &&
+                    !esPrestamoTx(t) &&
                     t._id && !_txsVistas.has(t._id)
                 ) : [];
 
                 // Marcar todas como vistas
                 all.forEach(t => t._id && _txsVistas.add(t._id));
 
+                // El saldo real ya lo actualizó el propio servidor (transferir()/sincronizarTransacciones)
+                // antes de que esta respuesta llegue — acá NUNCA se recalcula a mano sumando "lo nuevo"
+                // sobre el valor que ya estaba en pantalla: eso puede duplicar el crédito si ese valor
+                // ya venía actualizado por otra vía (ej. al abrir el dashboard). En vez de eso, cuando
+                // hay algo nuevo, se pide el saldo real de vuelta y se refleja tal cual está en la base.
+                let productosActuales = null;
+                if (nuevas.length || nuevasUsd.length) {
+                    try {
+                        const resProd = await fetch(`/api/personas/${u.id}/productos`);
+                        productosActuales = await resProd.json();
+                    } catch { productosActuales = null; }
+                }
+
                 if (nuevasUsd.length) {
-                    const totalUsd = nuevasUsd.reduce((sum, t) => sum + Number(t.importe), 0);
-                    if (cuentaUsdDashboard) {
-                        cuentaUsdDashboard.saldo = Number(cuentaUsdDashboard.saldo || 0) + totalUsd;
+                    const cuentaUsdActual = Array.isArray(productosActuales) ? productosActuales.find(p => p.moneda === 'USD') : null;
+                    if (cuentaUsdActual && cuentaUsdActual.saldo !== undefined && cuentaUsdDashboard) {
+                        cuentaUsdDashboard.saldo = Number(cuentaUsdActual.saldo);
                         const elSaldoUsd = document.getElementById('saldoUsdCard');
                         if (elSaldoUsd) elSaldoUsd.textContent = saldoUsdVisible ? fmtUsdCard(cuentaUsdDashboard.saldo) : 'US$ ******';
                     }
@@ -2705,19 +2804,15 @@
 
                 if (nuevas.length === 0) return;
 
-                // Actualizar saldo
-                const totalIngresado = nuevas.reduce((sum, t) => sum + Number(t.importe), 0);
-                const nuevoSaldo = saldoReal + totalIngresado;
-                const uActual = JSON.parse(localStorage.getItem('usuarioLogueado'));
-                uActual.saldo = nuevoSaldo;
-                localStorage.setItem('usuarioLogueado', JSON.stringify(uActual));
-                actualizarSaldoDisplay(nuevoSaldo, true);
-
-                fetch('/api/sincronizar-saldo', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cbu: u.cbu, nuevoSaldo })
-                }).catch(() => {});
+                // Actualizar saldo con el valor real del servidor (no un cálculo propio)
+                const cuentaArsActual = Array.isArray(productosActuales) ? productosActuales.find(p => p.moneda === 'ARS') : null;
+                if (cuentaArsActual && cuentaArsActual.saldo !== undefined) {
+                    const nuevoSaldo = Number(cuentaArsActual.saldo);
+                    const uActual = JSON.parse(localStorage.getItem('usuarioLogueado'));
+                    uActual.saldo = nuevoSaldo;
+                    localStorage.setItem('usuarioLogueado', JSON.stringify(uActual));
+                    actualizarSaldoDisplay(nuevoSaldo, true);
+                }
 
                 // Sonido y notificación por cada transferencia nueva
                 playSound('ingreso');
@@ -2985,8 +3080,21 @@
             _otraMonedaDestino = null;
         }
 
+        // Formatea el monto con puntos de miles mientras se escribe (estilo es-AR: "1.234.567,89").
+        // El input queda como texto (no se puede mostrar separadores en un <input type="number">),
+        // así que hay que leerlo con valorNumerico() en vez de Number()/parseFloat() directo.
+        function formatearMonto(input) {
+            const crudo = input.value.replace(/[^\d,]/g, '');
+            const [entero, decimal] = crudo.split(',');
+            const enteroFmt = (entero || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            input.value = decimal !== undefined ? `${enteroFmt},${decimal.slice(0, 2)}` : enteroFmt;
+        }
+        function valorNumerico(input) {
+            return parseFloat((input.value || '').replace(/\./g, '').replace(',', '.')) || 0;
+        }
+
         function actualizarImportePreview(val) {
-            const n  = parseFloat(val);
+            const n  = parseFloat((val || '').replace(/\./g, '').replace(',', '.'));
             const el = document.getElementById('importePreview');
             const simbolo = origenTransferencia === 'ARS' ? '$' : 'US$';
             if (n > 0) {
@@ -3062,7 +3170,7 @@
         }
 
         async function confirmarTransferencia() {
-            const importe = parseFloat(document.getElementById('inputImporte').value);
+            const importe = valorNumerico(document.getElementById('inputImporte'));
             const errEl   = document.getElementById('errorTransferencia');
             const btn     = document.getElementById('btnConfirmar');
             if (!importe || importe <= 0) {
@@ -3192,12 +3300,73 @@
 
         function fmtUsdCard(v) { return 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+        // Aviso de cuota de préstamo (estilo "banner destacado", inspirado en el de Naranja X
+        // pero con la identidad de tuo). Se recalcula en cada carga del dashboard, así que
+        // reaparece mientras la cuota siga vigente/vencida — no queda descartado para siempre.
+        async function cargarBannerCuota() {
+            const banner = document.getElementById('bannerCuota');
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
+            try {
+                const res = await fetch(`/api/prestamos/proxima-cuota?idPersona=${u.id}`);
+                if (!res.ok) { banner.style.display = 'none'; return; }
+                const cuota = await res.json();
+                if (!cuota) { banner.style.display = 'none'; return; }
+
+                const hoy = new Date();
+                const vencimiento = new Date(cuota.fecha_vencimiento);
+                const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
+                const monto = '$ ' + Number(cuota.monto).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const fechaTxt = vencimiento.toLocaleDateString('es-AR', { day: '2-digit', month: 'long' });
+
+                let texto, clase;
+                if (diasRestantes < 0) {
+                    clase = 'vencida';
+                    texto = `Tenés una cuota <b>vencida</b> de <b>${monto}</b> (venció el ${fechaTxt}).`;
+                } else if (diasRestantes <= 3) {
+                    clase = 'por-vencer';
+                    texto = diasRestantes === 0
+                        ? `Tu cuota de <b>${monto}</b> vence <b>hoy</b>.`
+                        : `Tu cuota de <b>${monto}</b> vence en <b>${diasRestantes} día${diasRestantes === 1 ? '' : 's'}</b> (${fechaTxt}).`;
+                } else {
+                    banner.style.display = 'none';
+                    return;
+                }
+
+                banner.innerHTML = `
+                    <div class="banner-cuota ${clase}" onclick="navTo('prestamos.html')">
+                        <span class="banner-cuota-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg></span>
+                        <span class="banner-cuota-text">${texto}</span>
+                        <button class="banner-cuota-close" onclick="event.stopPropagation(); document.getElementById('bannerCuota').style.display='none';" title="Cerrar">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                `;
+                banner.style.display = 'block';
+            } catch {
+                banner.style.display = 'none';
+            }
+        }
+
         async function cargarCuentaUsdDashboard() {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             try {
                 const res = await fetch(`/api/personas/${u.id}/productos`);
                 const productos = await res.json();
                 cuentaUsdDashboard = Array.isArray(productos) ? productos.find(p => p.moneda === 'USD') : null;
+
+                // El saldo en ARS que se muestra al cargar la página viene de localStorage (foto
+                // del último login) — si mientras tanto llegó una transferencia de otro banco, o
+                // simplemente pasó el tiempo, puede estar desactualizado. Acá se pide el valor real
+                // y, si difiere, se corrige tanto en pantalla como en el localStorage guardado.
+                const cuentaArs = Array.isArray(productos) ? productos.find(p => p.moneda === 'ARS') : null;
+                if (cuentaArs && cuentaArs.saldo !== undefined && cuentaArs.saldo !== null) {
+                    const saldoReal = Number(cuentaArs.saldo);
+                    if (!Number.isNaN(saldoReal) && saldoReal !== Number(u.saldo)) {
+                        actualizarSaldoDisplay(saldoReal, true);
+                        u.saldo = saldoReal;
+                        localStorage.setItem('usuarioLogueado', JSON.stringify(u));
+                    }
+                }
             } catch {
                 cuentaUsdDashboard = null;
             } finally {
@@ -3616,15 +3785,17 @@
                     const hora   = fmtTime(raw);
                     const esD    = t.cbuOrigen === 'DEPOSITO';
                     const esCam  = t.tipo === 'cambio_divisa';
+                    const esPr   = esPrestamoTx(t);
                     const esCamCompra = esCam && t.cbuOrigen === u?.cbu;
-                    const esUsdRow = !esD && !esCam && esTxUsd(t);
-                    const envio  = !esD && !esCam && esMiCbu(t.cbuOrigen);
+                    const esUsdRow = !esD && !esCam && !esPr && esTxUsd(t);
+                    const envio  = !esD && !esCam && !esPr && esMiCbu(t.cbuOrigen);
                     const nombre = sa((esD ? 'Deposito'
+                        : esPr ? 'Prestamos'
                         : esCam ? (esCamCompra ? 'Compra de dolares' : 'Venta de dolares')
                         : envio
                             ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                             : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen)) + (esUsdRow ? ' (USD)' : ''));
-                    const signo  = esCam ? (esCamCompra ? '-' : '+') : ((esD || !envio) ? '+' : '-');
+                    const signo  = esCam ? (esCamCompra ? '-' : '+') : esPr ? (t.cbuOrigen === 'PRESTAMO' ? '+' : '-') : ((esD || !envio) ? '+' : '-');
                     const imp    = `${signo}${simboloMoneda(esUsdRow)} ${fmtAmt(t.importe)}`;
                     const color  = signo === '+' ? [21,128,61] : [185,28,28];
 
@@ -3730,14 +3901,15 @@
                 const fecha = new Date(t.fecha || t.createdAt || t.created_at).toLocaleString('es-AR');
                 const esDeposito = t.cbuOrigen === 'DEPOSITO';
                 const esCambio = t.tipo === 'cambio_divisa';
+                const esPrestamo = esPrestamoTx(t);
                 const esCambioCompra = esCambio && t.cbuOrigen === u?.cbu;
-                const esUsdRow = !esDeposito && !esCambio && esTxUsd(t);
-                const esEnvio = !esDeposito && !esCambio && esMiCbu(t.cbuOrigen);
-                const tipo = esDeposito ? 'Depósito' : esCambio ? (esCambioCompra ? 'Compra USD' : 'Venta USD') : esEnvio ? (esUsdRow ? 'Enviado (USD)' : 'Enviado') : (esUsdRow ? 'Recibido (USD)' : 'Recibido');
-                const nombre = esDeposito ? 'Depósito' : esCambio ? (t.descripcion || tipo) : esEnvio
+                const esUsdRow = !esDeposito && !esCambio && !esPrestamo && esTxUsd(t);
+                const esEnvio = !esDeposito && !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
+                const tipo = esDeposito ? 'Depósito' : esPrestamo ? 'Préstamos' : esCambio ? (esCambioCompra ? 'Compra USD' : 'Venta USD') : esEnvio ? (esUsdRow ? 'Enviado (USD)' : 'Enviado') : (esUsdRow ? 'Recibido (USD)' : 'Recibido');
+                const nombre = esDeposito ? 'Depósito' : esPrestamo ? 'Préstamos' : esCambio ? (t.descripcion || tipo) : esEnvio
                     ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                     : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
-                const negativo = esCambio ? esCambioCompra : esEnvio;
+                const negativo = esCambio ? esCambioCompra : esPrestamo ? (t.cbuOrigen !== 'PRESTAMO') : esEnvio;
                 const importe = (negativo ? '-' : '+') + simboloMoneda(esUsdRow) + ' ' + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
                 return [fecha, tipo, nombre, importe, t.estado || '', t.motivoRechazo || ''];
             });

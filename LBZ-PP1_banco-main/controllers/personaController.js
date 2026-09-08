@@ -1,5 +1,5 @@
 const Persona = require('../models/personaModel');
-const { enviarCodigoVerificacion, enviarCodigoPassword, enviarCodigoAperturaUsd } = require('../utils/mailer');
+const { enviarCodigoVerificacion, enviarCodigoPassword, enviarCodigoAperturaUsd, enviarAlertaNuevoDispositivo } = require('../utils/mailer');
 
 function fetchBC(url, options = {}, timeoutMs = 12000) {
   const ctrl = new AbortController();
@@ -91,7 +91,7 @@ exports.crearPersona = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceId, dispositivoDescripcion } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña requeridos' });
     }
@@ -99,6 +99,19 @@ exports.login = async (req, res) => {
     if (!persona) {
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
+
+    // Aviso de nuevo dispositivo: nunca bloquea la respuesta del login, y nunca se manda en
+    // el primer login de la cuenta (todavía no hay ningún dispositivo conocido con qué comparar).
+    Persona.registrarDispositivo(persona.id, deviceId, dispositivoDescripcion)
+      .then(({ tenia_dispositivos, es_nuevo }) => {
+        if (tenia_dispositivos && es_nuevo && persona.email) {
+          enviarAlertaNuevoDispositivo(persona.email, persona.nombre, {
+            dispositivo: dispositivoDescripcion, fecha: new Date().toISOString()
+          }).catch(e => console.error('Error enviando alerta de nuevo dispositivo:', e.message));
+        }
+      })
+      .catch(e => console.error('Error registrando dispositivo:', e.message));
+
     res.json(persona);
   } catch (error) {
     res.status(500).json({ error: error.message });
