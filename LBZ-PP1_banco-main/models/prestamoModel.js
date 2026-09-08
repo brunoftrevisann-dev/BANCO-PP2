@@ -38,6 +38,8 @@ const Prestamo = {
     let ingresosArs = 0;
     for (const t of rows) {
       if (cbus.includes(t.cbu_origen)) continue; // viene de otra cuenta propia (ej. cambio de divisa): no cuenta
+      if (t.cbu_origen === 'PRESTAMO') continue; // el otorgamiento de un préstamo no es "ingreso" — si contara,
+      // pedir un préstamo inflaría el ingreso promedio y con eso el cupo para el próximo préstamo
       const moneda     = monedaPorCbu[t.cbu_destino] || 'ARS';
       const importeArs = moneda === 'USD' ? Number(t.importe) * tasaMepVenta : Number(t.importe);
       ingresosArs += importeArs;

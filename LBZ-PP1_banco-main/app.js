@@ -16,7 +16,7 @@ app.use((req, res, next) => {
     // Excepción: el cron diario de préstamos tiene que poder correr aunque el sitio
     // esté pausado. Solo pasa si además trae el secreto correcto (el propio handler
     // lo vuelve a chequear, así esto no queda como una puerta trasera pública).
-    if (req.path.startsWith('/api/cron/') && req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`) {
+    if (process.env.CRON_SECRET && req.path.startsWith('/api/cron/') && req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`) {
         return next();
     }
     res.status(503).send(`<!doctype html><html lang="es"><head><meta charset="utf-8">

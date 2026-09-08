@@ -529,7 +529,27 @@
     applyI18n();
   }
 
+  // ── FORMATO DE MONTOS ───────────────────────────────────────────────────────
+  // Compartido por dashboard.html, depositar.html y prestamos.html: formatea un input de
+  // monto con puntos de miles mientras se escribe (estilo es-AR: "1.234.567,89"). El input
+  // queda como texto (un <input type="number"> no puede mostrar separadores), así que hay
+  // que leerlo con valorNumerico() en vez de Number()/parseFloat() directo.
+  function formatearMonto(input) {
+    var crudo = input.value.replace(/[^\d,]/g, '');
+    var idx = crudo.lastIndexOf(','); // todo lo que hay después de la ÚLTIMA coma es la parte decimal;
+    var entero = idx === -1 ? crudo : crudo.slice(0, idx).replace(/,/g, ''); // así una coma de más
+    var decimal = idx === -1 ? undefined : crudo.slice(idx + 1);            // no borra dígitos, solo se ignora
+    var enteroFmt = entero.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    input.value = decimal !== undefined ? (enteroFmt + ',' + decimal.slice(0, 2)) : enteroFmt;
+  }
+  function valorNumerico(input) {
+    return parseFloat((input.value || '').replace(/\./g, '').replace(',', '.')) || 0;
+  }
+
   // ── PUBLIC API ────────────────────────────────────────────────────────────────
+
+  window.formatearMonto = formatearMonto;
+  window.valorNumerico  = valorNumerico;
 
   window.tuoI18n = {
     t: t,

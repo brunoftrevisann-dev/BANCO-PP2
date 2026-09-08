@@ -48,6 +48,7 @@ function plantillaAviso({ nombre, titulo, mensaje, filas, disclaimer }) {
         </div>
         <div style="padding:32px 32px 36px;">
           <h2 style="font-size:1.25rem;font-weight:700;margin:0 0 10px;color:#1A1A1B;letter-spacing:-0.02em;">Hola ${nombre}</h2>
+          ${titulo ? `<p style="color:#0052FF;margin:0 0 6px;font-size:0.98rem;font-weight:700;">${titulo}</p>` : ''}
           <p style="color:#6B6B6B;margin:0 0 20px;font-size:0.92rem;line-height:1.5;">${mensaje}</p>
           ${filasHtml ? `<div style="background:#F0F5FF;border-radius:14px;padding:6px 16px;">${filasHtml}</div>` : ''}
         </div>

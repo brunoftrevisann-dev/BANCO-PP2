@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Préstamos</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2064%2064'%3E%3Crect%20width%3D'64'%20height%3D'64'%20rx%3D'14'%20fill%3D'%230052FF'%2F%3E%3Ctext%20x%3D'32'%20y%3D'43'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-size%3D'26'%20font-weight%3D'800'%20fill%3D'white'%20text-anchor%3D'middle'%20letter-spacing%3D'-1'%3Etuo%3C%2Ftext%3E%3C%2Fsvg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="tuo-i18n.js"></script>
     <style>
@@ -154,6 +155,44 @@
         .btn-mini:hover { opacity: 0.85; }
         .cancelacion-info { font-size: 0.76rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 
+        /* ── MODAL DE CONFIRMACIÓN (reemplaza confirm()/alert() del navegador) ── */
+        .confirm-overlay {
+            display: none; position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.45); align-items: center; justify-content: center; padding: 20px;
+        }
+        .confirm-overlay.open { display: flex; }
+        .confirm-box {
+            background: var(--white); border-radius: 18px; padding: 26px 24px;
+            width: 100%; max-width: 340px; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .confirm-box h3 { font-size: 1.02rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .confirm-box p { font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; line-height: 1.5; }
+        .confirm-box .confirm-monto { font-size: 1.4rem; font-weight: 800; color: var(--accent); margin: 10px 0 16px; }
+        .confirm-btns { display: flex; gap: 10px; }
+        .confirm-btns button {
+            flex: 1; padding: 11px; border-radius: 10px; font-size: 0.86rem; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif; border: 1px solid var(--border);
+        }
+        .btn-confirm-cancel { background: var(--bg); color: var(--text); }
+        .btn-confirm-ok { background: var(--red); border-color: var(--red); color: white; }
+
+        @keyframes modalFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalPanelIn { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .confirm-overlay.animar-entrada { animation: modalFadeIn 0.18s ease; }
+        .confirm-box.animar-entrada { animation: modalPanelIn 0.22s cubic-bezier(0.16,1,0.3,1); }
+        @media (prefers-reduced-motion: reduce) {
+            .confirm-overlay.animar-entrada, .confirm-box.animar-entrada { animation: none; }
+        }
+
+        .toast-error {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(0);
+            background: var(--red); color: white; padding: 12px 20px; border-radius: 12px;
+            font-size: 0.85rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 300; max-width: 90vw; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+        }
+        .toast-error.visible { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+
         /* ── HISTORIAL ── */
         .historial-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -260,6 +299,22 @@
 
     </main>
 
+    <!-- Modal de confirmación (reemplaza al confirm() del navegador) -->
+    <div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this) cerrarConfirmCancelar()">
+        <div class="confirm-box">
+            <h3>Cancelar préstamo por completo</h3>
+            <p>Solo pagás el capital pendiente, sin los intereses de las cuotas futuras.</p>
+            <div class="confirm-monto" id="confirmMontoCancelacion">$ 0</div>
+            <p style="margin-bottom:18px;">Se debita de tu caja de ahorro en ARS. Esta acción no se puede deshacer.</p>
+            <div class="confirm-btns">
+                <button class="btn-confirm-cancel" onclick="cerrarConfirmCancelar()">Volver</button>
+                <button class="btn-confirm-ok" id="btnConfirmarCancelacion">Cancelar préstamo</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-error" id="toastError"></div>
+
     <script>
         function resolverTema() {
             const t = localStorage.getItem('tuo-theme');
@@ -287,18 +342,8 @@
 
         function fmt(v) { return '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-        // Formatea el monto con puntos de miles mientras se escribe (estilo es-AR: "1.234.567,89").
-        // El input queda como texto (no se puede mostrar separadores en un <input type="number">),
-        // así que hay que leerlo con valorNumerico() en vez de Number()/parseFloat() directo.
-        function formatearMonto(input) {
-            const crudo = input.value.replace(/[^\d,]/g, '');
-            const [entero, decimal] = crudo.split(',');
-            const enteroFmt = (entero || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            input.value = decimal !== undefined ? `${enteroFmt},${decimal.slice(0, 2)}` : enteroFmt;
-        }
-        function valorNumerico(input) {
-            return parseFloat((input.value || '').replace(/\./g, '').replace(',', '.')) || 0;
-        }
+        // formatearMonto()/valorNumerico() ahora viven en tuo-i18n.js (compartidas con
+        // dashboard.html y depositar.html), expuestas como funciones globales.
         function fmtPct(v) { return (Number(v) * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%'; }
 
         let plazoActual = 12;
@@ -414,7 +459,7 @@
                         <div class="prestamo-detalle">Cuota: ${fmt(p.cuota_monto)} · Próxima: ${proxima}</div>
                         <div class="prestamo-acciones">
                             <button class="btn-mini primario" onclick="pagarProximaCuota(${p.id_prestamo})">Pagar esta cuota</button>
-                            <button class="btn-mini" onclick="cancelarPrestamo(${p.id_prestamo})">Cancelar por completo</button>
+                            <button class="btn-mini" onclick="abrirConfirmCancelar(${p.id_prestamo})">Cancelar por completo</button>
                         </div>
                         <div class="cancelacion-info">Al cancelar por completo solo pagás el capital pendiente, sin los intereses de las cuotas futuras.</div>
                     </div>
@@ -422,12 +467,22 @@
             }).join('');
         }
 
+        // Toast de error con el estilo del banco, en vez del alert() nativo del navegador.
+        let _toastErrorTimeout = null;
+        function mostrarErrorToast(msg) {
+            const toast = document.getElementById('toastError');
+            toast.textContent = msg;
+            toast.classList.add('visible');
+            clearTimeout(_toastErrorTimeout);
+            _toastErrorTimeout = setTimeout(() => toast.classList.remove('visible'), 3500);
+        }
+
         async function pagarProximaCuota(idPrestamo) {
             try {
                 const cuotasRes = await fetch(`/api/prestamos/${idPrestamo}/cuotas?idPersona=${u.id}`);
                 const cuotas = await cuotasRes.json();
                 const proxima = cuotas.find(c => c.estado === 'PENDIENTE' || c.estado === 'VENCIDA');
-                if (!proxima) return alert('No hay ninguna cuota pendiente en este préstamo.');
+                if (!proxima) return mostrarErrorToast('No hay ninguna cuota pendiente en este préstamo.');
                 const res = await fetch(`/api/prestamos/${idPrestamo}/pagar-cuota`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idPersona: u.id, idCuota: proxima.id_cuota })
@@ -436,12 +491,43 @@
                 if (!res.ok) throw new Error(data.error);
                 cargarActivos(); cargarHistorial(); cargarPerfil();
             } catch (e) {
-                alert(e.message);
+                mostrarErrorToast(e.message);
             }
         }
 
-        async function cancelarPrestamo(idPrestamo) {
-            if (!confirm('¿Confirmás la cancelación anticipada de este préstamo? Se debita el capital pendiente de tu caja en ARS.')) return;
+        // Modal de confirmación (reemplaza al confirm() del navegador), con el monto real
+        // de cancelación calculado antes de mostrarlo — no un número genérico.
+        let _idPrestamoACancelar = null;
+        async function abrirConfirmCancelar(idPrestamo) {
+            try {
+                const [prestamosRes, cuotasRes] = await Promise.all([
+                    fetch(`/api/prestamos?idPersona=${u.id}`),
+                    fetch(`/api/prestamos/${idPrestamo}/cuotas?idPersona=${u.id}`)
+                ]);
+                const prestamos = await prestamosRes.json();
+                const cuotas = await cuotasRes.json();
+                const prestamo = prestamos.find(p => p.id_prestamo === idPrestamo);
+                if (!prestamo) return mostrarErrorToast('No se encontró el préstamo.');
+                const capitalPagado = cuotas
+                    .filter(c => c.estado === 'PAGADA' || c.estado === 'PAGADA_ANTICIPADA')
+                    .reduce((s, c) => s + Number(c.capital), 0);
+                const capitalPendiente = Number(prestamo.monto) - capitalPagado;
+                _idPrestamoACancelar = idPrestamo;
+                document.getElementById('confirmMontoCancelacion').textContent = fmt(capitalPendiente);
+                document.getElementById('confirmOverlay').classList.add('open');
+            } catch (e) {
+                mostrarErrorToast('No se pudo calcular el monto de cancelación.');
+            }
+        }
+        function cerrarConfirmCancelar() {
+            document.getElementById('confirmOverlay').classList.remove('open');
+            _idPrestamoACancelar = null;
+        }
+        document.getElementById('btnConfirmarCancelacion').addEventListener('click', async () => {
+            if (!_idPrestamoACancelar) return;
+            const idPrestamo = _idPrestamoACancelar;
+            const btn = document.getElementById('btnConfirmarCancelacion');
+            btn.disabled = true; btn.textContent = 'Procesando...';
             try {
                 const res = await fetch(`/api/prestamos/${idPrestamo}/cancelar`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -449,11 +535,14 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
+                cerrarConfirmCancelar();
                 cargarActivos(); cargarHistorial(); cargarPerfil();
             } catch (e) {
-                alert(e.message);
+                mostrarErrorToast(e.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Cancelar préstamo';
             }
-        }
+        });
 
         async function cargarHistorial() {
             const res = await fetch(`/api/prestamos?idPersona=${u.id}`);
@@ -479,6 +568,26 @@
             cargarActivos();
             cargarHistorial();
         }
+
+        // Animación de entrada del modal de confirmación (fade + scale), sin tener que
+        // tocar el punto donde se le agrega la clase 'open'.
+        (function animarModales() {
+            document.querySelectorAll('.confirm-overlay').forEach(overlay => {
+                let visible = false;
+                const panel = overlay.querySelector('.confirm-box');
+                new MutationObserver(() => {
+                    const abierto = getComputedStyle(overlay).display !== 'none';
+                    if (abierto && !visible) {
+                        overlay.classList.remove('animar-entrada');
+                        if (panel) panel.classList.remove('animar-entrada');
+                        void overlay.offsetWidth;
+                        overlay.classList.add('animar-entrada');
+                        if (panel) panel.classList.add('animar-entrada');
+                    }
+                    visible = abierto;
+                }).observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
+            });
+        })();
 
         function navTo(url) {
             document.body.classList.add('leaving');

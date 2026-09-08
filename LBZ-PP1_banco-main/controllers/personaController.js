@@ -1,12 +1,6 @@
 const Persona = require('../models/personaModel');
 const { enviarCodigoVerificacion, enviarCodigoPassword, enviarCodigoAperturaUsd, enviarAlertaNuevoDispositivo } = require('../utils/mailer');
-
-function fetchBC(url, options = {}, timeoutMs = 12000) {
-  const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: ctrl.signal })
-    .finally(() => clearTimeout(tid));
-}
+const fetchBC = require('../utils/fetchConTimeout');
 
 const DIACRITICOS = new RegExp('[̀-ͯ]', 'g');
 function normalizarParaAlias(texto) {

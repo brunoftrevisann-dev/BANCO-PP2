@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Contactos</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2064%2064'%3E%3Crect%20width%3D'64'%20height%3D'64'%20rx%3D'14'%20fill%3D'%230052FF'%2F%3E%3Ctext%20x%3D'32'%20y%3D'43'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-size%3D'26'%20font-weight%3D'800'%20fill%3D'white'%20text-anchor%3D'middle'%20letter-spacing%3D'-1'%3Etuo%3C%2Ftext%3E%3C%2Fsvg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="tuo-i18n.js"></script>
     <style>
@@ -125,6 +126,13 @@
             z-index: 200; backdrop-filter: blur(4px);
         }
         .confirm-overlay.open { display: flex; }
+        @keyframes modalFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalPanelIn { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .confirm-overlay.animar-entrada { animation: modalFadeIn 0.18s ease; }
+        .confirm-box.animar-entrada { animation: modalPanelIn 0.22s cubic-bezier(0.16,1,0.3,1); }
+        @media (prefers-reduced-motion: reduce) {
+            .confirm-overlay.animar-entrada, .confirm-box.animar-entrada { animation: none; }
+        }
         .confirm-box {
             background: var(--white); border-radius: 16px; padding: 28px 24px;
             width: 100%; max-width: 320px; text-align: center;
@@ -197,6 +205,24 @@
     </div>
 
     <script>
+        (function animarModales() {
+            document.querySelectorAll('.confirm-overlay').forEach(overlay => {
+                let visible = false;
+                const panel = overlay.querySelector('.confirm-box');
+                new MutationObserver(() => {
+                    const abierto = getComputedStyle(overlay).display !== 'none';
+                    if (abierto && !visible) {
+                        overlay.classList.remove('animar-entrada');
+                        if (panel) panel.classList.remove('animar-entrada');
+                        void overlay.offsetWidth;
+                        overlay.classList.add('animar-entrada');
+                        if (panel) panel.classList.add('animar-entrada');
+                    }
+                    visible = abierto;
+                }).observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
+            });
+        })();
+
         function resolverTema() {
             const t = localStorage.getItem('tuo-theme');
             if (t === 'light' || t === 'dark') return t;

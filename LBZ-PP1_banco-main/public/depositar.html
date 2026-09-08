@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tuo — Depositar</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2064%2064'%3E%3Crect%20width%3D'64'%20height%3D'64'%20rx%3D'14'%20fill%3D'%230052FF'%2F%3E%3Ctext%20x%3D'32'%20y%3D'43'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-size%3D'26'%20font-weight%3D'800'%20fill%3D'white'%20text-anchor%3D'middle'%20letter-spacing%3D'-1'%3Etuo%3C%2Ftext%3E%3C%2Fsvg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="tuo-i18n.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -295,18 +296,8 @@
             setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
         }
 
-        // Formatea el monto con puntos de miles mientras se escribe (estilo es-AR: "1.234.567,89").
-        // El input queda como texto (no se puede mostrar separadores en un <input type="number">),
-        // así que hay que leerlo con valorNumerico() en vez de Number()/parseFloat() directo.
-        function formatearMonto(input) {
-            const crudo = input.value.replace(/[^\d,]/g, '');
-            const [entero, decimal] = crudo.split(',');
-            const enteroFmt = (entero || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            input.value = decimal !== undefined ? `${enteroFmt},${decimal.slice(0, 2)}` : enteroFmt;
-        }
-        function valorNumerico(input) {
-            return parseFloat((input.value || '').replace(/\./g, '').replace(',', '.')) || 0;
-        }
+        // formatearMonto()/valorNumerico() ahora viven en tuo-i18n.js (compartidas con
+        // dashboard.html y prestamos.html), expuestas como funciones globales.
 
         function previsualizar() {
             const val = valorNumerico(document.getElementById('importeDeposito'));

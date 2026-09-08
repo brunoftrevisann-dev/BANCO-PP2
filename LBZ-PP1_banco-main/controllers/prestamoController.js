@@ -1,11 +1,7 @@
 const Prestamo = require('../models/prestamoModel');
 const Persona = require('../models/personaModel');
-
-function fetchBC(url, options = {}, timeoutMs = 12000) {
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(tid));
-}
+const fetchBC = require('../utils/fetchConTimeout');
+const { consultarSituacionBC, reportarSituacionBC, situacionPorVencidas } = require('../utils/centralDeudores');
 
 const round2 = (v) => Math.round(v * 100) / 100;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -13,10 +9,12 @@ const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 // Reglas de negocio confirmadas con el usuario (ver memoria del proyecto, new_requirements_roadmap.md)
 const REFERENCIA_INGRESO_MENSUAL = 1500000; // ARS/mes para los 60 puntos completos de capacidad de pago
 const PISO_RECHAZO_MORA = 100000;           // monto máximo permitido igual con situación BC 3+
+const TOPE_ABSOLUTO_PRESTAMO = 15000000;    // techo fijo de "tuo" (banco digital, entre lo que presta
+                                             // una billetera virtual —Ualá $5-12M— y un banco tradicional
+                                             // grande —$40-100M—) sin importar cuánto dé la fórmula por ingreso
 const MULTIPLICADORES_BUCKET = { alto: 3, medio: 1.5, bajo: 0.5 };
 const ORDEN_BUCKET = { bajo: 0, medio: 1, alto: 2 };
 const peorBucket = (a, b) => (ORDEN_BUCKET[a] <= ORDEN_BUCKET[b] ? a : b);
-const situacionPorVencidas = (vencidas) => (vencidas === 0 ? 1 : Math.min(vencidas + 1, 5));
 
 async function obtenerTasaMepVenta() {
   try {
@@ -80,31 +78,6 @@ function calcularAmortizacion(monto, tna, plazoMeses) {
   return { cuotaMonto: round2(cuotaMonto), cuotas };
 }
 
-async function consultarSituacionBC(dni) {
-  const res = await fetchBC(`${process.env.BANCO_URL}/central-deudores/${dni}`, {
-    headers: { 'x-api-key': process.env.BANCO_TOKEN, 'x-environment': process.env.BANCO_ENV }
-  }, 8000);
-  if (!res.ok) return null;
-  return res.json();
-}
-
-// Fire-and-forget desde los llamadores: nunca debe bloquear ni romper la respuesta al usuario.
-async function reportarSituacionBC(dni, monto, situacion) {
-  const res = await fetchBC(`${process.env.BANCO_URL}/central-deudores`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': process.env.BANCO_TOKEN,
-      'x-environment': process.env.BANCO_ENV,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ dni, monto: Math.max(0, Math.round(monto)), situacion })
-  }, 8000);
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || data.errors?.[0]?.msg || 'Error reportando situación al Banco Central');
-  }
-}
-
 // Puntaje interno (0-100) + tope externo de la Central de Deudores. montoSolicitado se usa
 // solo para decidir un eventual rechazo directo en mora seria (situación 3+); pasar 0 al
 // consultar el perfil "en general" (pantalla de perfil crediticio, sin un pedido concreto).
@@ -142,7 +115,7 @@ async function calcularPerfil(idPersona, montoSolicitado) {
     }
   }
 
-  const montoMaximo = Math.max(0, round2(ingresoPromedioArs * MULTIPLICADORES_BUCKET[bucketFinal]));
+  const montoMaximo = Math.min(TOPE_ABSOLUTO_PRESTAMO, Math.max(0, round2(ingresoPromedioArs * MULTIPLICADORES_BUCKET[bucketFinal])));
 
   return {
     ingresoPromedioArs: round2(ingresoPromedioArs),
@@ -360,6 +333,3 @@ exports.cancelarAnticipado = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// Exportado para que cronController reutilice la misma escalada y el mismo reporte al BC
-exports._internos = { situacionPorVencidas, reportarSituacionBC };
