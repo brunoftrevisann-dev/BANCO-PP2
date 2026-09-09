@@ -6,6 +6,7 @@ const app = express();
 const personaController = require('./controllers/personaController');
 const prestamoController = require('./controllers/prestamoController');
 const cronController = require('./controllers/cronController');
+const asistenteController = require('./controllers/asistenteController');
 
 // Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
 // la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
@@ -114,6 +115,9 @@ app.post('/api/prestamos/:id/cancelar', prestamoController.cancelarAnticipado);
 // Cron diario (recordatorios de cuota + escalada a Central de Deudores)
 app.get('/api/cron/prestamos-diario', cronController.diario);
 
+// Asistente de IA (atención al cliente)
+app.post('/api/asistente/chat', asistenteController.chat);
+
 // Columnas de verificación de email
 const db = require('./config/db');
 db.query(`
@@ -199,6 +203,16 @@ db.query(`
     UNIQUE(id_persona, device_id)
   )
 `).catch(e => console.error('Error creando tabla Dispositivos_Conocidos:', e.message));
+
+// Uso diario del asistente de IA por persona, para no agotar el tope gratuito compartido
+db.query(`
+  CREATE TABLE IF NOT EXISTS Asistente_Uso (
+    id_persona INTEGER NOT NULL REFERENCES Personas(id),
+    fecha      DATE NOT NULL DEFAULT CURRENT_DATE,
+    cantidad   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (id_persona, fecha)
+  )
+`).catch(e => console.error('Error creando tabla Asistente_Uso:', e.message));
 
 // Proxy para obtener nombre de banco por código
 app.get('/api/banco/:code', async (req, res) => {

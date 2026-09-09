@@ -333,3 +333,7 @@ exports.cancelarAnticipado = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Reutilizada por el asistente de IA (asistenteController) para responder "¿cuánto puedo pedir
+// prestado?" sin duplicar la lógica de puntaje.
+exports.calcularPerfil = calcularPerfil;

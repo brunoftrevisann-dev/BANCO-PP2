@@ -840,6 +840,67 @@
             letter-spacing: -0.01em; transition: opacity 0.15s;
         }
         .btn-comprobante-hist:hover { opacity: 0.85; }
+
+        /* ── ASISTENTE DE IA ─────────────────────────────────────────────── */
+        .asistente-fab {
+            position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px;
+            border-radius: 50%; background: var(--accent); color: #fff; border: none;
+            font-size: 1.5rem; cursor: pointer; z-index: 900;
+            box-shadow: 0 8px 24px rgba(0,82,255,0.35);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.15s;
+        }
+        .asistente-fab:hover { transform: scale(1.06); }
+        .asistente-panel {
+            width: 400px; max-width: 100%; height: 620px; max-height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .asistente-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 18px; border-bottom: 1px solid var(--border);
+        }
+        .asistente-header strong { font-size: 0.95rem; }
+        .asistente-header button {
+            background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted);
+            line-height: 1; padding: 4px;
+        }
+        .asistente-mensajes {
+            flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .asistente-burbuja {
+            max-width: 85%; padding: 10px 13px; border-radius: 14px; font-size: 0.86rem; line-height: 1.45;
+            white-space: pre-wrap;
+        }
+        .asistente-burbuja.bot { align-self: flex-start; background: var(--bg); color: var(--text); border-bottom-left-radius: 4px; }
+        .asistente-burbuja.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+        .asistente-burbuja.pensando { color: var(--muted); font-style: italic; }
+        .asistente-chips { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; max-width: 100%; }
+        .asistente-chip {
+            border: 1px solid var(--border); background: var(--white); color: var(--text);
+            border-radius: 16px; padding: 7px 12px; font-size: 0.78rem; cursor: pointer;
+            font-family: 'Inter', sans-serif; transition: border-color 0.15s;
+        }
+        .asistente-chip:hover { border-color: var(--accent); color: var(--accent); }
+        .asistente-footer { border-top: 1px solid var(--border); padding: 10px 12px; }
+        .asistente-verops {
+            background: none; border: none; color: var(--accent); font-size: 0.78rem;
+            cursor: pointer; padding: 0 0 8px 2px; font-family: 'Inter', sans-serif;
+        }
+        .asistente-inputrow { display: flex; gap: 8px; }
+        .asistente-inputrow input {
+            flex: 1; border: 1px solid var(--border); border-radius: 20px; padding: 10px 14px;
+            font-size: 0.86rem; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+        }
+        .asistente-inputrow input:focus { outline: none; border-color: var(--accent); }
+        .asistente-inputrow button {
+            width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--accent);
+            color: #fff; font-size: 1rem; cursor: pointer; flex-shrink: 0;
+        }
+        .asistente-inputrow button:disabled { opacity: 0.5; cursor: default; }
+        @media (max-width: 600px) {
+            .asistente-panel { height: 100%; max-height: 100vh; }
+            .asistente-fab { bottom: 16px; right: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -3959,6 +4020,191 @@
 
     </script>
 
+    <!-- ── ASISTENTE DE IA ─────────────────────────────────────────────── -->
+    <button class="asistente-fab" id="asistenteFab" onclick="abrirAsistente()" aria-label="Abrir asistente">💬</button>
+
+    <div class="modal-overlay" id="asistenteOverlay" style="display:none;">
+        <div class="modal-panel asistente-panel">
+            <div class="asistente-header">
+                <strong>🤖 Asistente tuo</strong>
+                <button onclick="cerrarAsistente()" aria-label="Cerrar">×</button>
+            </div>
+            <div class="asistente-mensajes" id="asistenteMensajes"></div>
+            <div class="asistente-footer">
+                <button class="asistente-verops" id="asistenteVerOpciones" onclick="mostrarCategoriasAsistente()">☰ Ver opciones</button>
+                <div class="asistente-inputrow">
+                    <input type="text" id="asistenteInput" placeholder="Escribí tu consulta..." maxlength="500"
+                           onkeydown="if(event.key==='Enter') enviarMensajeAsistenteInput()">
+                    <button id="asistenteBtnEnviar" onclick="enviarMensajeAsistenteInput()" aria-label="Enviar">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── ASISTENTE DE IA: catálogo + lógica de chat ─────────────────────
+        // 'ia'   -> se manda como si el usuario lo hubiera tecleado (dispara tools reales en el backend)
+        // 'guia' -> respuesta fija, sin costo, sin llamar al backend
+        const CATALOGO_ASISTENTE = [
+            { cat: '💰 Mi cuenta', opciones: [
+                { texto: 'Ver mi saldo', modo: 'ia' },
+                { texto: '¿Cuál es mi CBU/alias?', modo: 'ia' },
+                { texto: 'No reconozco un movimiento, mostrame mis últimos movimientos', modo: 'ia', label: 'No reconozco un movimiento' },
+                { texto: '¿Cómo exporto mis movimientos?', modo: 'guia', respuesta: 'Podés exportar tu historial en PDF o CSV desde el listado de movimientos del inicio: buscá los botones de exportar arriba de la lista, elegí el formato y listo.' },
+                { texto: '¿Cómo oculto mi saldo en pantalla?', modo: 'guia', respuesta: 'Tocá el ícono del ojo 👁 al lado de tu saldo, arriba en el inicio: alterna entre mostrarlo y ocultarlo con asteriscos.' },
+            ]},
+            { cat: '🔁 Transferencias', opciones: [
+                { texto: '¿Cómo transfiero a otro banco?', modo: 'guia', respuesta: 'Andá a Transferir, ingresá el CBU o alias de la cuenta destino (puede ser de cualquier banco), el monto y confirmá. Vas a ver el resultado al instante.' },
+                { texto: '¿Cómo transfiero a un contacto guardado?', modo: 'guia', respuesta: 'Desde Transferir, elegí la pestaña de Contactos y seleccioná uno que ya tengas guardado — no hace falta tipear el CBU de nuevo.' },
+                { texto: 'Transferí y no la veo acreditada, revisá mis últimos movimientos', modo: 'ia', label: 'Transferí y no se acreditó' },
+                { texto: '¿Puedo revertir o cancelar una transferencia ya hecha?', modo: 'ia' },
+            ]},
+            { cat: '💵 Cuenta en dólares', opciones: [
+                { texto: '¿Cómo abro una cuenta en USD?', modo: 'guia', respuesta: 'Entrá a la sección Dólares desde el menú y seguí los pasos para abrir tu caja de ahorro en dólares. Vas a poder comprar y vender USD contra tu saldo en pesos.' },
+                { texto: '¿A qué cotización compro o vendo dólares?', modo: 'ia' },
+                { texto: 'Ver mi saldo en dólares', modo: 'ia' },
+            ]},
+            { cat: '🏦 Préstamos', opciones: [
+                { texto: '¿Cuánto puedo pedir prestado?', modo: 'ia' },
+                { texto: '¿Cómo simulo un préstamo?', modo: 'guia', respuesta: 'Entrá a Préstamos y usá el simulador: elegí el monto y el plazo, y te muestra la cuota antes de pedirlo.' },
+                { texto: '¿Cuándo vence mi próxima cuota?', modo: 'ia' },
+                { texto: '¿Cómo hago para cancelar mi préstamo antes de tiempo y cuánto pagaría?', modo: 'ia', label: 'Cancelar mi préstamo antes de tiempo' },
+                { texto: '¿Por qué mi cupo de préstamo es bajo?', modo: 'ia' },
+            ]},
+            { cat: '🔒 Seguridad', opciones: [
+                { texto: 'No reconozco un inicio de sesión', modo: 'guia', respuesta: 'Si te llegó un aviso de un inicio de sesión que no reconocés, cambiá tu contraseña ahora desde Configuración y revisá que no haya movimientos extraños en tu cuenta.' },
+                { texto: '¿Cómo cambio mi contraseña?', modo: 'guia', respuesta: "Podés cambiarla desde Configuración, o con la opción \"¿Olvidaste tu contraseña?\" en la pantalla de inicio de sesión." },
+                { texto: '¿Es seguro compartir mi CBU o alias?', modo: 'ia' },
+            ]},
+            { cat: '📚 Educación financiera', opciones: [
+                { texto: '¿Qué es el CBU y el alias?', modo: 'ia' },
+                { texto: '¿Qué son la TNA y el CFT?', modo: 'ia' },
+                { texto: '¿Por qué la cuota de un préstamo francés es siempre igual?', modo: 'ia' },
+                { texto: '¿Qué es la Central de Deudores del BCRA?', modo: 'ia' },
+                { texto: '¿Cómo se calcula mi puntaje crediticio?', modo: 'ia' },
+            ]},
+        ];
+
+        let _asistenteHistorial = [];
+        let _asistenteAbierto = false;
+
+        function abrirAsistente() {
+            const overlay = document.getElementById('asistenteOverlay');
+            const panel = overlay.querySelector('.asistente-panel');
+            overlay.style.display = 'flex';
+            overlay.classList.remove('animar-entrada'); panel.classList.remove('animar-entrada');
+            void overlay.offsetWidth;
+            overlay.classList.add('animar-entrada'); panel.classList.add('animar-entrada');
+            _asistenteAbierto = true;
+            if (_asistenteHistorial.length === 0) {
+                agregarBurbujaAsistente('bot', '👋 ¡Hola! Soy el asistente de tuo. ¿En qué te puedo ayudar?');
+                mostrarCategoriasAsistente();
+            }
+        }
+        function cerrarAsistente() {
+            document.getElementById('asistenteOverlay').style.display = 'none';
+            _asistenteAbierto = false;
+        }
+
+        function agregarBurbujaAsistente(tipo, texto) {
+            const cont = document.getElementById('asistenteMensajes');
+            const div = document.createElement('div');
+            div.className = 'asistente-burbuja ' + tipo;
+            div.textContent = texto;
+            cont.appendChild(div);
+            cont.scrollTop = cont.scrollHeight;
+            return div;
+        }
+
+        function limpiarChipsAsistente() {
+            document.querySelectorAll('#asistenteMensajes .asistente-chips').forEach(el => el.remove());
+        }
+
+        function mostrarCategoriasAsistente() {
+            limpiarChipsAsistente();
+            const cont = document.getElementById('asistenteMensajes');
+            const wrap = document.createElement('div');
+            wrap.className = 'asistente-chips';
+            CATALOGO_ASISTENTE.forEach(grupo => {
+                const chip = document.createElement('button');
+                chip.className = 'asistente-chip';
+                chip.textContent = grupo.cat;
+                chip.onclick = () => mostrarOpcionesAsistente(grupo);
+                wrap.appendChild(chip);
+            });
+            cont.appendChild(wrap);
+            cont.scrollTop = cont.scrollHeight;
+        }
+
+        function mostrarOpcionesAsistente(grupo) {
+            limpiarChipsAsistente();
+            const cont = document.getElementById('asistenteMensajes');
+            const wrap = document.createElement('div');
+            wrap.className = 'asistente-chips';
+            grupo.opciones.forEach(op => {
+                const chip = document.createElement('button');
+                chip.className = 'asistente-chip';
+                chip.textContent = op.label || op.texto;
+                chip.onclick = () => elegirOpcionAsistente(op);
+                wrap.appendChild(chip);
+            });
+            const volver = document.createElement('button');
+            volver.className = 'asistente-chip';
+            volver.textContent = '‹ Categorías';
+            volver.onclick = mostrarCategoriasAsistente;
+            wrap.appendChild(volver);
+            cont.appendChild(wrap);
+            cont.scrollTop = cont.scrollHeight;
+        }
+
+        function elegirOpcionAsistente(op) {
+            limpiarChipsAsistente();
+            agregarBurbujaAsistente('user', op.label || op.texto);
+            if (op.modo === 'guia') {
+                agregarBurbujaAsistente('bot', op.respuesta);
+                _asistenteHistorial.push({ role: 'user', texto: op.texto });
+                _asistenteHistorial.push({ role: 'model', texto: op.respuesta });
+            } else {
+                enviarMensajeAsistente(op.texto);
+            }
+        }
+
+        function enviarMensajeAsistenteInput() {
+            const input = document.getElementById('asistenteInput');
+            const texto = input.value.trim();
+            if (!texto) return;
+            input.value = '';
+            limpiarChipsAsistente();
+            agregarBurbujaAsistente('user', texto);
+            enviarMensajeAsistente(texto);
+        }
+
+        async function enviarMensajeAsistente(texto) {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+            if (!u) return;
+            const btn = document.getElementById('asistenteBtnEnviar');
+            btn.disabled = true;
+            const burbujaPensando = agregarBurbujaAsistente('bot pensando', 'Escribiendo...');
+            try {
+                const res = await fetch('/api/asistente/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idPersona: u.id, mensaje: texto, historial: _asistenteHistorial })
+                });
+                const data = await res.json();
+                burbujaPensando.remove();
+                const respuesta = data.respuesta || data.error || 'No pude responder eso ahora.';
+                agregarBurbujaAsistente('bot', respuesta);
+                _asistenteHistorial.push({ role: 'user', texto });
+                _asistenteHistorial.push({ role: 'model', texto: respuesta });
+            } catch (e) {
+                burbujaPensando.remove();
+                agregarBurbujaAsistente('bot', 'No me pude conectar. Probá de nuevo en un momento.');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
 
 </body>
 </html>
