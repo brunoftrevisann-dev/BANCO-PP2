@@ -2,6 +2,7 @@ const Prestamo = require('../models/prestamoModel');
 const Persona = require('../models/personaModel');
 const fetchBC = require('../utils/fetchConTimeout');
 const { consultarSituacionBC, reportarSituacionBC, situacionPorVencidas } = require('../utils/centralDeudores');
+const { notificarPrestamoOtorgado, notificarPrestamoSaldado, notificarPrestamoCancelado } = require('../utils/notificaciones');
 
 const round2 = (v) => Math.round(v * 100) / 100;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -215,6 +216,9 @@ exports.solicitar = async (req, res) => {
       createdAt: new Date().toISOString()
     }).catch(e => console.error('Error registrando otorgamiento de préstamo en el historial:', e.message));
 
+    notificarPrestamoOtorgado(idPersona, { monto: Number(monto), plazoMeses: Number(plazoMeses) })
+      .catch(e => console.error('Error creando notificación de préstamo otorgado:', e.message));
+
     const dni = await Persona.getDni(idPersona);
     if (dni) {
       const montoAdeudado = await Prestamo.getMontoAdeudadoPersona(idPersona);
@@ -291,6 +295,11 @@ exports.pagarCuota = async (req, res) => {
       createdAt: new Date().toISOString()
     }).catch(e => console.error('Error registrando pago de cuota en el historial:', e.message));
 
+    if (resultado.saldado) {
+      notificarPrestamoSaldado(idPersona)
+        .catch(e => console.error('Error creando notificación de préstamo saldado:', e.message));
+    }
+
     res.json(resultado);
   } catch (error) {
     if (['NO_CUENTA', 'NO_CUOTA', 'CUOTA_INVALIDA', 'FUERA_DE_ORDEN', 'SALDO_INSUFICIENTE'].includes(error.code))
@@ -325,6 +334,9 @@ exports.cancelarAnticipado = async (req, res) => {
       tipo: 'cancelacion_prestamo',
       createdAt: new Date().toISOString()
     }).catch(e => console.error('Error registrando cancelación en el historial:', e.message));
+
+    notificarPrestamoCancelado(idPersona, { monto: resultado.monto })
+      .catch(e => console.error('Error creando notificación de préstamo cancelado:', e.message));
 
     res.json(resultado);
   } catch (error) {

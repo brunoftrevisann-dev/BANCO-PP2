@@ -70,7 +70,7 @@ const Persona = {
 
   getByCbu: async (cbu) => {
     const query = `
-      SELECT cb.id_cuenta, cb.saldo, cb.alias, cb.cbu,
+      SELECT cb.id_cuenta, cb.saldo, cb.alias, cb.cbu, cb.moneda,
              p.nombre, p.apellido, p.id AS id_persona, p.dni
       FROM Cuentas_Bancarias cb
       JOIN Productos pr ON cb.id_producto = pr.id_producto
@@ -282,10 +282,11 @@ const Persona = {
             bank_code_origen, bank_code_destino, persona_origen, persona_destino, created_at, descripcion, tipo)
          VALUES ${values.join(',')}
          ON CONFLICT (tx_id) DO NOTHING
-         RETURNING tx_id, cbu_origen, cbu_destino, importe, estado`,
+         RETURNING tx_id, cbu_origen, cbu_destino, importe, estado, persona_origen`,
         params
       );
 
+      const acreditadas = [];
       const aprobadas = nuevas.filter(r => r.estado === 'aprobada');
       if (aprobadas.length > 0) {
         const origenes = [...new Set(aprobadas.map(r => r.cbu_origen))];
@@ -295,11 +296,29 @@ const Persona = {
           if (!setLocales.has(r.cbu_origen)) {
             // El origen no es una cuenta nuestra: vino de otro banco. Acreditamos al destino.
             await client.query('UPDATE Cuentas_Bancarias SET saldo = saldo + $1 WHERE cbu = $2', [r.importe, r.cbu_destino]);
+            acreditadas.push(r);
           }
         }
       }
 
       await client.query('COMMIT');
+
+      if (acreditadas.length > 0) {
+        const { notificarTransferenciaRecibida } = require('../utils/notificaciones');
+        const cbusDestino = [...new Set(acreditadas.map(r => r.cbu_destino))];
+        db.query('SELECT cb.cbu, pr.id_persona AS "idPersona" FROM Cuentas_Bancarias cb JOIN Productos pr ON cb.id_producto = pr.id_producto WHERE cb.cbu = ANY($1)', [cbusDestino])
+          .then(({ rows: cuentas }) => {
+            const idPorCbu = Object.fromEntries(cuentas.map(c => [c.cbu, c.idPersona]));
+            for (const r of acreditadas) {
+              const idPersona = idPorCbu[r.cbu_destino];
+              if (!idPersona) continue;
+              const nombreOrigen = r.persona_origen ? `${r.persona_origen.nombre} ${r.persona_origen.apellido}` : 'otro banco';
+              notificarTransferenciaRecibida(idPersona, { monto: r.importe, nombreOrigen })
+                .catch(e => console.error('Error creando notificación de transferencia recibida:', e.message));
+            }
+          })
+          .catch(e => console.error('Error resolviendo destinatarios para notificación de transferencia:', e.message));
+      }
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -361,12 +380,14 @@ const Persona = {
   },
 
   updatePassword: async (email, newPassword) => {
-    await db.query(
+    const { rows } = await db.query(
       `UPDATE Personas
        SET password = $1, token_verificacion = NULL, token_expira = NULL
-       WHERE LOWER(email) = LOWER($2)`,
+       WHERE LOWER(email) = LOWER($2)
+       RETURNING id`,
       [newPassword, email]
     );
+    return rows[0] || null;
   },
 
   reenviarToken: async (email) => {

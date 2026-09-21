@@ -1,0 +1,102 @@
+const Notificacion = require('../models/notificacionModel');
+
+const fmtMonto = (v) => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtMontoUsd = (v) => 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtFecha = (v) => new Date(v).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+async function notificarTransferenciaRecibida(idPersona, { monto, nombreOrigen, moneda = 'ARS' }) {
+  const montoFmt = moneda === 'USD' ? fmtMontoUsd(monto) : fmtMonto(monto);
+  await Notificacion.crear(idPersona, {
+    tipo: 'transferencia_recibida',
+    titulo: 'Transferencia recibida',
+    mensaje: `Recibiste ${montoFmt} de ${nombreOrigen || 'otra cuenta'}.`
+  });
+}
+
+async function notificarDeposito(idPersona, { monto }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'deposito',
+    titulo: 'Depósito acreditado',
+    mensaje: `Se acreditó un depósito de ${fmtMonto(monto)} en tu cuenta.`
+  });
+}
+
+async function notificarCambioDivisa(idPersona, { direccion, montoUsd }) {
+  const accion = direccion === 'compra' ? 'Compraste' : 'Vendiste';
+  await Notificacion.crear(idPersona, {
+    tipo: 'cambio_divisa',
+    titulo: direccion === 'compra' ? 'Compra de dólares' : 'Venta de dólares',
+    mensaje: `${accion} ${fmtMontoUsd(montoUsd)}.`
+  });
+}
+
+async function notificarPrestamoOtorgado(idPersona, { monto, plazoMeses }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'prestamo_otorgado',
+    titulo: 'Préstamo otorgado',
+    mensaje: `Te otorgamos un préstamo de ${fmtMonto(monto)} en ${plazoMeses} cuotas.`
+  });
+}
+
+async function notificarCuotaPorVencer(idPersona, { monto, fechaVencimiento, numeroCuota }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'cuota_por_vencer',
+    titulo: 'Cuota por vencer',
+    mensaje: `La cuota N.º ${numeroCuota} de ${fmtMonto(monto)} vence el ${fmtFecha(fechaVencimiento)}.`
+  });
+}
+
+async function notificarCuotaVencida(idPersona, { monto, fechaVencimiento }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'cuota_vencida',
+    titulo: 'Cuota vencida',
+    mensaje: `Tenés una cuota de ${fmtMonto(monto)} vencida desde el ${fmtFecha(fechaVencimiento)}.`
+  });
+}
+
+async function notificarPrestamoSaldado(idPersona) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'prestamo_saldado',
+    titulo: 'Préstamo saldado',
+    mensaje: 'Terminaste de pagar tu préstamo por completo. ¡Felicitaciones!'
+  });
+}
+
+async function notificarPrestamoCancelado(idPersona, { monto }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'prestamo_cancelado',
+    titulo: 'Préstamo cancelado',
+    mensaje: `Cancelaste anticipadamente tu préstamo pagando ${fmtMonto(monto)}.`
+  });
+}
+
+async function notificarNuevoDispositivo(idPersona, { dispositivo }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'nuevo_dispositivo',
+    titulo: 'Nuevo inicio de sesión',
+    mensaje: `Detectamos un inicio de sesión desde un dispositivo nuevo${dispositivo ? ` (${dispositivo})` : ''}.`
+  });
+}
+
+async function notificarPasswordCambiada(idPersona) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'password_cambiada',
+    titulo: 'Contraseña actualizada',
+    mensaje: 'Tu contraseña se cambió correctamente.'
+  });
+}
+
+async function notificarAliasCambiado(idPersona, { alias }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'alias_cambiado',
+    titulo: 'Alias actualizado',
+    mensaje: `Tu nuevo alias es ${alias}.`
+  });
+}
+
+module.exports = {
+  notificarTransferenciaRecibida, notificarDeposito, notificarCambioDivisa,
+  notificarPrestamoOtorgado, notificarCuotaPorVencer, notificarCuotaVencida,
+  notificarPrestamoSaldado, notificarPrestamoCancelado, notificarNuevoDispositivo,
+  notificarPasswordCambiada, notificarAliasCambiado
+};

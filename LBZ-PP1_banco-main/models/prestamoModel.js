@@ -259,12 +259,13 @@ const Prestamo = {
         `SELECT COUNT(*) AS restantes FROM Cuotas WHERE id_prestamo = $1 AND estado IN ('PENDIENTE', 'VENCIDA')`,
         [idPrestamo]
       );
-      if (Number(restantesResult.rows[0].restantes) === 0) {
+      const saldado = Number(restantesResult.rows[0].restantes) === 0;
+      if (saldado) {
         await client.query(`UPDATE Prestamos SET estado = 'SALDADO' WHERE id_prestamo = $1`, [idPrestamo]);
       }
 
       await client.query('COMMIT');
-      return { cbu: cuenta.cbu, monto: Number(cuota.monto), nuevoSaldo };
+      return { cbu: cuenta.cbu, monto: Number(cuota.monto), nuevoSaldo, saldado };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -338,7 +339,7 @@ const Prestamo = {
   // con los datos de la persona para el mail de recordatorio.
   getCuotasPorVencerEn3Dias: async () => {
     const { rows } = await db.query(
-      `SELECT c.*, per.email, per.nombre, per.dni
+      `SELECT c.*, per.id AS id_persona, per.email, per.nombre, per.dni
        FROM Cuotas c
        JOIN Prestamos p ON c.id_prestamo = p.id_prestamo
        JOIN Productos prod ON p.id_producto = prod.id_producto

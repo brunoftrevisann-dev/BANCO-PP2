@@ -381,16 +381,18 @@
             return `${cbu.slice(0,4)} ${cbu.slice(4,8)} ${cbu.slice(8,12)} ${cbu.slice(12,16)} ${cbu.slice(16,20)} ${cbu.slice(20)}`;
         }
 
-        function abrirQRUsd() {
+        async function abrirQRUsd() {
             if (!cuentaUsd?.cbu) return;
             const overlay = document.getElementById('qrOverlayUsd');
             const canvas  = document.getElementById('qrCanvasUsd');
             canvas.innerHTML = '';
             document.getElementById('qrCbuValUsd').textContent = cuentaUsd.cbu;
             overlay.classList.add('open');
+            const contenidoQr = await obtenerContenidoQr(cuentaUsd.cbu);
             setTimeout(() => {
+                canvas.innerHTML = '';
                 if (typeof QRCode !== 'undefined') {
-                    new QRCode(canvas, { text: cuentaUsd.cbu, width: 200, height: 200, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                    new QRCode(canvas, { text: contenidoQr, width: 220, height: 220, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
                 } else {
                     canvas.innerHTML = '<div style="padding:20px;color:#6B6B6B;font-size:0.82rem;">Cargando QR…</div>';
                 }

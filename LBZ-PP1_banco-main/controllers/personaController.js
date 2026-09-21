@@ -1,6 +1,10 @@
 const Persona = require('../models/personaModel');
 const { enviarCodigoVerificacion, enviarCodigoPassword, enviarCodigoAperturaUsd, enviarAlertaNuevoDispositivo } = require('../utils/mailer');
 const fetchBC = require('../utils/fetchConTimeout');
+const {
+  notificarTransferenciaRecibida, notificarDeposito, notificarCambioDivisa,
+  notificarNuevoDispositivo, notificarPasswordCambiada, notificarAliasCambiado
+} = require('../utils/notificaciones');
 
 const DIACRITICOS = new RegExp('[̀-ͯ]', 'g');
 function normalizarParaAlias(texto) {
@@ -102,6 +106,10 @@ exports.login = async (req, res) => {
           enviarAlertaNuevoDispositivo(persona.email, persona.nombre, {
             dispositivo: dispositivoDescripcion, fecha: new Date().toISOString()
           }).catch(e => console.error('Error enviando alerta de nuevo dispositivo:', e.message));
+        }
+        if (tenia_dispositivos && es_nuevo) {
+          notificarNuevoDispositivo(persona.id, { dispositivo: dispositivoDescripcion })
+            .catch(e => console.error('Error creando notificación de nuevo dispositivo:', e.message));
         }
       })
       .catch(e => console.error('Error registrando dispositivo:', e.message));
@@ -235,6 +243,10 @@ exports.transferir = async (req, res) => {
     const cuentaDestino = await Persona.getByCbu(cbuDestino);
     if (cuentaDestino) {
       await Persona.updateSaldo(cbuDestino, Number(cuentaDestino.saldo) + Number(importe));
+      notificarTransferenciaRecibida(cuentaDestino.id_persona, {
+        monto: importe,
+        nombreOrigen: `${cuentaOrigen.nombre} ${cuentaOrigen.apellido}`
+      }).catch(e => console.error('Error creando notificación de transferencia recibida:', e.message));
     }
 
     res.status(201).json({ ...bcData, nuevoSaldo });
@@ -368,6 +380,9 @@ exports.cambiarDivisa = async (req, res) => {
       createdAt
     }).catch(e => console.error('Error registrando cambio de divisa en el historial:', e.message));
 
+    notificarCambioDivisa(idPersona, { direccion, montoUsd: importeUsd })
+      .catch(e => console.error('Error creando notificación de cambio de divisa:', e.message));
+
     res.json({ ...resultado, tasaUsada, txId, descripcion, createdAt });
   } catch (error) {
     if (error.code === 'NO_CUENTA') return res.status(404).json({ error: error.message });
@@ -407,6 +422,11 @@ exports.actualizarAlias = async (req, res) => {
     }
 
     await Persona.updateAlias(cbu, alias);
+
+    Persona.getByCbu(cbu)
+      .then(cuenta => cuenta && notificarAliasCambiado(cuenta.id_persona, { alias }))
+      .catch(e => console.error('Error creando notificación de alias cambiado:', e.message));
+
     res.status(200).json({ message: 'Alias actualizado', alias });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -440,6 +460,9 @@ exports.depositar = async (req, res) => {
       personaDestino: { nombre: cuenta.nombre, apellido: cuenta.apellido },
       createdAt: new Date().toISOString()
     });
+
+    notificarDeposito(cuenta.id_persona, { monto: importe })
+      .catch(e => console.error('Error creando notificación de depósito:', e.message));
 
     res.json({ nuevoSaldo });
   } catch (error) {
@@ -572,7 +595,11 @@ exports.confirmarCambioPassword = async (req, res) => {
     if (!result.ok)
       return res.status(400).json({ error: result.motivo });
 
-    await Persona.updatePassword(email, nuevaPassword);
+    const persona = await Persona.updatePassword(email, nuevaPassword);
+    if (persona) {
+      notificarPasswordCambiada(persona.id)
+        .catch(e => console.error('Error creando notificación de cambio de contraseña:', e.message));
+    }
     res.json({ message: 'Contraseña actualizada correctamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });

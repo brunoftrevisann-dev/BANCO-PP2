@@ -7,6 +7,8 @@ const personaController = require('./controllers/personaController');
 const prestamoController = require('./controllers/prestamoController');
 const cronController = require('./controllers/cronController');
 const asistenteController = require('./controllers/asistenteController');
+const notificacionController = require('./controllers/notificacionController');
+const qrController = require('./controllers/qrController');
 
 // Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
 // la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
@@ -118,6 +120,12 @@ app.get('/api/cron/prestamos-diario', cronController.diario);
 // Asistente de IA (atención al cliente)
 app.post('/api/asistente/chat', asistenteController.chat);
 
+// Notificaciones
+app.get('/api/notificaciones', notificacionController.listar);
+app.get('/api/notificaciones/no-leidas', notificacionController.noLeidas);
+app.put('/api/notificaciones/:id/leer', notificacionController.marcarLeida);
+app.put('/api/notificaciones/marcar-todas-leidas', notificacionController.marcarTodasLeidas);
+
 // Columnas de verificación de email
 const db = require('./config/db');
 db.query(`
@@ -214,6 +222,21 @@ db.query(`
   )
 `).catch(e => console.error('Error creando tabla Asistente_Uso:', e.message));
 
+// Centro de notificaciones in-app
+db.query(`
+  CREATE TABLE IF NOT EXISTS Notificaciones (
+    id_notificacion SERIAL PRIMARY KEY,
+    id_persona      INTEGER NOT NULL REFERENCES Personas(id),
+    tipo            VARCHAR(30) NOT NULL,
+    titulo          VARCHAR(120) NOT NULL,
+    mensaje         TEXT NOT NULL,
+    leida           BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+  )
+`).catch(e => console.error('Error creando tabla Notificaciones:', e.message));
+db.query(`CREATE INDEX IF NOT EXISTS idx_notificaciones_persona ON Notificaciones(id_persona, leida, created_at DESC)`)
+  .catch(e => console.error('Error creando indice idx_notificaciones_persona:', e.message));
+
 // Proxy para obtener nombre de banco por código
 app.get('/api/banco/:code', async (req, res) => {
   try {
@@ -231,6 +254,10 @@ app.get('/api/banco/:code', async (req, res) => {
     res.status(504).json({ error: msg });
   }
 });
+
+// QR interbancario firmado (JWT ES256)
+app.post('/api/qr/firmar', qrController.firmar);
+app.post('/api/qr/verificar', qrController.verificar);
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;

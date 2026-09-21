@@ -1,6 +1,7 @@
 const Prestamo = require('../models/prestamoModel');
 const { enviarRecordatorioCuota, enviarCuotaVencida } = require('../utils/mailer');
 const { situacionPorVencidas, reportarSituacionBC } = require('../utils/centralDeudores');
+const { notificarCuotaPorVencer, notificarCuotaVencida } = require('../utils/notificaciones');
 
 // Corre una vez por día (Vercel Cron, ver vercel.json): manda los recordatorios de cuota
 // por vencer, escala a "vencida" lo que ya pasó de fecha, y reporta la nueva situación al
@@ -23,6 +24,9 @@ exports.diario = async (req, res) => {
         await enviarRecordatorioCuota(c.email, c.nombre, {
           monto: c.monto, fechaVencimiento: c.fecha_vencimiento, numeroCuota: c.numero_cuota
         });
+        notificarCuotaPorVencer(c.id_persona, {
+          monto: c.monto, fechaVencimiento: c.fecha_vencimiento, numeroCuota: c.numero_cuota
+        }).catch(e => console.error('Error creando notificación de cuota por vencer:', e.message));
         recordatorios++;
       } catch (e) {
         console.error('Error enviando recordatorio de cuota:', e.message);
@@ -39,6 +43,8 @@ exports.diario = async (req, res) => {
     for (const c of recienVencidas) {
       try {
         await enviarCuotaVencida(c.email, c.nombre, { monto: c.monto, fechaVencimiento: c.fecha_vencimiento });
+        notificarCuotaVencida(c.id_persona, { monto: c.monto, fechaVencimiento: c.fecha_vencimiento })
+          .catch(e => console.error('Error creando notificación de cuota vencida:', e.message));
       } catch (e) {
         console.error('Error enviando aviso de cuota vencida:', e.message);
       }
