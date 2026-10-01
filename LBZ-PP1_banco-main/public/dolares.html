@@ -339,6 +339,10 @@
             <div class="qr-panel-sub">Mostralo para que te transfieran dólares desde cualquier banco</div>
             <div class="qr-canvas-wrap"><div id="qrCanvasUsd"></div></div>
             <span class="qr-cbu-val" id="qrCbuValUsd"></span>
+            <div class="importe-input-wrap" style="margin-bottom:20px;">
+                <span class="importe-symbol">US$</span>
+                <input class="input-dep" id="qrMontoInputUsd" type="text" inputmode="decimal" placeholder="Pedir un monto (opcional)" oninput="formatearMonto(this); onCambioMontoQrUsd();">
+            </div>
             <button class="qr-btn-close" onclick="cerrarQRUsd()">Cerrar</button>
         </div>
     </div>
@@ -384,19 +388,28 @@
         async function abrirQRUsd() {
             if (!cuentaUsd?.cbu) return;
             const overlay = document.getElementById('qrOverlayUsd');
-            const canvas  = document.getElementById('qrCanvasUsd');
-            canvas.innerHTML = '';
             document.getElementById('qrCbuValUsd').textContent = cuentaUsd.cbu;
+            document.getElementById('qrMontoInputUsd').value = '';
             overlay.classList.add('open');
-            const contenidoQr = await obtenerContenidoQr(cuentaUsd.cbu);
-            setTimeout(() => {
-                canvas.innerHTML = '';
-                if (typeof QRCode !== 'undefined') {
-                    new QRCode(canvas, { text: contenidoQr, width: 220, height: 220, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
-                } else {
-                    canvas.innerHTML = '<div style="padding:20px;color:#6B6B6B;font-size:0.82rem;">Cargando QR…</div>';
-                }
-            }, 80);
+            await renderizarQrUsd();
+        }
+        // El monto es opcional: si el campo está vacío se vuelve a firmar el QR sin monto.
+        async function renderizarQrUsd() {
+            const canvas = document.getElementById('qrCanvasUsd');
+            const monto = valorNumerico(document.getElementById('qrMontoInputUsd')) || undefined;
+            canvas.innerHTML = '<div style="padding:20px;color:#6B6B6B;font-size:0.82rem;">Generando…</div>';
+            const contenidoQr = await obtenerContenidoQr(cuentaUsd.cbu, monto);
+            canvas.innerHTML = '';
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(canvas, { text: contenidoQr, width: 220, height: 220, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
+            } else {
+                canvas.innerHTML = '<div style="padding:20px;color:#6B6B6B;font-size:0.82rem;">Cargando QR…</div>';
+            }
+        }
+        let _debounceMontoQrUsd = null;
+        function onCambioMontoQrUsd() {
+            clearTimeout(_debounceMontoQrUsd);
+            _debounceMontoQrUsd = setTimeout(renderizarQrUsd, 500);
         }
         function cerrarQRUsd() { document.getElementById('qrOverlayUsd').classList.remove('open'); }
 

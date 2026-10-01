@@ -721,6 +721,14 @@
         .qr-scan-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #000; aspect-ratio: 1 / 1; }
         .qr-scan-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
         .qr-scan-frame { position: absolute; inset: 18%; border: 3px solid rgba(255,255,255,0.85); border-radius: 16px; pointer-events: none; }
+        .qr-scan-success {
+            position: absolute; inset: 0; background: rgba(21,128,61,0.94);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.15s;
+        }
+        .qr-scan-success.visible { opacity: 1; }
+        .qr-scan-success svg { animation: qrCheckPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+        @keyframes qrCheckPop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .notif-item.no-leida { background: rgba(0,82,255,0.05); }
         .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
         .notif-empty { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 40px 0; font-family: 'Inter', sans-serif; }
@@ -1259,6 +1267,9 @@
                 <div class="qr-scan-wrap">
                     <video id="qrScanVideo" playsinline muted></video>
                     <div class="qr-scan-frame"></div>
+                    <div class="qr-scan-success" id="qrScanSuccess">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </div>
                 </div>
                 <p id="qrScanMsg" class="modal-desc" style="margin-top:14px;text-align:center;">Apuntá la cámara al código QR.</p>
             </div>
@@ -1550,6 +1561,10 @@
                 <div class="qr-cbu-wrap" onclick="copiarCbuDesdeQR()" title="Copiar CBU">
                     <span class="qr-cbu-val" id="qrCbuVal"></span>
                     <svg class="qr-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </div>
+                <div class="importe-input-wrap" style="width:100%;margin-top:14px;">
+                    <span class="importe-symbol" id="qrMontoSymbolo">$</span>
+                    <input class="input-modal" id="qrMontoInput" type="text" inputmode="decimal" placeholder="Pedir un monto (opcional)" style="padding-left:18px;" oninput="formatearMonto(this); onCambioMontoQr();">
                 </div>
             </div>
             <div class="qr-footer">
@@ -4200,21 +4215,32 @@
             if (!objetivo) return;
             _qrCbuActual = objetivo;
             const modal = document.getElementById('qrModal');
-            const canvas = document.getElementById('qrCanvas');
             const label  = document.getElementById('qrCbuVal');
-            canvas.innerHTML = '';
             label.textContent = objetivo;
+            document.getElementById('qrMontoInput').value = '';
+            document.getElementById('qrMontoSymbolo').textContent = (cuentaUsdDashboard && objetivo === cuentaUsdDashboard.cbu) ? 'US$' : '$';
             modal.classList.add('open');
-            const contenidoQr = await obtenerContenidoQr(objetivo);
-            setTimeout(() => {
-                canvas.innerHTML = '';
-                if (typeof QRCode !== 'undefined') {
-                    // Nivel L y 220px: el JWT firmado es ~10x más largo que un CBU, así los módulos siguen siendo legibles
-                    new QRCode(canvas, { text: contenidoQr, width: 220, height: 220, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
-                } else {
-                    canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Cargando QR…</div>';
-                }
-            }, 80);
+            await renderizarQr();
+        }
+        // El monto es opcional: si el campo está vacío se vuelve a firmar el QR sin monto
+        // (igual que siempre), así el usuario puede pedirlo o sacarlo cuando quiera.
+        async function renderizarQr() {
+            const canvas = document.getElementById('qrCanvas');
+            const monto = valorNumerico(document.getElementById('qrMontoInput')) || undefined;
+            canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Generando…</div>';
+            const contenidoQr = await obtenerContenidoQr(_qrCbuActual, monto);
+            canvas.innerHTML = '';
+            if (typeof QRCode !== 'undefined') {
+                // Nivel L y 220px: el JWT firmado es ~10x más largo que un CBU, así los módulos siguen siendo legibles
+                new QRCode(canvas, { text: contenidoQr, width: 220, height: 220, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
+            } else {
+                canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Cargando QR…</div>';
+            }
+        }
+        let _debounceMontoQr = null;
+        function onCambioMontoQr() {
+            clearTimeout(_debounceMontoQr);
+            _debounceMontoQr = setTimeout(renderizarQr, 500);
         }
         function cerrarQR() { document.getElementById('qrModal').classList.remove('open'); }
         async function copiarCbuDesdeQR() {
@@ -4248,6 +4274,7 @@
             }
             const modal = document.getElementById('modalEscanerQr');
             document.getElementById('qrScanMsg').textContent = 'Apuntá la cámara al código QR.';
+            document.getElementById('qrScanSuccess').classList.remove('visible');
             modal.style.display = 'flex';
             let stream;
             try {
@@ -4293,8 +4320,16 @@
                 const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const codigo = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
                 if (codigo && codigo.data) {
-                    cerrarEscanerQr();
-                    procesarQrEscaneado(codigo.data);
+                    // Señal visual de éxito antes de cerrar — sin esto el escáner se cerraba de
+                    // golpe y no quedaba claro que sí se había detectado el código.
+                    _qrEscaneando = false;
+                    document.getElementById('qrScanMsg').textContent = '¡Código detectado!';
+                    document.getElementById('qrScanSuccess').classList.add('visible');
+                    const datoLeido = codigo.data;
+                    setTimeout(() => {
+                        cerrarEscanerQr();
+                        procesarQrEscaneado(datoLeido);
+                    }, 700);
                     return;
                 }
             }

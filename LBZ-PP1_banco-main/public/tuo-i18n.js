@@ -556,14 +556,16 @@
   // Compartido por dashboard.html y dolares.html: pide al servidor el QR de cobro firmado (JWT ES256,
   // ver qr-interbancario-jwt.md) para un CBU propio. Si el servidor no puede firmar, cae al CBU plano
   // (el formato de siempre) para que mostrar el QR nunca deje de andar.
-  window.obtenerContenidoQr = async function (cbu) {
+  window.obtenerContenidoQr = async function (cbu, monto) {
     try {
       var ctrl = new AbortController();
       var tid  = setTimeout(function () { ctrl.abort(); }, 8000);
+      var body = { cbu: cbu };
+      if (monto) body.monto = monto;
       var res = await fetch('/api/qr/firmar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cbu: cbu }),
+        body: JSON.stringify(body),
         signal: ctrl.signal
       });
       clearTimeout(tid);
