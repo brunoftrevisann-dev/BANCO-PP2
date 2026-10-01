@@ -871,6 +871,19 @@
             transition: transform 0.15s;
         }
         .asistente-fab:hover { transform: scale(1.06); }
+
+        /* ── BOTÓN FLOTANTE ESCANEAR QR ── */
+        .qr-fab {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            width: 56px; height: 56px; border-radius: 50%; background: #1A1A1B; color: #fff; border: none;
+            cursor: pointer; z-index: 900;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.15s;
+        }
+        [data-theme="dark"] .qr-fab { background: var(--accent); }
+        .qr-fab:hover { transform: translateX(-50%) scale(1.06); }
+        @media (max-width: 600px) { .qr-fab { bottom: 16px; } }
         .asistente-panel {
             width: 400px; max-width: 100%; height: 620px; max-height: 85vh;
             display: flex; flex-direction: column;
@@ -4220,6 +4233,13 @@
         let _qrEscaneando = false;
         let _qrUltimoFrame = 0;
 
+        // Botón flotante de la pantalla principal: abre el modal de transferencia (para tener
+        // dónde mostrar el destinatario una vez escaneado) y directo encima la cámara.
+        function abrirEscanerQrDesdeHome() {
+            abrirModalTransferencia();
+            abrirEscanerQr();
+        }
+
         async function abrirEscanerQr() {
             if (typeof jsQR === 'undefined') { showToast('El lector de QR todavía está cargando, probá de nuevo en un momento', 'info'); return; }
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -4362,6 +4382,9 @@
 
     <!-- ── ASISTENTE DE IA ─────────────────────────────────────────────── -->
     <button class="asistente-fab" id="asistenteFab" onclick="abrirAsistente()" aria-label="Abrir asistente">💬</button>
+    <button class="qr-fab" id="qrFab" onclick="abrirEscanerQrDesdeHome()" aria-label="Escanear QR">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+    </button>
 
     <div class="modal-overlay" id="asistenteOverlay" style="display:none;">
         <div class="modal-panel asistente-panel">

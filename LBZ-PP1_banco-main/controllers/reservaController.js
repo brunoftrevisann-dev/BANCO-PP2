@@ -5,11 +5,15 @@ const { notificarReservaAbierta, notificarReservaVencida } = require('../utils/n
 
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Proporciones propias de tuo, no vienen de ninguna API: ningún plazo fijo bancario real baja de
+// Diferencias propias de tuo, no vienen de ninguna API: ningún plazo fijo bancario real baja de
 // 30 días (mínimo legal BCRA), así que la semanal y el frasco no tienen tasa de mercado posible.
-// Naranja X real paga menos en sus productos cortos/flexibles que en el fijo largo — mismo orden acá.
-const PROPORCION_SEMANAL = 0.70;
-const PROPORCION_FRASCO = 0.45;
+// Naranja X real paga menos en sus productos cortos/flexibles que en el fijo largo, pero la
+// diferencia real es chica (1-2 puntos porcentuales entre un plazo y el siguiente, no un porcentaje
+// multiplicativo) — por eso son puntos porcentuales restados, no un factor como 0.70/0.45, que con
+// una tasa base de ~20% abría una brecha de 6-11 puntos, mucho más de lo que se ve en la realidad.
+const DIFERENCIA_SEMANAL_PP = 0.015; // 1.5 puntos porcentuales menos que la fija
+const DIFERENCIA_FRASCO_PP = 0.03;   // 3 puntos porcentuales menos que la fija (1.5 menos que la semanal)
+const TNA_MINIMA = 0.01;             // piso de seguridad, para que nunca quede negativa si la tasa base es muy baja
 
 // Promedia la tnaClientes (o la banda de tasas[] que cubra el plazo pedido) de los bancos de
 // api.argentinadatos.com — mismo criterio de "promedio, no una entidad puntual" que préstamos.
@@ -36,8 +40,8 @@ async function calcularTasas(plazoDiasFija = 30) {
   const tnaFija = await calcularTnaFijaReferencia(plazoDiasFija);
   return {
     FIJO_MESES: tnaFija,
-    FIJO_DIAS: round2(tnaFija * PROPORCION_SEMANAL),
-    FRASCO: round2(tnaFija * PROPORCION_FRASCO)
+    FIJO_DIAS: Math.max(tnaFija - DIFERENCIA_SEMANAL_PP, TNA_MINIMA),
+    FRASCO: Math.max(tnaFija - DIFERENCIA_FRASCO_PP, TNA_MINIMA)
   };
 }
 
