@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Reservas</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2064%2064'%3E%3Crect%20width%3D'64'%20height%3D'64'%20rx%3D'14'%20fill%3D'%230052FF'%2F%3E%3Ctext%20x%3D'32'%20y%3D'43'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-size%3D'26'%20font-weight%3D'800'%20fill%3D'white'%20text-anchor%3D'middle'%20letter-spacing%3D'-1'%3Etuo%3C%2Ftext%3E%3C%2Fsvg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="tuo-i18n.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9; --text: #1A1A1B; --accent: #0052FF;
+            --muted: #6B6B6B; --border: #E5E5E5; --white: #FFFFFF;
+            --green: #16a34a; --green-bg: #F0FDF4;
+            --red: #B91C1C; --red-bg: #FEF2F2;
+            --amber: #B45309; --amber-bg: #FFF3E2;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E; --green-bg: #0F2318;
+            --red-bg: #2D0A0A; --amber-bg: #2E2107;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 40px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .btn-back {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 12px; cursor: pointer; color: var(--muted);
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
+        .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+        .page-title {
+            font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em;
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            white-space: nowrap;
+        }
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        .main {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 40px 24px 80px; gap: 20px;
+        }
+
+        .card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 20px; padding: 28px;
+            width: 100%; max-width: 460px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .card-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+        /* ── SELECTOR DE TIPO ── */
+        .tipo-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+        .tipo-tab {
+            padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg);
+            color: var(--muted); font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; text-align: center;
+        }
+        .tipo-tab.active { border-color: var(--accent); background: var(--accent); color: white; }
+
+        /* ── SIMULADOR (mismas clases que prestamos.html) ── */
+        .form-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .form-label:first-child { margin-top: 0; }
+        .importe-input-wrap { position: relative; }
+        .importe-symbol { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--muted); font-weight: 500; pointer-events: none; }
+        .input-monto {
+            width: 100%; padding: 12px 14px 12px 28px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'Inter', sans-serif; font-size: 1rem; background: var(--bg); color: var(--text);
+            outline: none; transition: border-color 0.15s;
+        }
+        .input-monto:focus { border-color: var(--accent); }
+        .input-texto {
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'Inter', sans-serif; font-size: 0.92rem; background: var(--bg); color: var(--text);
+            outline: none; transition: border-color 0.15s;
+        }
+        .input-texto:focus { border-color: var(--accent); }
+        .plazo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .plazo-grid.tres { grid-template-columns: repeat(3, 1fr); }
+        .plazo-btn {
+            padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg);
+            color: var(--muted); font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .plazo-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+        .simulacion-box {
+            margin-top: 18px; padding: 16px; background: var(--bg); border-radius: 14px;
+            display: none;
+        }
+        .simulacion-box.visible { display: block; }
+        .sim-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.86rem; }
+        .sim-row b { font-weight: 700; }
+        .btn-primary {
+            width: 100%; padding: 13px; background: var(--accent); color: white; border: none;
+            border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700;
+            cursor: pointer; margin-top: 16px; transition: opacity 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .error-box { color: var(--red); font-size: 0.8rem; margin-top: 10px; display: none; }
+        .error-box.visible { display: block; }
+
+        /* ── RESERVAS ACTIVAS ── */
+        .reserva-item { padding: 16px 0; border-bottom: 1px solid var(--border); }
+        .reserva-item:last-child { border-bottom: none; }
+        .reserva-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .reserva-monto { font-size: 1.05rem; font-weight: 700; }
+        .reserva-tipo-label { font-size: 0.76rem; color: var(--muted); }
+        .reserva-detalle { font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
+        .frasco-acciones { display: flex; gap: 8px; margin-top: 10px; }
+        .frasco-acciones input {
+            flex: 1; padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 9px;
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; background: var(--bg); color: var(--text); outline: none;
+        }
+        .btn-mini {
+            padding: 9px 14px; border-radius: 9px; font-size: 0.78rem; font-weight: 600;
+            font-family: 'Inter', sans-serif; cursor: pointer; border: 1.5px solid var(--border);
+            background: var(--bg); color: var(--text); transition: all 0.15s; white-space: nowrap;
+        }
+        .btn-mini.primario { background: var(--accent); border-color: var(--accent); color: white; }
+        .btn-mini:hover { opacity: 0.85; }
+
+        .toast-error {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(0);
+            background: var(--red); color: white; padding: 12px 20px; border-radius: 12px;
+            font-size: 0.85rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 300; max-width: 90vw; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+        }
+        .toast-error.visible { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+        .toast-error.exito { background: var(--green); }
+
+        /* ── HISTORIAL ── */
+        .historial-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
+        }
+        .historial-row:last-child { border-bottom: none; }
+        .historial-estado {
+            font-size: 0.7rem; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+        }
+        .historial-estado.ACTIVA    { background: var(--amber-bg); color: var(--amber); }
+        .historial-estado.LIQUIDADA { background: var(--green-bg); color: var(--green); }
+        .empty-state { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 20px 0; }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+            </button>
+            <span class="header-logo">tuo</span>
+        </div>
+        <span class="page-title">Reservas</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main">
+
+        <!-- Abrir reserva -->
+        <div class="card">
+            <div class="card-title">Abrí una reserva</div>
+            <div class="card-subtitle">Separá plata y hacela rendir. Elegí el tipo que más te convenga.</div>
+
+            <div class="tipo-tabs" id="tipoTabs">
+                <button class="tipo-tab active" data-tipo="FIJO_MESES" onclick="setTipo('FIJO_MESES')">Fija</button>
+                <button class="tipo-tab" data-tipo="FIJO_DIAS" onclick="setTipo('FIJO_DIAS')">Semanal</button>
+                <button class="tipo-tab" data-tipo="FRASCO" onclick="setTipo('FRASCO')">Frasco</button>
+            </div>
+
+            <div class="form-label">Monto</div>
+            <div class="importe-input-wrap">
+                <span class="importe-symbol">$</span>
+                <input class="input-monto" id="inputMonto" type="text" inputmode="decimal" placeholder="0" oninput="formatearMonto(this); onCambioSimulador();">
+            </div>
+
+            <div id="grupoPlazoMeses">
+                <div class="form-label">Plazo (meses)</div>
+                <div class="plazo-grid tres">
+                    <button class="plazo-btn active" data-plazo="1" onclick="setPlazo(1)">1</button>
+                    <button class="plazo-btn" data-plazo="2" onclick="setPlazo(2)">2</button>
+                    <button class="plazo-btn" data-plazo="3" onclick="setPlazo(3)">3</button>
+                </div>
+            </div>
+            <div id="grupoPlazoDias" style="display:none;">
+                <div class="form-label">Plazo (días)</div>
+                <div class="plazo-grid">
+                    <button class="plazo-btn active" data-plazo="7" onclick="setPlazo(7)">7</button>
+                    <button class="plazo-btn" data-plazo="14" onclick="setPlazo(14)">14</button>
+                    <button class="plazo-btn" data-plazo="21" onclick="setPlazo(21)">21</button>
+                    <button class="plazo-btn" data-plazo="28" onclick="setPlazo(28)">28</button>
+                </div>
+            </div>
+            <div id="grupoNombreFrasco" style="display:none;">
+                <div class="form-label">Nombre del frasco (opcional)</div>
+                <input class="input-texto" id="inputNombreFrasco" type="text" maxlength="50" placeholder="Ej: Vacaciones">
+            </div>
+
+            <div class="simulacion-box" id="simulacionBox">
+                <div class="sim-row"><span>TNA</span><b id="simTna">-</b></div>
+                <div class="sim-row" id="filaInteres"><span>Interés proyectado</span><b id="simInteres">-</b></div>
+                <div class="sim-row" id="filaFinal"><span>Recibís al vencer</span><b id="simFinal">-</b></div>
+            </div>
+            <div class="error-box" id="errorAbrir"></div>
+
+            <button class="btn-primary" id="btnAbrir" onclick="abrirReserva()" disabled>Abrir reserva</button>
+        </div>
+
+        <!-- Reservas activas -->
+        <div class="card" id="cardActivas" style="display:none;">
+            <div class="card-title">Tus reservas activas</div>
+            <div id="listaActivas"></div>
+        </div>
+
+        <!-- Historial -->
+        <div class="card">
+            <div class="card-title">Historial de reservas</div>
+            <div id="listaHistorial"><div class="empty-state">Cargando...</div></div>
+        </div>
+
+    </main>
+
+    <div class="toast-error" id="toastError"></div>
+
+    <script>
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm]=(s.desde||'20:00').split(':').map(Number);
+                const [hh,hm]=(s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        const savedTheme = resolverTema();
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
+        }
+
+        const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+        if (!u) { navTo('login.html'); }
+
+        function fmt(v) { return '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function fmtPct(v) { return (Number(v) * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%'; }
+
+        const NOMBRE_TIPO = { FIJO_MESES: 'Reserva fija', FIJO_DIAS: 'Reserva semanal', FRASCO: 'Frasco' };
+
+        let tipoActual = 'FIJO_MESES';
+        let plazoMesesActual = 1;
+        let plazoDiasActual = 7;
+        let ultimaSimulacion = null;
+
+        function setTipo(tipo) {
+            tipoActual = tipo;
+            document.querySelectorAll('#tipoTabs .tipo-tab').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
+            document.getElementById('grupoPlazoMeses').style.display = tipo === 'FIJO_MESES' ? 'block' : 'none';
+            document.getElementById('grupoPlazoDias').style.display = tipo === 'FIJO_DIAS' ? 'block' : 'none';
+            document.getElementById('grupoNombreFrasco').style.display = tipo === 'FRASCO' ? 'block' : 'none';
+            document.getElementById('filaInteres').style.display = tipo === 'FRASCO' ? 'none' : 'flex';
+            document.getElementById('filaFinal').style.display = tipo === 'FRASCO' ? 'none' : 'flex';
+            onCambioSimulador();
+        }
+
+        function setPlazo(p) {
+            if (tipoActual === 'FIJO_MESES') { plazoMesesActual = p; document.querySelectorAll('#grupoPlazoMeses .plazo-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.plazo) === p)); }
+            else { plazoDiasActual = p; document.querySelectorAll('#grupoPlazoDias .plazo-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.plazo) === p)); }
+            onCambioSimulador();
+        }
+
+        let _debounceSim = null;
+        function onCambioSimulador() {
+            clearTimeout(_debounceSim);
+            _debounceSim = setTimeout(simular, 300);
+        }
+
+        async function simular() {
+            const monto = valorNumerico(document.getElementById('inputMonto'));
+            const box = document.getElementById('simulacionBox');
+            const btn = document.getElementById('btnAbrir');
+            if (!monto || monto <= 0) { box.classList.remove('visible'); btn.disabled = true; return; }
+            try {
+                const body = { tipo: tipoActual, monto };
+                if (tipoActual === 'FIJO_MESES') body.plazoMeses = plazoMesesActual;
+                if (tipoActual === 'FIJO_DIAS') body.plazoDias = plazoDiasActual;
+                const res = await fetch('/api/reservas/simular', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                ultimaSimulacion = { monto };
+                document.getElementById('simTna').textContent = fmtPct(data.tna);
+                document.getElementById('simInteres').textContent = fmt(data.interesProyectado);
+                document.getElementById('simFinal').textContent = fmt(data.montoFinal);
+                box.classList.add('visible');
+                btn.disabled = false;
+            } catch (e) {
+                box.classList.remove('visible');
+                btn.disabled = true;
+            }
+        }
+
+        // Toast con el estilo del banco, en vez del alert() nativo.
+        let _toastTimeout = null;
+        function mostrarToast(msg, tipo) {
+            const toast = document.getElementById('toastError');
+            toast.textContent = msg;
+            toast.classList.toggle('exito', tipo === 'exito');
+            toast.classList.add('visible');
+            clearTimeout(_toastTimeout);
+            _toastTimeout = setTimeout(() => toast.classList.remove('visible'), 3500);
+        }
+
+        async function abrirReserva() {
+            if (!ultimaSimulacion) return;
+            const btn = document.getElementById('btnAbrir');
+            const err = document.getElementById('errorAbrir');
+            err.classList.remove('visible');
+            btn.disabled = true; btn.textContent = 'Procesando...';
+            try {
+                const body = { idPersona: u.id, tipo: tipoActual, monto: ultimaSimulacion.monto };
+                if (tipoActual === 'FIJO_MESES') body.plazoMeses = plazoMesesActual;
+                if (tipoActual === 'FIJO_DIAS') body.plazoDias = plazoDiasActual;
+                if (tipoActual === 'FRASCO') body.nombre = document.getElementById('inputNombreFrasco').value.trim() || undefined;
+
+                const res = await fetch('/api/reservas/abrir', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                document.getElementById('inputMonto').value = '';
+                document.getElementById('inputNombreFrasco').value = '';
+                document.getElementById('simulacionBox').classList.remove('visible');
+                mostrarToast('Reserva abierta con éxito', 'exito');
+                cargarReservas();
+            } catch (e) {
+                err.textContent = e.message;
+                err.classList.add('visible');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Abrir reserva';
+            }
+        }
+
+        async function depositarFrasco(idReserva) {
+            const input = document.getElementById('depInput' + idReserva);
+            const monto = valorNumerico(input);
+            if (!monto || monto <= 0) return mostrarToast('Ingresá un monto válido');
+            try {
+                const res = await fetch(`/api/reservas/${idReserva}/depositar`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idPersona: u.id, monto })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                input.value = '';
+                mostrarToast('Depósito realizado', 'exito');
+                cargarReservas();
+            } catch (e) {
+                mostrarToast(e.message);
+            }
+        }
+
+        async function retirarFrasco(idReserva) {
+            const input = document.getElementById('retInput' + idReserva);
+            const monto = valorNumerico(input);
+            if (!monto || monto <= 0) return mostrarToast('Ingresá un monto válido');
+            try {
+                const res = await fetch(`/api/reservas/${idReserva}/retirar`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idPersona: u.id, monto })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                input.value = '';
+                mostrarToast('Retiro realizado', 'exito');
+                cargarReservas();
+            } catch (e) {
+                mostrarToast(e.message);
+            }
+        }
+
+        async function cargarReservas() {
+            const res = await fetch(`/api/reservas?idPersona=${u.id}`);
+            const reservas = await res.json();
+            if (!res.ok) return;
+
+            const activas = reservas.filter(r => r.estado === 'ACTIVA');
+            const cardActivas = document.getElementById('cardActivas');
+            const listaActivas = document.getElementById('listaActivas');
+            if (activas.length === 0) {
+                cardActivas.style.display = 'none';
+            } else {
+                cardActivas.style.display = 'block';
+                listaActivas.innerHTML = activas.map(r => {
+                    if (r.tipo === 'FRASCO') {
+                        return `
+                            <div class="reserva-item">
+                                <div class="reserva-top">
+                                    <span class="reserva-monto">${fmt(r.saldo)}</span>
+                                    <span class="reserva-tipo-label">${r.nombre || 'Frasco'} · ${fmtPct(r.tna)} TNA</span>
+                                </div>
+                                <div class="reserva-detalle">Depositá o retirá cuando quieras.</div>
+                                <div class="frasco-acciones">
+                                    <input type="text" inputmode="decimal" placeholder="Monto" id="depInput${r.id_reserva}" oninput="formatearMonto(this)">
+                                    <button class="btn-mini primario" onclick="depositarFrasco(${r.id_reserva})">Depositar</button>
+                                </div>
+                                <div class="frasco-acciones">
+                                    <input type="text" inputmode="decimal" placeholder="Monto" id="retInput${r.id_reserva}" oninput="formatearMonto(this)">
+                                    <button class="btn-mini" onclick="retirarFrasco(${r.id_reserva})">Retirar</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    const vencimiento = new Date(r.fecha_vencimiento).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+                    const plazo = r.tipo === 'FIJO_MESES' ? `${r.plazo_meses} meses` : `${r.plazo_dias} días`;
+                    return `
+                        <div class="reserva-item">
+                            <div class="reserva-top">
+                                <span class="reserva-monto">${fmt(r.saldo)}</span>
+                                <span class="reserva-tipo-label">${NOMBRE_TIPO[r.tipo]} · ${fmtPct(r.tna)} TNA</span>
+                            </div>
+                            <div class="reserva-detalle">${plazo} · vence el ${vencimiento}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const histCont = document.getElementById('listaHistorial');
+            if (reservas.length === 0) {
+                histCont.innerHTML = '<div class="empty-state">Todavía no abriste ninguna reserva.</div>';
+                return;
+            }
+            histCont.innerHTML = reservas.map(r => {
+                const fecha = new Date(r.fecha_alta).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+                return `
+                    <div class="historial-row">
+                        <span>${fmt(r.saldo)} · ${NOMBRE_TIPO[r.tipo]} · ${fecha}</span>
+                        <span class="historial-estado ${r.estado}">${r.estado}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        if (u) cargarReservas();
+
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
+    </script>
+</body>
+</html>

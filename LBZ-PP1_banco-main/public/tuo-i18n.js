@@ -99,6 +99,7 @@
       'dashboard.menu.deposit': 'Depositar',
       'dashboard.menu.usd': 'Dólares',
       'dashboard.menu.loans': 'Préstamos',
+      'dashboard.menu.reservas': 'Reservas',
       'dashboard.menu.contacts': 'Contactos',
       'dashboard.menu.stats': 'Estadísticas',
       'dashboard.menu.settings': 'Ajustes',
@@ -326,6 +327,7 @@
       'dashboard.menu.deposit': 'Deposit',
       'dashboard.menu.usd': 'US Dollars',
       'dashboard.menu.loans': 'Loans',
+      'dashboard.menu.reservas': 'Savings',
       'dashboard.menu.contacts': 'Contacts',
       'dashboard.menu.stats': 'Statistics',
       'dashboard.menu.settings': 'Settings',
@@ -556,11 +558,15 @@
   // (el formato de siempre) para que mostrar el QR nunca deje de andar.
   window.obtenerContenidoQr = async function (cbu) {
     try {
+      var ctrl = new AbortController();
+      var tid  = setTimeout(function () { ctrl.abort(); }, 8000);
       var res = await fetch('/api/qr/firmar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cbu: cbu })
+        body: JSON.stringify({ cbu: cbu }),
+        signal: ctrl.signal
       });
+      clearTimeout(tid);
       if (!res.ok) return cbu;
       var data = await res.json();
       return data.jwt || cbu;

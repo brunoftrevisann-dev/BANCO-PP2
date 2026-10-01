@@ -518,16 +518,23 @@
 
     <script>
         // ── COTIZACIÓN DEL DÓLAR ──
+        // Solo MEP (la cotización que usa tuo para comprar/vender dólares) y la TNA de referencia
+        // de préstamos personales — no oficial ni blue, que acá eran solo informativos sin uso real.
         (async function cargarBannerDolar() {
             const fmt = v => Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const fmtPct = v => (Number(v) * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
             try {
-                const res = await fetch('/api/cotizacion-dolar');
-                const data = await res.json();
-                if (!res.ok) throw new Error();
-                const bloque =
-                    `<span>Dólar Oficial: <b>$${fmt(data.oficial.compra)} / $${fmt(data.oficial.venta)}</b></span>` +
-                    `<span>Dólar MEP: <b>$${fmt(data.mep.compra)} / $${fmt(data.mep.venta)}</b></span>` +
-                    `<span>Dólar Blue: <b>$${fmt(data.blue.compra)} / $${fmt(data.blue.venta)}</b></span>`;
+                const [mepRes, tasaRes] = await Promise.all([
+                    fetch('/api/cotizacion-dolar'),
+                    fetch('/api/prestamos/tasas')
+                ]);
+                const mepData  = await mepRes.json();
+                const tasaData = await tasaRes.json();
+                if (!mepRes.ok) throw new Error();
+                let bloque = `<span>Dólar MEP: <b>$${fmt(mepData.mep.compra)} / $${fmt(mepData.mep.venta)}</b></span>`;
+                if (tasaRes.ok && typeof tasaData.tna === 'number') {
+                    bloque += `<span>TNA préstamos personales: <b>${fmtPct(tasaData.tna)}</b></span>`;
+                }
                 const contenido = bloque.repeat(8);
                 document.getElementById('usdBannerTrack').innerHTML = contenido + contenido;
             } catch {

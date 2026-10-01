@@ -406,8 +406,8 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 cotizacion = data;
+                // Solo se muestra el MEP: es la única cotización que usa la operatoria de compra/venta de esta pantalla.
                 const filas = [
-                    ['Oficial', data.oficial],
                     ['MEP', data.mep],
                 ];
                 document.getElementById('cotizList').innerHTML = filas.map(([nombre, d]) => `

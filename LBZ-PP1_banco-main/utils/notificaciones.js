@@ -70,6 +70,25 @@ async function notificarPrestamoCancelado(idPersona, { monto }) {
   });
 }
 
+const NOMBRE_TIPO_RESERVA = { FIJO_MESES: 'una reserva fija', FIJO_DIAS: 'una reserva semanal', FRASCO: 'un frasco' };
+
+async function notificarReservaAbierta(idPersona, { tipo, monto, tna }) {
+  const pct = (Number(tna) * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 });
+  await Notificacion.crear(idPersona, {
+    tipo: 'reserva_abierta',
+    titulo: 'Reserva abierta',
+    mensaje: `Abriste ${NOMBRE_TIPO_RESERVA[tipo] || 'una reserva'} de ${fmtMonto(monto)} al ${pct}% TNA.`
+  });
+}
+
+async function notificarReservaVencida(idPersona, { montoFinal, interes }) {
+  await Notificacion.crear(idPersona, {
+    tipo: 'reserva_vencida',
+    titulo: 'Reserva vencida',
+    mensaje: `Tu reserva venció y se acreditaron ${fmtMonto(montoFinal)} a tu cuenta (incluye ${fmtMonto(interes)} de interés).`
+  });
+}
+
 async function notificarNuevoDispositivo(idPersona, { dispositivo }) {
   await Notificacion.crear(idPersona, {
     tipo: 'nuevo_dispositivo',
@@ -98,5 +117,6 @@ module.exports = {
   notificarTransferenciaRecibida, notificarDeposito, notificarCambioDivisa,
   notificarPrestamoOtorgado, notificarCuotaPorVencer, notificarCuotaVencida,
   notificarPrestamoSaldado, notificarPrestamoCancelado, notificarNuevoDispositivo,
-  notificarPasswordCambiada, notificarAliasCambiado
+  notificarPasswordCambiada, notificarAliasCambiado,
+  notificarReservaAbierta, notificarReservaVencida
 };

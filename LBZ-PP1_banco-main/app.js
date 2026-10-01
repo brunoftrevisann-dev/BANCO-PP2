@@ -9,6 +9,7 @@ const cronController = require('./controllers/cronController');
 const asistenteController = require('./controllers/asistenteController');
 const notificacionController = require('./controllers/notificacionController');
 const qrController = require('./controllers/qrController');
+const reservaController = require('./controllers/reservaController');
 
 // Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
 // la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
@@ -126,6 +127,14 @@ app.get('/api/notificaciones/no-leidas', notificacionController.noLeidas);
 app.put('/api/notificaciones/:id/leer', notificacionController.marcarLeida);
 app.put('/api/notificaciones/marcar-todas-leidas', notificacionController.marcarTodasLeidas);
 
+// Reservas (plazo fijo y frasco, estilo Naranja X)
+app.get('/api/reservas/tasas', reservaController.tasas);
+app.get('/api/reservas', reservaController.listar);
+app.post('/api/reservas/simular', reservaController.simular);
+app.post('/api/reservas/abrir', reservaController.abrir);
+app.post('/api/reservas/:id/depositar', reservaController.depositarFrasco);
+app.post('/api/reservas/:id/retirar', reservaController.retirarFrasco);
+
 // Columnas de verificación de email
 const db = require('./config/db');
 db.query(`
@@ -141,6 +150,12 @@ db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS descripcion TEXT`)
 // Agregar columna tipo si no existe (para distinguir compra/venta de USD de las transferencias normales)
 db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS tipo VARCHAR(20)`)
   .catch(e => console.error('Error agregando columna tipo:', e.message));
+
+// Ensanchar tipo: 'otorgamiento_prestamo' tiene 21 caracteres y no entraba en VARCHAR(20) — el INSERT
+// fallaba en silencio (el .catch de upsertTransaccion se comía el error) desde que existe Préstamos,
+// así que ningún préstamo otorgado quedó nunca registrado en el historial de movimientos.
+db.query(`ALTER TABLE Transacciones ALTER COLUMN tipo TYPE VARCHAR(30)`)
+  .catch(e => console.error('Error ensanchando columna tipo:', e.message));
 
 // Crear tabla Transacciones si no existe (historial persistente)
 db.query(`
@@ -236,6 +251,28 @@ db.query(`
 `).catch(e => console.error('Error creando tabla Notificaciones:', e.message));
 db.query(`CREATE INDEX IF NOT EXISTS idx_notificaciones_persona ON Notificaciones(id_persona, leida, created_at DESC)`)
   .catch(e => console.error('Error creando indice idx_notificaciones_persona:', e.message));
+
+// Reservas: tipo de producto nuevo + tabla de reservas (fija por meses, fija por días, frasco)
+db.query(`INSERT INTO Tipos_Producto (nombre) VALUES ('RESERVA') ON CONFLICT (nombre) DO NOTHING`)
+  .catch(e => console.error('Error agregando tipo de producto RESERVA:', e.message));
+
+db.query(`
+  CREATE TABLE IF NOT EXISTS Reservas (
+    id_reserva           SERIAL PRIMARY KEY,
+    id_producto          INTEGER NOT NULL UNIQUE REFERENCES Productos(id_producto),
+    tipo                 VARCHAR(20) NOT NULL,
+    nombre               VARCHAR(50),
+    saldo                DECIMAL(15,2) NOT NULL DEFAULT 0,
+    tna                  DECIMAL(8,5) NOT NULL,
+    plazo_dias           INTEGER,
+    plazo_meses          INTEGER,
+    fecha_alta           TIMESTAMP DEFAULT NOW(),
+    fecha_vencimiento    DATE,
+    fecha_ultimo_interes DATE DEFAULT CURRENT_DATE,
+    estado               VARCHAR(20) NOT NULL DEFAULT 'ACTIVA',
+    interes_pagado       DECIMAL(15,2) NOT NULL DEFAULT 0
+  )
+`).catch(e => console.error('Error creando tabla Reservas:', e.message));
 
 // Proxy para obtener nombre de banco por código
 app.get('/api/banco/:code', async (req, res) => {

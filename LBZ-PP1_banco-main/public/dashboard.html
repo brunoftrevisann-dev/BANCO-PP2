@@ -974,6 +974,11 @@
                         <span data-i18n="dashboard.menu.loans">Préstamos</span>
                     </button>
                     <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="navTo('reservas.html')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M21 8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/><path d="M12 12v4"/></svg>
+                        <span data-i18n="dashboard.menu.reservas">Reservas</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="abrirEstadisticas()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                         <span data-i18n="dashboard.menu.stats">Estadísticas</span>
@@ -1143,6 +1148,10 @@
                 <button class="action-btn" onclick="navTo('prestamos.html')" data-tooltip="Préstamos">
                     <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg></div>
                     <span class="action-label" data-i18n="dashboard.menu.loans">Préstamos</span>
+                </button>
+                <button class="action-btn" onclick="navTo('reservas.html')" data-tooltip="Reservas">
+                    <div class="action-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M21 8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/><path d="M12 12v4"/></svg></div>
+                    <span class="action-label" data-i18n="dashboard.menu.reservas">Reservas</span>
                 </button>
             </div>
         </div>
@@ -1626,6 +1635,11 @@
         // intentar resolverle un nombre de contraparte, el movimiento se etiqueta "Préstamos".
         function esPrestamoTx(t) {
             return t.tipo === 'otorgamiento_prestamo' || t.tipo === 'pago_cuota' || t.tipo === 'cancelacion_prestamo';
+        }
+        // Movimientos de Reservas (apertura, vencimiento, depósito/retiro de frasco) usan el CBU
+        // sentinela "RESERVA" del lado que no es una cuenta real — mismo criterio que Préstamos.
+        function esReservaTx(t) {
+            return t.tipo === 'apertura_reserva' || t.tipo === 'vencimiento_reserva' || t.tipo === 'deposito_frasco' || t.tipo === 'retiro_frasco';
         }
         // Símbolo de moneda para un MOVIMIENTO (historial/detalle/exportaciones) — no confundir con
         // el símbolo de "mi propia cuenta" del selector de origen en el modal de transferencia, que
@@ -2120,22 +2134,25 @@
                     const esDeposito  = t.cbuOrigen === 'DEPOSITO';
                     const esCambio    = t.tipo === 'cambio_divisa';
                     const esPrestamo  = esPrestamoTx(t);
+                    const esReserva   = esReservaTx(t);
                     const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
-                    const esEnvio     = !esDeposito && !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
-                    const esUsd       = !esDeposito && !esCambio && !esPrestamo && esTxUsd(t);
+                    const esEnvio     = !esDeposito && !esCambio && !esPrestamo && !esReserva && esMiCbu(t.cbuOrigen);
+                    const esUsd       = !esDeposito && !esCambio && !esPrestamo && !esReserva && esTxUsd(t);
                     const contraparte = esDeposito
                         ? (window.t ? window.t('dashboard.tx.deposit') : 'Depósito en efectivo')
                         : esPrestamo
                         ? 'Préstamos'
+                        : esReserva
+                        ? 'Reservas'
                         : esCambio
                         ? (esCompraCambio ? 'Compra de dólares' : 'Venta de dólares')
                         : (esEnvio
                             ? ((t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : null) || getNombrePorCbu(t.cbuDestino) || t.cbuDestino)
                             : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || t.cbuOrigen));
-                    const envioLike   = esCambio ? esCompraCambio : (esPrestamo ? t.cbuOrigen !== 'PRESTAMO' : esEnvio);
+                    const envioLike   = esCambio ? esCompraCambio : (esPrestamo ? t.cbuOrigen !== 'PRESTAMO' : (esReserva ? t.cbuOrigen !== 'RESERVA' : esEnvio));
                     const colorAmt    = envioLike ? '#B91C1C' : '#15803D';
                     const signo       = envioLike ? '−' : '+';
-                    const etiqueta    = esDeposito ? (window.t ? window.t('dashboard.tx.deposito') : 'Depósito') : esPrestamo ? 'Préstamos' : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
+                    const etiqueta    = esDeposito ? (window.t ? window.t('dashboard.tx.deposito') : 'Depósito') : esPrestamo ? 'Préstamos' : esReserva ? 'Reservas' : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
                     const badgeBg     = envioLike ? '#FEF2F2' : '#F0FDF4';
                     const badgeFg     = envioLike ? '#B91C1C' : '#15803D';
                     const estadoOk    = t.estado === 'aprobada' || t.estado === 'approved';
@@ -2144,11 +2161,13 @@
                         : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;';
                     const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
                     const fechaStr = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
-                    const bg  = (esDeposito || esCambio || esPrestamo) ? '#0052FF' : avatarColor(contraparte || '');
+                    const bg  = (esDeposito || esCambio || esPrestamo || esReserva) ? '#0052FF' : avatarColor(contraparte || '');
                     const ini = esDeposito
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>`
                         : esPrestamo
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>`
+                        : esReserva
+                        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v3"/><path d="M20 7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/></svg>`
                         : esCambio
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`
                         : initials(contraparte || '');
@@ -2298,8 +2317,41 @@
             const esDeposito = t.cbuOrigen === 'DEPOSITO';
             const esCambio   = t.tipo === 'cambio_divisa';
             const esPrestamo = esPrestamoTx(t);
-            const esEnvio    = !esDeposito && !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
-            const esUsd      = !esDeposito && !esCambio && !esPrestamo && esTxUsd(t);
+            const esReserva  = esReservaTx(t);
+            const esEnvio    = !esDeposito && !esCambio && !esPrestamo && !esReserva && esMiCbu(t.cbuOrigen);
+            const esUsd      = !esDeposito && !esCambio && !esPrestamo && !esReserva && esTxUsd(t);
+
+            if (esReserva) {
+                const envioLike = t.cbuOrigen !== 'RESERVA';
+                const rawFecha = t.fecha || t.createdAt || t.timestamp || t.created_at;
+                const fechaHora = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+                const fmt = v => '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const colorAmt = envioLike ? '#B91C1C' : '#15803D';
+                const signo    = envioLike ? '−' : '+';
+                document.getElementById('detalleTxCuerpo').innerHTML = `
+                    <div class="detalle-tx-hero">
+                        <div class="detalle-tx-avatar" style="background:#0052FF;">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v3"/><path d="M20 7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/></svg>
+                        </div>
+                        <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${fmt(t.importe)}</div>
+                        <div class="detalle-tx-label">Reservas</div>
+                        <span class="historial-estado" style="background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;">Aprobada</span>
+                    </div>
+                    <div class="detalle-tx-section">
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Fecha</span><span class="detalle-tx-value">${fechaHora}</span></div>
+                        <div class="detalle-tx-row"><span class="detalle-tx-label">Tipo</span><span class="detalle-tx-value">Reservas</span></div>
+                    </div>
+                    ${t.descripcion ? `
+                    <div class="detalle-tx-section">
+                        <div class="detalle-tx-section-title">Detalle</div>
+                        <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
+                            ${t.descripcion}
+                        </div>
+                    </div>` : ''}
+                    <button class="btn-comprobante-hist" onclick="navTo('reservas.html')">Ver mis reservas</button>`;
+                document.getElementById('modalDetalleTx').style.display = 'flex';
+                return;
+            }
 
             if (esPrestamo) {
                 const envioLike = t.cbuOrigen !== 'PRESTAMO';
@@ -2796,12 +2848,15 @@
                 container.innerHTML = propias.slice(0, 3).map((t, idx) => {
                     const esCambio    = t.tipo === 'cambio_divisa';
                     const esPrestamo  = esPrestamoTx(t);
+                    const esReserva   = esReservaTx(t);
                     const esCompraCambio = esCambio && t.cbuOrigen === u.cbu;
-                    const esEnvio     = !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
-                    const esUsd       = !esCambio && !esPrestamo && esTxUsd(t);
-                    const envioLike   = esCambio ? esCompraCambio : (esPrestamo ? t.cbuOrigen !== 'PRESTAMO' : esEnvio);
+                    const esEnvio     = !esCambio && !esPrestamo && !esReserva && esMiCbu(t.cbuOrigen);
+                    const esUsd       = !esCambio && !esPrestamo && !esReserva && esTxUsd(t);
+                    const envioLike   = esCambio ? esCompraCambio : (esPrestamo ? t.cbuOrigen !== 'PRESTAMO' : (esReserva ? t.cbuOrigen !== 'RESERVA' : esEnvio));
                     const contraparte = esPrestamo
                         ? 'Préstamos'
+                        : esReserva
+                        ? 'Reservas'
                         : esCambio
                         ? (esCompraCambio ? 'Compra de dólares' : 'Venta de dólares')
                         : (esEnvio
@@ -2809,12 +2864,14 @@
                             : ((t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`  : null) || getNombrePorCbu(t.cbuOrigen)  || 'CBU ' + (t.cbuOrigen  || '').slice(-6)));
                     const colorAmt = envioLike ? '#B91C1C' : '#15803D';
                     const signo    = envioLike ? '−' : '+';
-                    const etiqueta = esPrestamo ? '' : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
+                    const etiqueta = (esPrestamo || esReserva) ? '' : esCambio ? 'Cambio USD' : (esEnvio ? (window.t ? window.t('dashboard.tx.sent') : 'Enviado a') : (window.t ? window.t('dashboard.tx.received') : 'Recibido de'));
                     const fecha    = t.fecha || t.createdAt || t.timestamp || t.created_at;
                     const fechaStr = fecha ? new Date(fecha).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
-                    const bg       = (esCambio || esPrestamo) ? '#0052FF' : avatarColor(contraparte);
+                    const bg       = (esCambio || esPrestamo || esReserva) ? '#0052FF' : avatarColor(contraparte);
                     const ini      = esPrestamo
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg>`
+                        : esReserva
+                        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v3"/><path d="M20 7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/></svg>`
                         : esCambio
                         ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`
                         : initials(contraparte);
@@ -2899,19 +2956,20 @@
 
                 // Buscar transferencias recibidas que no hayamos visto aún, en ARS y en USD por separado
                 // (el saldo en ARS y el saldo en USD son campos distintos, no se pueden sumar juntos).
-                // Los movimientos de Préstamos quedan afuera a propósito: esos ya mueven el saldo del
-                // lado del servidor en el momento mismo de la operación (otorgar/pagar/cancelar), así
-                // que sumarlos acá de nuevo duplicaría el crédito/débito sobre un saldo que ya está bien.
+                // Los movimientos de Préstamos y Reservas quedan afuera a propósito: esos ya mueven el
+                // saldo del lado del servidor en el momento mismo de la operación (otorgar/pagar/cancelar,
+                // abrir/vencer/depositar/retirar), así que sumarlos acá de nuevo duplicaría el crédito/débito
+                // sobre un saldo que ya está bien.
                 const nuevas = all.filter(t =>
                     t.cbuDestino === u.cbu &&
                     (t.estado === 'aprobada' || t.estado === 'approved') &&
-                    !esPrestamoTx(t) &&
+                    !esPrestamoTx(t) && !esReservaTx(t) &&
                     t._id && !_txsVistas.has(t._id)
                 );
                 const nuevasUsd = cbuUsd ? all.filter(t =>
                     t.cbuDestino === cbuUsd && t.tipo !== 'cambio_divisa' &&
                     (t.estado === 'aprobada' || t.estado === 'approved') &&
-                    !esPrestamoTx(t) &&
+                    !esPrestamoTx(t) && !esReservaTx(t) &&
                     t._id && !_txsVistas.has(t._id)
                 ) : [];
 
@@ -2985,7 +3043,7 @@
         const NOTIF_ICON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
         function colorNotif(tipo) {
             if (['transferencia_recibida', 'deposito', 'cambio_divisa'].includes(tipo)) return '#15803D';
-            if (['prestamo_otorgado', 'cuota_por_vencer', 'cuota_vencida', 'prestamo_saldado', 'prestamo_cancelado'].includes(tipo)) return '#0052FF';
+            if (['prestamo_otorgado', 'cuota_por_vencer', 'cuota_vencida', 'prestamo_saldado', 'prestamo_cancelado', 'reserva_abierta', 'reserva_vencida'].includes(tipo)) return '#0052FF';
             return '#B45309'; // seguridad: nuevo_dispositivo, password_cambiada, alias_cambiado
         }
 
@@ -4047,16 +4105,18 @@
                     const esD    = t.cbuOrigen === 'DEPOSITO';
                     const esCam  = t.tipo === 'cambio_divisa';
                     const esPr   = esPrestamoTx(t);
+                    const esRes  = esReservaTx(t);
                     const esCamCompra = esCam && t.cbuOrigen === u?.cbu;
-                    const esUsdRow = !esD && !esCam && !esPr && esTxUsd(t);
-                    const envio  = !esD && !esCam && !esPr && esMiCbu(t.cbuOrigen);
+                    const esUsdRow = !esD && !esCam && !esPr && !esRes && esTxUsd(t);
+                    const envio  = !esD && !esCam && !esPr && !esRes && esMiCbu(t.cbuOrigen);
                     const nombre = sa((esD ? 'Deposito'
                         : esPr ? 'Prestamos'
+                        : esRes ? 'Reservas'
                         : esCam ? (esCamCompra ? 'Compra de dolares' : 'Venta de dolares')
                         : envio
                             ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                             : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen)) + (esUsdRow ? ' (USD)' : ''));
-                    const signo  = esCam ? (esCamCompra ? '-' : '+') : esPr ? (t.cbuOrigen === 'PRESTAMO' ? '+' : '-') : ((esD || !envio) ? '+' : '-');
+                    const signo  = esCam ? (esCamCompra ? '-' : '+') : esPr ? (t.cbuOrigen === 'PRESTAMO' ? '+' : '-') : esRes ? (t.cbuOrigen === 'RESERVA' ? '+' : '-') : ((esD || !envio) ? '+' : '-');
                     const imp    = `${signo}${simboloMoneda(esUsdRow)} ${fmtAmt(t.importe)}`;
                     const color  = signo === '+' ? [21,128,61] : [185,28,28];
 
@@ -4277,14 +4337,15 @@
                 const esDeposito = t.cbuOrigen === 'DEPOSITO';
                 const esCambio = t.tipo === 'cambio_divisa';
                 const esPrestamo = esPrestamoTx(t);
+                const esReserva = esReservaTx(t);
                 const esCambioCompra = esCambio && t.cbuOrigen === u?.cbu;
-                const esUsdRow = !esDeposito && !esCambio && !esPrestamo && esTxUsd(t);
-                const esEnvio = !esDeposito && !esCambio && !esPrestamo && esMiCbu(t.cbuOrigen);
-                const tipo = esDeposito ? 'Depósito' : esPrestamo ? 'Préstamos' : esCambio ? (esCambioCompra ? 'Compra USD' : 'Venta USD') : esEnvio ? (esUsdRow ? 'Enviado (USD)' : 'Enviado') : (esUsdRow ? 'Recibido (USD)' : 'Recibido');
-                const nombre = esDeposito ? 'Depósito' : esPrestamo ? 'Préstamos' : esCambio ? (t.descripcion || tipo) : esEnvio
+                const esUsdRow = !esDeposito && !esCambio && !esPrestamo && !esReserva && esTxUsd(t);
+                const esEnvio = !esDeposito && !esCambio && !esPrestamo && !esReserva && esMiCbu(t.cbuOrigen);
+                const tipo = esDeposito ? 'Depósito' : esPrestamo ? 'Préstamos' : esReserva ? 'Reservas' : esCambio ? (esCambioCompra ? 'Compra USD' : 'Venta USD') : esEnvio ? (esUsdRow ? 'Enviado (USD)' : 'Enviado') : (esUsdRow ? 'Recibido (USD)' : 'Recibido');
+                const nombre = esDeposito ? 'Depósito' : esPrestamo ? 'Préstamos' : esReserva ? 'Reservas' : esCambio ? (t.descripcion || tipo) : esEnvio
                     ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                     : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
-                const negativo = esCambio ? esCambioCompra : esPrestamo ? (t.cbuOrigen !== 'PRESTAMO') : esEnvio;
+                const negativo = esCambio ? esCambioCompra : esPrestamo ? (t.cbuOrigen !== 'PRESTAMO') : esReserva ? (t.cbuOrigen !== 'RESERVA') : esEnvio;
                 const importe = (negativo ? '-' : '+') + simboloMoneda(esUsdRow) + ' ' + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
                 return [fecha, tipo, nombre, importe, t.estado || '', t.motivoRechazo || ''];
             });
