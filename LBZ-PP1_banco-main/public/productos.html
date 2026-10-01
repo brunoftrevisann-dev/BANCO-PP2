@@ -433,6 +433,18 @@
             footer { flex-direction: column; gap: 16px; padding: 32px 24px; }
         }
 
+        /* Phone (≤ 480px): header-left (logo + divisor + "Inicio") + header-actions
+           (Log in + Abrir Cuenta) no entran juntos en una fila de ~320-360px útiles */
+        @media (max-width: 480px) {
+            header { padding: 0 14px; }
+            .header-divider { display: none; }
+            .back-link span { display: none; }
+            .back-link { padding: 7px 10px; }
+            .btn-text { padding: 6px 10px; font-size: 0.8rem; }
+            .btn-primary { padding: 8px 14px; font-size: 0.82rem; }
+            .header-actions { gap: 8px; }
+        }
+
         .header-left { display: flex; align-items: center; gap: 0; }
         .header-divider { width: 1px; height: 20px; background: var(--border); margin: 0 18px; }
         .back-link {

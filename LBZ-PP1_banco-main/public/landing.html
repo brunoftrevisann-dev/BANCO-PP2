@@ -34,18 +34,21 @@
             height: 34px; overflow: hidden;
             background: var(--text); color: var(--bg);
             display: flex; align-items: center;
+            -webkit-transform: translateZ(0); transform: translateZ(0);
         }
         .usd-ticker-track {
             display: flex; align-items: center; gap: 40px;
             white-space: nowrap; flex-shrink: 0;
             animation: tickerScroll 220s linear infinite;
             padding-left: 40px;
+            will-change: transform;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
         }
         .usd-ticker-track span { font-size: 0.76rem; font-weight: 500; }
         .usd-ticker-track b { font-weight: 700; }
         @keyframes tickerScroll {
-            from { transform: translateX(0); }
-            to   { transform: translateX(-50%); }
+            from { transform: translate3d(0,0,0); }
+            to   { transform: translate3d(-50%,0,0); }
         }
         @media (prefers-reduced-motion: reduce) {
             .usd-ticker-track { animation: none; }

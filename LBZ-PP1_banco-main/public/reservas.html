@@ -171,6 +171,16 @@
         @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
         body { animation: pageIn 0.3s ease both; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; }
+            /* el título centrado con position:absolute puede pisar "Volver tuo" en
+               pantallas angostas — en mobile pasa a fluir en el flex normal */
+            .page-title { position: static; left: auto; top: auto; transform: none; }
+            .main { padding: 20px 14px 80px; gap: 16px; }
+            .card { padding: 20px; }
+        }
     </style>
 </head>
 <body>

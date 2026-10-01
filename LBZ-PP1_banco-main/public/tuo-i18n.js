@@ -519,6 +519,24 @@
   function vibrateSuccess() { vibrate([10, 5, 10, 5, 30]); }
   function vibrateError() { vibrate([50, 10, 50]); }
 
+  // ── DETECCIÓN DE MOBILE ──────────────────────────────────────────────────────
+  // Mismo breakpoint que ya usan todos los @media (max-width: 600px) del resto de
+  // la app — agrega la clase "is-mobile" a <html> para que el CSS pueda usar
+  // selectores tipo `html.is-mobile .algo` donde un @media no alcance (por ej.
+  // reglas que dependen de JS), y expone window.tuoEsMobile() para ramas de JS
+  // (ej. UX distinta del escáner de QR en celular).
+  var mqMobile = window.matchMedia('(max-width: 600px)');
+  function actualizarClaseMobile(e) {
+    document.documentElement.classList.toggle('is-mobile', e.matches);
+  }
+  actualizarClaseMobile(mqMobile);
+  if (mqMobile.addEventListener) {
+    mqMobile.addEventListener('change', actualizarClaseMobile);
+  } else if (mqMobile.addListener) {
+    mqMobile.addListener(actualizarClaseMobile); // Safari viejo
+  }
+  window.tuoEsMobile = function () { return mqMobile.matches; };
+
   // ── INIT ─────────────────────────────────────────────────────────────────────
 
   // Apply font size immediately — document.documentElement is always available

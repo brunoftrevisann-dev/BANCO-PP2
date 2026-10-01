@@ -150,7 +150,7 @@
         }
 
         /* ── LAYOUT ── */
-        .main { max-width: 860px; margin: 36px auto; padding: 0 24px; display: flex; flex-direction: column; gap: 28px; }
+        .main { max-width: 860px; margin: 36px auto; padding: 0 24px calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 24px); display: flex; flex-direction: column; gap: 28px; }
 
         /* ── TARJETA DE CUENTA ── */
         /* ── STACK ARS/USD: ambas tarjetas ocupan la misma celda, así el contenedor siempre mide lo que la más alta de las dos ── */
@@ -432,7 +432,7 @@
         .confirm-btn-danger:hover { opacity: 0.88; }
 
         /* ── TOAST ── */
-        .toast-container { position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast-container { position: fixed; bottom: calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 16px); right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast { padding: 12px 18px; border-radius: 10px; font-size: 0.84rem; font-weight: 500; font-family: 'Inter', sans-serif; max-width: 300px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); display: flex; align-items: center; gap: 10px; animation: toastIn 0.25s ease; pointer-events: auto; line-height: 1.4; }
         .toast.success { background: #1A1A1B; color: white; }
         .toast.error   { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
@@ -761,7 +761,7 @@
 
         /* Tablet landscape (≤ 860px) */
         @media (max-width: 860px) {
-            .main { padding: 0 16px; }
+            .main { padding: 0 16px calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 24px); }
         }
 
         /* Tablet portrait (≤ 768px) */
@@ -776,7 +776,7 @@
         @media (max-width: 600px) {
             .header { padding: 0 16px; height: 56px; }
             .header-name { display: none; }
-            .main { margin: 14px auto; gap: 14px; padding: 0 12px; }
+            .main { margin: 14px auto; gap: 14px; padding: 0 12px calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 20px); }
 
             /* Account card */
             .account-card { padding: 22px; border-radius: 16px; }
@@ -803,7 +803,7 @@
             .info-grid { grid-template-columns: 1fr; gap: 16px; }
 
             /* Toast */
-            .toast-container { bottom: 16px; right: 12px; left: 12px; }
+            .toast-container { bottom: calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 10px); right: 12px; left: 12px; }
             .toast { max-width: none; font-size: 0.82rem; }
 
             /* Modals — bottom sheet on phone */
@@ -871,7 +871,8 @@
 
         /* ── ASISTENTE DE IA ─────────────────────────────────────────────── */
         .asistente-fab {
-            position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px;
+            position: fixed; right: 24px; width: 56px; height: 56px;
+            bottom: calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 16px);
             border-radius: 50%; background: var(--accent); color: #fff; border: none;
             font-size: 1.5rem; cursor: pointer; z-index: 900;
             box-shadow: 0 8px 24px rgba(0,82,255,0.35);
@@ -880,18 +881,22 @@
         }
         .asistente-fab:hover { transform: scale(1.06); }
 
-        /* ── BOTÓN FLOTANTE ESCANEAR QR ── */
-        .qr-fab {
-            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-            width: 56px; height: 56px; border-radius: 50%; background: #1A1A1B; color: #fff; border: none;
-            cursor: pointer; z-index: 900;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        /* ── BARRA FLOTANTE ESCANEAR QR ── */
+        :root { --qr-bar-height: 58px; }
+        .qr-scan-bar {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+            width: 100%; height: var(--qr-bar-height);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            background: var(--accent); color: #fff; border: none;
+            cursor: pointer;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.18);
             display: flex; align-items: center; justify-content: center;
-            transition: transform 0.15s;
+            transition: opacity 0.15s;
         }
-        [data-theme="dark"] .qr-fab { background: var(--accent); }
-        .qr-fab:hover { transform: translateX(-50%) scale(1.06); }
-        @media (max-width: 600px) { .qr-fab { bottom: 16px; } }
+        .qr-scan-bar:hover { opacity: 0.92; }
+        .qr-scan-bar:active { opacity: 0.8; }
+        .qr-scan-bar svg { width: 24px; height: 24px; flex-shrink: 0; }
+        @media (max-width: 600px) { :root { --qr-bar-height: 52px; } }
         .asistente-panel {
             width: 400px; max-width: 100%; height: 620px; max-height: 85vh;
             display: flex; flex-direction: column;
@@ -940,7 +945,7 @@
         .asistente-inputrow button:disabled { opacity: 0.5; cursor: default; }
         @media (max-width: 600px) {
             .asistente-panel { height: 100%; max-height: 100vh; }
-            .asistente-fab { bottom: 16px; right: 16px; }
+            .asistente-fab { right: 16px; }
         }
     </style>
 </head>
@@ -4417,7 +4422,7 @@
 
     <!-- ── ASISTENTE DE IA ─────────────────────────────────────────────── -->
     <button class="asistente-fab" id="asistenteFab" onclick="abrirAsistente()" aria-label="Abrir asistente">💬</button>
-    <button class="qr-fab" id="qrFab" onclick="abrirEscanerQrDesdeHome()" aria-label="Escanear QR">
+    <button class="qr-scan-bar" id="qrFab" onclick="abrirEscanerQrDesdeHome()" aria-label="Escanear QR">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
     </button>
 
