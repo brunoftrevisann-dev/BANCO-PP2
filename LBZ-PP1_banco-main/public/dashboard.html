@@ -1751,6 +1751,7 @@
         let saldoReal = 0;
         let _lastVisitChecked = false;
         let _txsVistas = new Set();
+        let _notifsQrVistas = new Set(); // ids de notificaciones de "aviso de lectura" ya toasteadas
         let _pollingInterval = null;
         let _inicializado = false;      // true sólo después de que cargarRecentTx completa
         let _cargandoRecent = false;    // evita llamadas concurrentes a cargarRecentTx
@@ -3076,7 +3077,7 @@
         const NOTIF_ICON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
         function colorNotif(tipo) {
             if (['transferencia_recibida', 'deposito', 'cambio_divisa'].includes(tipo)) return '#15803D';
-            if (['prestamo_otorgado', 'cuota_por_vencer', 'cuota_vencida', 'prestamo_saldado', 'prestamo_cancelado', 'reserva_abierta', 'reserva_vencida'].includes(tipo)) return '#0052FF';
+            if (['prestamo_otorgado', 'cuota_por_vencer', 'cuota_vencida', 'prestamo_saldado', 'prestamo_cancelado', 'reserva_abierta', 'reserva_vencida', 'qr_leido'].includes(tipo)) return '#0052FF';
             return '#B45309'; // seguridad: nuevo_dispositivo, password_cambiada, alias_cambiado
         }
 
@@ -3088,14 +3089,27 @@
                 if (!res.ok) return;
                 const { cantidad } = await res.json();
                 const badge = document.getElementById('notifBadge');
-                if (!badge) return;
-                if (cantidad > 0) {
-                    badge.textContent = cantidad > 99 ? '99+' : cantidad;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
+                if (badge) {
+                    if (cantidad > 0) {
+                        badge.textContent = cantidad > 99 ? '99+' : cantidad;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
                 }
+                // "Aviso de lectura" de QR: además del contador, muestra un toast apenas
+                // llega (no hay websockets, así que se apoya en este mismo polling de 30s).
+                if (cantidad > 0) avisarLecturasQrNuevas(u.id).catch(() => {});
             } catch {}
+        }
+
+        async function avisarLecturasQrNuevas(idPersona) {
+            const res = await fetch(`/api/notificaciones?idPersona=${idPersona}`);
+            const notifs = await res.json();
+            if (!Array.isArray(notifs)) return;
+            notifs
+                .filter(n => n.tipo === 'qr_leido' && !n.leida && !_notifsQrVistas.has(n.id_notificacion))
+                .forEach(n => { _notifsQrVistas.add(n.id_notificacion); showToast(n.mensaje, 'info'); });
         }
 
         async function abrirNotificaciones() {
@@ -4347,10 +4361,13 @@
         async function procesarQrEscaneado(texto) {
             let resultado;
             try {
+                const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
                 const res = await fetch('/api/qr/verificar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ qr: texto })
+                    // idPersona: quién escaneó, para el "aviso de lectura" al banco que emitió el QR
+                    // (le muestra "Fulano escaneó tu QR" al dueño) — ver prompt-aviso-lectura-qr.md.
+                    body: JSON.stringify({ qr: texto, idPersona: u ? u.id : undefined })
                 });
                 resultado = await res.json();
                 if (!res.ok) { showToast(resultado.error || 'Código QR no reconocido', 'error'); return; }

@@ -89,6 +89,16 @@ async function notificarReservaVencida(idPersona, { montoFinal, interes }) {
   });
 }
 
+async function notificarQrLeido(idPersona, { nombreLector, nombreBanco }) {
+  const quien = nombreLector || 'Alguien';
+  const sufijo = nombreBanco ? ` desde ${nombreBanco}` : '';
+  await Notificacion.crear(idPersona, {
+    tipo: 'qr_leido',
+    titulo: 'Tu QR fue leído',
+    mensaje: `${quien} escaneó tu QR${sufijo}.`
+  });
+}
+
 async function notificarNuevoDispositivo(idPersona, { dispositivo }) {
   await Notificacion.crear(idPersona, {
     tipo: 'nuevo_dispositivo',
@@ -118,5 +128,6 @@ module.exports = {
   notificarPrestamoOtorgado, notificarCuotaPorVencer, notificarCuotaVencida,
   notificarPrestamoSaldado, notificarPrestamoCancelado, notificarNuevoDispositivo,
   notificarPasswordCambiada, notificarAliasCambiado,
-  notificarReservaAbierta, notificarReservaVencida
+  notificarReservaAbierta, notificarReservaVencida,
+  notificarQrLeido
 };

@@ -32,6 +32,17 @@ app.use((req, res, next) => {
 <p style="color:#9C9C9F;font-size:0.9rem;margin:0;">Volvemos enseguida. Gracias por tu paciencia.</p></div></body></html>`);
 });
 
+// El preflight del aviso de lectura (prompt-aviso-lectura-qr.md) tiene que devolver 200
+// exacto, igual que en los otros bancos de la cátedra — no el 204 que manda por defecto
+// el middleware cors() de abajo para el resto de la app. Va antes para que lo intercepte
+// primero.
+app.options('/api/qr/aviso-lectura', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'content-type');
+    res.sendStatus(200);
+});
+
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -274,6 +285,23 @@ db.query(`
   )
 `).catch(e => console.error('Error creando tabla Reservas:', e.message));
 
+// Aviso de lectura del QR interbancario: registro de quién leyó el QR de quién
+// (prompt-aviso-lectura-qr.md) — no mueve plata, solo dispara la notificación
+// "Fulano escaneó tu QR".
+db.query(`
+  CREATE TABLE IF NOT EXISTS Qr_Lecturas (
+    id            SERIAL PRIMARY KEY,
+    id_persona    INTEGER NOT NULL REFERENCES Personas(id),
+    cbu           VARCHAR(22) NOT NULL,
+    jti           VARCHAR(100),
+    banco_lector  INTEGER NOT NULL,
+    nombre_lector VARCHAR(40),
+    created_at    TIMESTAMPTZ DEFAULT NOW()
+  )
+`).catch(e => console.error('Error creando tabla Qr_Lecturas:', e.message));
+db.query(`CREATE INDEX IF NOT EXISTS idx_qr_lecturas_dedupe ON Qr_Lecturas(id_persona, banco_lector, jti, created_at DESC)`)
+  .catch(e => console.error('Error creando indice idx_qr_lecturas_dedupe:', e.message));
+
 // Proxy para obtener nombre de banco por código
 app.get('/api/banco/:code', async (req, res) => {
   try {
@@ -295,6 +323,8 @@ app.get('/api/banco/:code', async (req, res) => {
 // QR interbancario firmado (JWT ES256)
 app.post('/api/qr/firmar', qrController.firmar);
 app.post('/api/qr/verificar', qrController.verificar);
+// Aviso de lectura (rol emisor): lo llaman los otros bancos de la cátedra, sin login.
+app.post('/api/qr/aviso-lectura', qrController.avisoLectura);
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;

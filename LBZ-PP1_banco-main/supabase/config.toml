@@ -1,0 +1,8 @@
+project_id = "bjpgdcgloinsjogpwwgm"
+
+# Pública a propósito: los otros bancos de la cátedra no son usuarios de este
+# proyecto de Supabase, así que no pueden mandar un JWT de Supabase Auth válido.
+# La autenticación real pasa por la firma ES256 del propio QR, verificada del
+# lado del backend de Express al que esta función hace de proxy.
+[functions.qr-lectura]
+verify_jwt = false

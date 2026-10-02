@@ -31,7 +31,23 @@ async function firmarQr({ cbu, alias, monto, moneda }) {
   if (monto) claims.monto = monto;
   return new SignJWT(claims)
     .setProtectedHeader({ alg: 'ES256', typ: 'JWT', kid: obtenerKid() })
+    // jti identifica este QR puntual — lo usa el "aviso de lectura" para no avisar
+    // dos veces la misma lectura (la cámara suele leer el mismo cuadro varias veces).
+    .setJti(crypto.randomUUID())
     .sign(obtenerClavePrivada());
+}
+
+// Verifica un QR con NUESTRA PROPIA clave pública (nunca la de otro banco) — lo usa el
+// endpoint que recibe "avisos de lectura" de otros bancos (prompt-aviso-lectura-qr.md):
+// ahí solo hace falta probar que el QR es nuestro y no venció, no la identidad de quien
+// lo leyó (eso no se puede verificar sin firma del banco lector, y a propósito no se pide).
+async function verificarQrPropio(jwt) {
+  const { jwtVerify, importJWK } = await jose();
+  const clavePublica = await importJWK(obtenerClavePublicaJwk(), 'ES256');
+  const { payload } = await jwtVerify(jwt, clavePublica, { algorithms: ['ES256'], clockTolerance: 120 });
+  if (Number(payload.iss) !== obtenerBankCode()) throw new Error('iss no coincide con este banco');
+  if (typeof payload.cbu !== 'string' || !/^\d{22}$/.test(payload.cbu)) throw new Error('cbu inválido en el QR');
+  return { cbu: payload.cbu, jti: typeof payload.jti === 'string' ? payload.jti : null };
 }
 
 // Los claims de un QR ajeno se usan para precargar formularios: se devuelven solo los campos
@@ -90,4 +106,4 @@ async function verificarQr(payloadCrudo, bancosConocidos) {
   return { tipo: 'error' };
 }
 
-module.exports = { obtenerBankCode, obtenerKid, obtenerClavePublicaJwk, firmarQr, verificarQr };
+module.exports = { obtenerBankCode, obtenerKid, obtenerClavePublicaJwk, firmarQr, verificarQr, verificarQrPropio };
