@@ -30,44 +30,56 @@ exports.firmar = async (req, res) => {
   }
 };
 
-// Registra la lectura y avisa al dueño del QR ("Fulano escaneó tu QR"), evitando avisos
-// repetidos del mismo QR+banco en los últimos 30s (la cámara suele leer el mismo cuadro
-// varias veces seguidas). Compartida entre el endpoint público (rol emisor) y el caso
-// "nos escaneamos a nosotros mismos" (ver avisarLecturaAlEmisor).
+function resolverNombreBanco(bancoLector) {
+  return bancoLector !== obtenerBankCode() ? (bancosAviso[bancoLector]?.nombre || null) : null;
+}
+
+// Registra la lectura y avisa al dueño del QR ("Fulano escaneó tu QR"). Compartida entre el
+// endpoint público (rol emisor) y el caso "nos escaneamos a nosotros mismos" (ver
+// avisarLecturaAlEmisor). Devuelve { avisado, usado }:
+// - usado=true   → el QR (con jti) ya lo había cerrado OTRO lector antes: hay que responder 409.
+// - avisado=true → se aceptó (primera vez, repetición del mismo lector, o sin jti dentro de los 30s).
 async function registrarYNotificarLectura({ cbu, jti, bancoLector, nombreLector }) {
   const cuenta = await Persona.getByCbu(cbu);
-  if (!cuenta) return { avisado: false };
+  if (!cuenta) return { avisado: false, usado: false };
 
-  const repetido = await QrLectura.yaAvisado({ bancoLector, jti, cbu });
-  if (repetido) return { avisado: true };
+  if (jti) {
+    const { resultado } = await QrLectura.intentarCerrarConJti({ idPersona: cuenta.id_persona, cbu, jti, bancoLector, nombreLector });
+    if (resultado === 'usado_por_otro') return { avisado: false, usado: true };
+    if (resultado === 'repetida_mismo_lector') return { avisado: true, usado: false };
+    // 'primera'
+    notificarQrLeido(cuenta.id_persona, { nombreLector, nombreBanco: resolverNombreBanco(bancoLector) })
+      .catch(e => console.error('Error creando notificación de lectura de QR:', e.message));
+    return { avisado: true, usado: false };
+  }
 
-  await QrLectura.registrar({ idPersona: cuenta.id_persona, cbu, jti, bancoLector, nombreLector });
+  // Sin jti (QR viejos): nunca se cierran, solo se ignoran repetidos de la misma cuenta+banco en 30s.
+  const repetido = await QrLectura.yaAvisado({ bancoLector, cbu });
+  if (repetido) return { avisado: true, usado: false };
 
-  const esOtroBanco = bancoLector !== obtenerBankCode();
-  const nombreBanco = esOtroBanco ? (bancosAviso[bancoLector]?.nombre || null) : null;
-  notificarQrLeido(cuenta.id_persona, { nombreLector, nombreBanco })
+  await QrLectura.registrar({ idPersona: cuenta.id_persona, cbu, jti: null, bancoLector, nombreLector });
+  notificarQrLeido(cuenta.id_persona, { nombreLector, nombreBanco: resolverNombreBanco(bancoLector) })
     .catch(e => console.error('Error creando notificación de lectura de QR:', e.message));
-
-  return { avisado: true };
+  return { avisado: true, usado: false };
 }
 
 // Rol lector: después de decodificar cualquier QR JWT (verificado o no), le avisa al banco
-// emisor que alguien lo leyó. Nunca bloquea ni condiciona el resto del flujo de pago: si el
-// otro banco está caído o tarda, no importa — por eso nunca se espera ni se "awaitea" desde
-// exports.verificar, y cualquier error se traga en silencio.
+// emisor que alguien lo leyó, y ESPERA la respuesta hasta 3s para saber si el QR ya estaba
+// usado (409) — si lo está, no hay que dejar pagar. Cualquier otro caso (202, timeout, error,
+// banco sin avisoUrl) nunca tiene que trabar el pago: se interpreta como "seguir normal".
 async function avisarLecturaAlEmisor(qrTexto, idPersonaLector) {
   const texto = String(qrTexto || '');
-  if (!FORMA_JWT.test(texto)) return; // no es un JWT (CBU plano, JSON, etc.) — nada que avisar
+  if (!FORMA_JWT.test(texto)) return { usado: false }; // no es un JWT — nada que avisar
 
   let claimsCrudos;
   try {
     claimsCrudos = JSON.parse(Buffer.from(texto.split('.')[1], 'base64url').toString('utf8'));
   } catch {
-    return;
+    return { usado: false };
   }
 
   const bancoEmisor = Number(claimsCrudos.iss);
-  if (!Number.isInteger(bancoEmisor) || typeof claimsCrudos.cbu !== 'string') return;
+  if (!Number.isInteger(bancoEmisor) || typeof claimsCrudos.cbu !== 'string') return { usado: false };
 
   let nombreLector = null;
   if (idPersonaLector) {
@@ -77,37 +89,46 @@ async function avisarLecturaAlEmisor(qrTexto, idPersonaLector) {
     } catch { /* si no se puede resolver el nombre, se avisa sin nombre */ }
   }
 
+  const jtiCrudo = typeof claimsCrudos.jti === 'string' ? claimsCrudos.jti : null;
+
   if (bancoEmisor === obtenerBankCode()) {
     // Es un QR propio (de otro usuario de tuo): se procesa en el mismo proceso, sin HTTP.
-    await registrarYNotificarLectura({
-      cbu: claimsCrudos.cbu, jti: typeof claimsCrudos.jti === 'string' ? claimsCrudos.jti : null,
-      bancoLector: obtenerBankCode(), nombreLector
-    });
-    return;
+    const { usado } = await registrarYNotificarLectura({ cbu: claimsCrudos.cbu, jti: jtiCrudo, bancoLector: obtenerBankCode(), nombreLector });
+    return { usado };
   }
 
   const destino = bancosAviso[bancoEmisor];
-  if (!destino || !destino.avisoUrl) return; // banco no conocido o sin aviso implementado
+  if (!destino || !destino.avisoUrl) return { usado: false }; // banco no conocido o sin aviso implementado
 
   const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 4000);
+  const tid = setTimeout(() => ctrl.abort(), 3000);
   try {
-    await fetch(destino.avisoUrl, {
+    const resp = await fetch(destino.avisoUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ qr: texto, banco: obtenerBankCode(), nombre: nombreLector }),
       signal: ctrl.signal
     });
-  } catch { /* fire-and-forget */ }
-  finally { clearTimeout(tid); }
+    if (resp.status === 409) return { usado: true };
+    return { usado: false };
+  } catch {
+    return { usado: false }; // banco caído, timeout, etc. — nunca frena el pago
+  } finally {
+    clearTimeout(tid);
+  }
 }
 
 exports.verificar = async (req, res) => {
   try {
     const { qr, idPersona } = req.body;
-    const resultado = await verificarQr(qr, bancosConocidos);
-    avisarLecturaAlEmisor(qr, idPersona ? Number(idPersona) : null)
-      .catch(e => console.error('Error avisando lectura de QR:', e.message));
+    const [resultado, { usado }] = await Promise.all([
+      verificarQr(qr, bancosConocidos),
+      avisarLecturaAlEmisor(qr, idPersona ? Number(idPersona) : null)
+    ]);
+
+    if (usado) {
+      return res.status(409).json({ tipo: 'usado', error: 'Este QR ya fue escaneado por otra persona. Pedí que te muestren uno nuevo.' });
+    }
     if (resultado.tipo === 'error') return res.status(400).json({ tipo: 'error', error: 'Código QR no reconocido' });
     if (resultado.tipo === 'rechazado') {
       console.error('QR rechazado:', resultado.motivoInterno);
@@ -119,9 +140,9 @@ exports.verificar = async (req, res) => {
   }
 };
 
-// Rol emisor: otro banco (o el nuestro, para bancos sin el aviso implementado todavía) nos
-// avisa que alguien leyó uno de nuestros QR. Endpoint público, sin login — contrato en
-// prompt-aviso-lectura-qr.md. No mueve plata ni condiciona ningún pago, solo informa.
+// Rol emisor: otro banco (o el nuestro, in-process) nos avisa que alguien leyó uno de
+// nuestros QR. Endpoint público, sin login — contrato en prompt-aviso-lectura-qr.md.
+// No mueve plata; si el QR ya estaba cerrado por otro lector, responde 409.
 exports.avisoLectura = async (req, res) => {
   try {
     const { qr, banco, nombre } = req.body;
@@ -137,8 +158,30 @@ exports.avisoLectura = async (req, res) => {
       return res.status(401).json({ error: 'QR inválido o vencido' });
     }
 
-    const { avisado } = await registrarYNotificarLectura({ cbu: claims.cbu, jti: claims.jti, bancoLector: bancoNum, nombreLector });
+    const { avisado, usado } = await registrarYNotificarLectura({ cbu: claims.cbu, jti: claims.jti, bancoLector: bancoNum, nombreLector });
+    if (usado) return res.status(409).json({ ok: false, usado: true, error: 'Este QR ya fue escaneado' });
     res.status(202).json({ ok: true, avisado });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Polling del QR propio (cada 2s mientras el modal está abierto en dashboard.html/dolares.html)
+// para saber si ya lo escanearon y cerrarlo en pantalla — alternativa a Supabase Realtime,
+// que exigiría RLS con auth.uid() sin mapeo directo a nuestras personas (login propio, sin
+// sesiones de Supabase Auth).
+exports.estado = async (req, res) => {
+  try {
+    const jti = String(req.query.jti || '');
+    if (!jti) return res.status(400).json({ error: 'jti requerido' });
+    const fila = await QrLectura.buscarPorJti(jti);
+    if (!fila) return res.json({ usado: false });
+    res.json({
+      usado: true,
+      bancoLector: fila.banco_lector,
+      nombreLector: fila.nombre_lector,
+      nombreBanco: resolverNombreBanco(fila.banco_lector)
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

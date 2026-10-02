@@ -6,3 +6,9 @@ project_id = "bjpgdcgloinsjogpwwgm"
 # lado del backend de Express al que esta función hace de proxy.
 [functions.qr-lectura]
 verify_jwt = false
+
+# También pública ante Supabase (verify_jwt=false): la protección real es un secret
+# interno propio (QR_FIRMAR_INTERNAL_SECRET) que solo conoce nuestro backend de Express,
+# chequeado a mano dentro de la función — ver supabase/functions/qr-firmar/index.ts.
+[functions.qr-firmar]
+verify_jwt = false

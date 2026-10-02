@@ -1559,7 +1559,7 @@
                 <div class="qr-title">Tu código QR</div>
                 <div class="qr-sub">Mostralo para que te transfieran desde cualquier banco</div>
             </div>
-            <div class="qr-body">
+            <div class="qr-body" id="qrContenidoNormal">
                 <div class="qr-canvas-wrap">
                     <div id="qrCanvas"></div>
                 </div>
@@ -1571,6 +1571,13 @@
                     <span class="importe-symbol" id="qrMontoSymbolo">$</span>
                     <input class="input-modal" id="qrMontoInput" type="text" inputmode="decimal" placeholder="Pedir un monto (opcional)" style="padding-left:18px;" oninput="formatearMonto(this); onCambioMontoQr();">
                 </div>
+            </div>
+            <div class="qr-body" id="qrContenidoUsado" style="display:none; text-align:center; padding:28px 28px 8px;">
+                <div class="qr-header-icon" style="background:#F0FDF4; margin:0 auto 14px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="qr-title" id="qrUsadoTexto" style="color:var(--text);"></div>
+                <button class="btn-qr-close" style="margin-top:18px;" onclick="generarNuevoQrPropio()">Generar nuevo QR</button>
             </div>
             <div class="qr-footer">
                 <button class="btn-qr-close" onclick="cerrarQR()">Cerrar</button>
@@ -4229,6 +4236,16 @@
 
         // ── QR DEL CBU ──────────────────────────────────────────────────
         let _qrCbuActual = null;
+        let _qrMontoActual = undefined;
+        let _qrPollInterval = null;
+        // Decodifica el jti de un JWT que NOSOTROS firmamos — no hace falta verificar la
+        // firma, solo leer el payload para saber qué QR puntual está en pantalla.
+        function decodificarJtiDeJwt(jwt) {
+            try {
+                const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                return typeof payload.jti === 'string' ? payload.jti : null;
+            } catch { return null; }
+        }
         async function abrirQR(cbu) {
             const objetivo = cbu || JSON.parse(localStorage.getItem('usuarioLogueado'))?.cbu;
             if (!objetivo) return;
@@ -4244,8 +4261,12 @@
         // El monto es opcional: si el campo está vacío se vuelve a firmar el QR sin monto
         // (igual que siempre), así el usuario puede pedirlo o sacarlo cuando quiera.
         async function renderizarQr() {
+            clearInterval(_qrPollInterval);
+            document.getElementById('qrContenidoUsado').style.display = 'none';
+            document.getElementById('qrContenidoNormal').style.display = '';
             const canvas = document.getElementById('qrCanvas');
             const monto = valorNumerico(document.getElementById('qrMontoInput')) || undefined;
+            _qrMontoActual = monto;
             canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Generando…</div>';
             const contenidoQr = await obtenerContenidoQr(_qrCbuActual, monto);
             canvas.innerHTML = '';
@@ -4255,13 +4276,41 @@
             } else {
                 canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Cargando QR…</div>';
             }
+            // QR de un solo uso: si logramos firmar (hay jti), nos fijamos cada 2s si ya lo
+            // escanearon para cerrarlo en pantalla — alternativa a Realtime (ver memoria del proyecto).
+            const jti = decodificarJtiDeJwt(contenidoQr);
+            if (jti) iniciarPollingQrPropio(jti);
         }
+        function iniciarPollingQrPropio(jti) {
+            clearInterval(_qrPollInterval);
+            _qrPollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/qr/estado?jti=${encodeURIComponent(jti)}`);
+                    const data = await res.json();
+                    if (data.usado) mostrarQrUsado(data);
+                } catch { /* un error de red acá no debería tapar el QR */ }
+            }, 2000);
+        }
+        function mostrarQrUsado({ nombreLector, nombreBanco }) {
+            clearInterval(_qrPollInterval);
+            const quien = nombreLector || 'Alguien';
+            const sufijo = nombreBanco ? ` desde ${nombreBanco}` : '';
+            let texto = `${quien} escaneó tu QR${sufijo}.`;
+            if (_qrMontoActual) texto += ` Esperando el pago de ${(_qrMontoActual).toLocaleString('es-AR', { minimumFractionDigits: 2 })}…`;
+            document.getElementById('qrUsadoTexto').textContent = texto;
+            document.getElementById('qrContenidoNormal').style.display = 'none';
+            document.getElementById('qrContenidoUsado').style.display = '';
+        }
+        function generarNuevoQrPropio() { renderizarQr(); }
         let _debounceMontoQr = null;
         function onCambioMontoQr() {
             clearTimeout(_debounceMontoQr);
             _debounceMontoQr = setTimeout(renderizarQr, 500);
         }
-        function cerrarQR() { document.getElementById('qrModal').classList.remove('open'); }
+        function cerrarQR() {
+            clearInterval(_qrPollInterval);
+            document.getElementById('qrModal').classList.remove('open');
+        }
         async function copiarCbuDesdeQR() {
             if (!_qrCbuActual) return;
             try {

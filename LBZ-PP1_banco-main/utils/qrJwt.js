@@ -1,5 +1,3 @@
-const crypto = require('crypto');
-
 let joseModulo = null;
 async function jose() {
   if (!joseModulo) joseModulo = await import('jose');
@@ -9,32 +7,45 @@ async function jose() {
 const obtenerBankCode = () => Number(process.env.BANK_CODE || 12);
 const obtenerKid = () => process.env.QR_KID || 'tuo-1';
 
-let clavePrivada = null;
-function obtenerClavePrivada() {
-  if (clavePrivada) return clavePrivada;
-  const b64 = process.env.QR_PRIVATE_KEY_B64;
-  if (!b64) throw new Error('QR_PRIVATE_KEY_B64 no está configurada');
-  clavePrivada = crypto.createPrivateKey(Buffer.from(b64, 'base64').toString('utf8'));
-  return clavePrivada;
-}
+// Clave pública de firma — no es secreta, puede vivir en el código (prompt-aviso-lectura-qr.md
+// v2, sección 1). La privada (con "d") ya NO vive en Express/Vercel: se movió a un secret de
+// Supabase (QR_JWT_PRIVATE_KEY) que solo lee la Edge Function qr-firmar. Mismo par de claves
+// de siempre — nunca se compartió públicamente, así que no hay ruptura de compatibilidad.
+const CLAVE_PUBLICA_JWK = {
+  kty: 'EC', crv: 'P-256',
+  x: 'FpUlRhsV90k-HnjgOjjHdmR_BQXAh9cgkNjDZn56YNs',
+  y: 'IbFlt8whZYvoA0dIOla6Og0zOgKcrO3J7RR_uNoYm2o'
+};
 
 function obtenerClavePublicaJwk() {
-  return crypto.createPublicKey(obtenerClavePrivada()).export({ format: 'jwk' });
+  return CLAVE_PUBLICA_JWK;
 }
 
+// Firma vía la Edge Function qr-firmar (Supabase), que es la única que tiene acceso a la
+// clave privada. Protegida con un secret compartido propio — no es la clave de firma, solo
+// autoriza a este backend a pedir firmas.
 async function firmarQr({ cbu, alias, monto, moneda }) {
-  const { SignJWT } = await jose();
-  const ahora = Math.floor(Date.now() / 1000);
-  // `iss` va en el payload y no con setIssuer(): la spec lo define como número y jose solo acepta string ahí.
-  const claims = { iss: obtenerBankCode(), cbu, moneda, iat: ahora, exp: ahora + 600 };
-  if (alias) claims.alias = alias;
-  if (monto) claims.monto = monto;
-  return new SignJWT(claims)
-    .setProtectedHeader({ alg: 'ES256', typ: 'JWT', kid: obtenerKid() })
-    // jti identifica este QR puntual — lo usa el "aviso de lectura" para no avisar
-    // dos veces la misma lectura (la cámara suele leer el mismo cuadro varias veces).
-    .setJti(crypto.randomUUID())
-    .sign(obtenerClavePrivada());
+  const secreto = process.env.QR_FIRMAR_INTERNAL_SECRET;
+  if (!secreto) throw new Error('QR_FIRMAR_INTERNAL_SECRET no está configurada');
+  const url = `${process.env.SUPABASE_URL}/functions/v1/qr-firmar`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${secreto}` },
+      body: JSON.stringify({ cbu, alias, monto, moneda }),
+      signal: ctrl.signal
+    });
+    if (!resp.ok) {
+      const cuerpo = await resp.json().catch(() => ({}));
+      throw new Error(cuerpo.error || `qr-firmar respondió ${resp.status}`);
+    }
+    const { jwt } = await resp.json();
+    return jwt;
+  } finally {
+    clearTimeout(tid);
+  }
 }
 
 // Verifica un QR con NUESTRA PROPIA clave pública (nunca la de otro banco) — lo usa el

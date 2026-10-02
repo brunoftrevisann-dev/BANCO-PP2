@@ -301,6 +301,11 @@ db.query(`
 `).catch(e => console.error('Error creando tabla Qr_Lecturas:', e.message));
 db.query(`CREATE INDEX IF NOT EXISTS idx_qr_lecturas_dedupe ON Qr_Lecturas(id_persona, banco_lector, jti, created_at DESC)`)
   .catch(e => console.error('Error creando indice idx_qr_lecturas_dedupe:', e.message));
+// QR de un solo uso (prompt-aviso-lectura-qr.md v2): con jti, la PRIMERA lectura "cierra"
+// el QR — ninguna otra puede insertar el mismo jti de nuevo. Índice único parcial (solo
+// alcanza a las filas con jti, las sin jti siguen permitiendo varias dentro de los 30s).
+db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_qr_lecturas_jti_unico ON Qr_Lecturas(jti) WHERE jti IS NOT NULL`)
+  .catch(e => console.error('Error creando indice idx_qr_lecturas_jti_unico:', e.message));
 
 // Proxy para obtener nombre de banco por código
 app.get('/api/banco/:code', async (req, res) => {
@@ -325,6 +330,9 @@ app.post('/api/qr/firmar', qrController.firmar);
 app.post('/api/qr/verificar', qrController.verificar);
 // Aviso de lectura (rol emisor): lo llaman los otros bancos de la cátedra, sin login.
 app.post('/api/qr/aviso-lectura', qrController.avisoLectura);
+// Polling del QR propio (cada 2s mientras el modal está abierto) para saber si ya lo
+// escanearon y cerrarlo en pantalla — alternativa a Realtime, ver plan en memoria.
+app.get('/api/qr/estado', qrController.estado);
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;

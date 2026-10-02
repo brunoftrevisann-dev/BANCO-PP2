@@ -342,11 +342,17 @@
         <div class="qr-panel">
             <div class="qr-panel-title">Tu código QR en USD</div>
             <div class="qr-panel-sub">Mostralo para que te transfieran dólares desde cualquier banco</div>
-            <div class="qr-canvas-wrap"><div id="qrCanvasUsd"></div></div>
-            <span class="qr-cbu-val" id="qrCbuValUsd"></span>
-            <div class="importe-input-wrap" style="margin-bottom:20px;">
-                <span class="importe-symbol">US$</span>
-                <input class="input-dep" id="qrMontoInputUsd" type="text" inputmode="decimal" placeholder="Pedir un monto (opcional)" oninput="formatearMonto(this); onCambioMontoQrUsd();">
+            <div id="qrContenidoNormalUsd">
+                <div class="qr-canvas-wrap"><div id="qrCanvasUsd"></div></div>
+                <span class="qr-cbu-val" id="qrCbuValUsd"></span>
+                <div class="importe-input-wrap" style="margin-bottom:20px;">
+                    <span class="importe-symbol">US$</span>
+                    <input class="input-dep" id="qrMontoInputUsd" type="text" inputmode="decimal" placeholder="Pedir un monto (opcional)" oninput="formatearMonto(this); onCambioMontoQrUsd();">
+                </div>
+            </div>
+            <div id="qrContenidoUsadoUsd" style="display:none; padding:8px 0 16px;">
+                <div class="qr-panel-title" id="qrUsadoTextoUsd"></div>
+                <button class="qr-btn-close" style="margin-top:10px;" onclick="generarNuevoQrUsd()">Generar nuevo QR</button>
             </div>
             <button class="qr-btn-close" onclick="cerrarQRUsd()">Cerrar</button>
         </div>
@@ -390,6 +396,14 @@
             return `${cbu.slice(0,4)} ${cbu.slice(4,8)} ${cbu.slice(8,12)} ${cbu.slice(12,16)} ${cbu.slice(16,20)} ${cbu.slice(20)}`;
         }
 
+        let _qrPollIntervalUsd = null;
+        let _qrMontoActualUsd = undefined;
+        function decodificarJtiDeJwtUsd(jwt) {
+            try {
+                const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                return typeof payload.jti === 'string' ? payload.jti : null;
+            } catch { return null; }
+        }
         async function abrirQRUsd() {
             if (!cuentaUsd?.cbu) return;
             const overlay = document.getElementById('qrOverlayUsd');
@@ -400,8 +414,12 @@
         }
         // El monto es opcional: si el campo está vacío se vuelve a firmar el QR sin monto.
         async function renderizarQrUsd() {
+            clearInterval(_qrPollIntervalUsd);
+            document.getElementById('qrContenidoUsadoUsd').style.display = 'none';
+            document.getElementById('qrContenidoNormalUsd').style.display = '';
             const canvas = document.getElementById('qrCanvasUsd');
             const monto = valorNumerico(document.getElementById('qrMontoInputUsd')) || undefined;
+            _qrMontoActualUsd = monto;
             canvas.innerHTML = '<div style="padding:20px;color:#6B6B6B;font-size:0.82rem;">Generando…</div>';
             const contenidoQr = await obtenerContenidoQr(cuentaUsd.cbu, monto);
             canvas.innerHTML = '';
@@ -410,13 +428,39 @@
             } else {
                 canvas.innerHTML = '<div style="padding:20px;color:#6B6B6B;font-size:0.82rem;">Cargando QR…</div>';
             }
+            // QR de un solo uso: polling cada 2s mientras está en pantalla (ver dashboard.html
+            // y la memoria del proyecto para la justificación de por qué no es Realtime).
+            const jti = decodificarJtiDeJwtUsd(contenidoQr);
+            if (jti) {
+                _qrPollIntervalUsd = setInterval(async () => {
+                    try {
+                        const res = await fetch(`/api/qr/estado?jti=${encodeURIComponent(jti)}`);
+                        const data = await res.json();
+                        if (data.usado) mostrarQrUsadoUsd(data);
+                    } catch { /* ignorar errores de red del polling */ }
+                }, 2000);
+            }
         }
+        function mostrarQrUsadoUsd({ nombreLector, nombreBanco }) {
+            clearInterval(_qrPollIntervalUsd);
+            const quien = nombreLector || 'Alguien';
+            const sufijo = nombreBanco ? ` desde ${nombreBanco}` : '';
+            let texto = `${quien} escaneó tu QR${sufijo}.`;
+            if (_qrMontoActualUsd) texto += ` Esperando el pago de US$${(_qrMontoActualUsd).toLocaleString('es-AR', { minimumFractionDigits: 2 })}…`;
+            document.getElementById('qrUsadoTextoUsd').textContent = texto;
+            document.getElementById('qrContenidoNormalUsd').style.display = 'none';
+            document.getElementById('qrContenidoUsadoUsd').style.display = '';
+        }
+        function generarNuevoQrUsd() { renderizarQrUsd(); }
         let _debounceMontoQrUsd = null;
         function onCambioMontoQrUsd() {
             clearTimeout(_debounceMontoQrUsd);
             _debounceMontoQrUsd = setTimeout(renderizarQrUsd, 500);
         }
-        function cerrarQRUsd() { document.getElementById('qrOverlayUsd').classList.remove('open'); }
+        function cerrarQRUsd() {
+            clearInterval(_qrPollIntervalUsd);
+            document.getElementById('qrOverlayUsd').classList.remove('open');
+        }
 
         async function cargarCotizacion() {
             try {
