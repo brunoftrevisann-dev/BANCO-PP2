@@ -1,5 +1,5 @@
 # tuo — Banco Digital
-
+bruno y seba
 Aplicación bancaria digital full-stack con frontend web, backend Node.js/Express, base de datos PostgreSQL en Supabase e integración con una API de Banco Central externa.
 
 ---
