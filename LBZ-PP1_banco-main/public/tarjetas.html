@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tuo — Tarjetas</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2064%2064'%3E%3Crect%20width%3D'64'%20height%3D'64'%20rx%3D'14'%20fill%3D'%230052FF'%2F%3E%3Ctext%20x%3D'32'%20y%3D'43'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-size%3D'26'%20font-weight%3D'800'%20fill%3D'white'%20text-anchor%3D'middle'%20letter-spacing%3D'-1'%3Etuo%3C%2Ftext%3E%3C%2Fsvg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <script src="tuo-i18n.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #F9F9F9; --text: #1A1A1B; --accent: #0052FF;
+            --muted: #6B6B6B; --border: #E5E5E5; --white: #FFFFFF;
+            --green: #16a34a; --green-bg: #F0FDF4;
+            --red: #B91C1C; --red-bg: #FEF2F2;
+            --amber: #B45309; --amber-bg: #FFF3E2;
+        }
+        [data-theme="dark"] {
+            --bg: #111113; --text: #F0F0F0; --muted: #8E8E8E;
+            --border: #2C2C2E; --white: #1C1C1E; --green-bg: #0F2318;
+            --red-bg: #2D0A0A; --amber-bg: #2E2107;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 40px; height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .btn-back {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 12px; cursor: pointer; color: var(--muted);
+            font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .btn-back:hover { color: var(--text); border-color: #aaa; background: var(--bg); }
+        .header-logo { font-size: 1.15rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+        .page-title {
+            font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em;
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            white-space: nowrap;
+        }
+        .btn-theme {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; flex-shrink: 0;
+        }
+        .btn-theme:hover { color: var(--text); border-color: #aaa; }
+
+        .main {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 32px 24px 80px; gap: 20px;
+        }
+
+        .card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 20px; padding: 28px;
+            width: 100%; max-width: 460px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .card-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+        /* ── SELECTOR DÉBITO / CRÉDITO ── */
+        .tipo-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; max-width: 460px; }
+        .tipo-tab {
+            padding: 11px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--white);
+            color: var(--muted); font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; text-align: center;
+        }
+        .tipo-tab.active { border-color: var(--accent); background: var(--accent); color: white; }
+
+        /* ── TARJETA PLÁSTICA ── */
+        .plastico {
+            position: relative; width: 100%; max-width: 460px; aspect-ratio: 1.586;
+            border-radius: 20px; padding: 24px 26px; color: white; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 14px 40px rgba(0, 40, 140, 0.28);
+            transition: filter 0.3s;
+        }
+        .plastico.debito  { background: linear-gradient(135deg, #0052FF 0%, #2E7BFF 55%, #6AA3FF 100%); }
+        .plastico.credito { background: linear-gradient(135deg, #0B0F1E 0%, #1E2A4F 55%, #34477F 100%); box-shadow: 0 14px 40px rgba(10, 15, 30, 0.35); }
+        .plastico.bloqueada { filter: grayscale(0.85) brightness(0.9); }
+        .plastico::after {
+            content: ''; position: absolute; width: 320px; height: 320px; border-radius: 50%;
+            right: -110px; top: -140px; background: rgba(255,255,255,0.08); pointer-events: none;
+        }
+        .plastico-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
+        .plastico-logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em; }
+        .plastico-tipo { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.85; }
+        .chip { width: 42px; height: 32px; border-radius: 6px; background: linear-gradient(135deg, #E8C872, #B8913A); position: relative; z-index: 1; }
+        .plastico-numero {
+            font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; letter-spacing: 0.12em;
+            position: relative; z-index: 1; white-space: nowrap;
+        }
+        .plastico-bottom { display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 1; gap: 10px; }
+        .plastico-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; margin-bottom: 2px; }
+        .plastico-valor { font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; }
+        .plastico-marca { font-size: 1.1rem; font-weight: 800; font-style: italic; letter-spacing: -0.02em; }
+        .badge-bloqueada {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2;
+            background: rgba(0,0,0,0.65); padding: 8px 16px; border-radius: 30px;
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; display: none;
+        }
+        .plastico.bloqueada .badge-bloqueada { display: block; }
+
+        /* ── ACCIONES DE LA TARJETA ── */
+        .acciones { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; max-width: 460px; }
+        .btn-accion {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--white);
+            color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.84rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .btn-accion:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-accion.peligro:hover { border-color: var(--red); color: var(--red); }
+
+        /* ── RESUMEN DE CRÉDITO ── */
+        .resumen-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+        .resumen-item { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+        .resumen-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+        .resumen-valor { font-size: 1.05rem; font-weight: 700; }
+        .barra { height: 8px; background: var(--bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+        .barra-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: width 0.4s; }
+        .barra-leyenda { display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--muted); margin-top: 6px; }
+
+        /* ── FORMULARIOS ── */
+        .form-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .form-label:first-child { margin-top: 0; }
+        .importe-input-wrap { position: relative; }
+        .importe-symbol { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--muted); font-weight: 500; pointer-events: none; }
+        .input-monto {
+            width: 100%; padding: 12px 14px 12px 28px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'Inter', sans-serif; font-size: 1rem; background: var(--bg); color: var(--text);
+            outline: none; transition: border-color 0.15s;
+        }
+        .input-monto:focus { border-color: var(--accent); }
+        .input-texto {
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'Inter', sans-serif; font-size: 0.92rem; background: var(--bg); color: var(--text);
+            outline: none; transition: border-color 0.15s;
+        }
+        .input-texto:focus { border-color: var(--accent); }
+        .plazo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .plazo-grid.tres { grid-template-columns: repeat(3, 1fr); }
+        .plazo-btn {
+            padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg);
+            color: var(--muted); font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .plazo-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+        .cuota-info { font-size: 0.8rem; color: var(--muted); margin-top: 10px; min-height: 1em; }
+        .btn-primary {
+            width: 100%; padding: 13px; background: var(--accent); color: white; border: none;
+            border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700;
+            cursor: pointer; margin-top: 16px; transition: opacity 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .error-box { color: var(--red); font-size: 0.8rem; margin-top: 10px; display: none; }
+        .error-box.visible { display: block; }
+
+        /* ── SOLICITAR ── */
+        .solicitar-ilustracion {
+            width: 100%; aspect-ratio: 1.586; border-radius: 16px; margin-bottom: 18px;
+            border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center;
+            color: var(--muted);
+        }
+        .beneficios { list-style: none; margin-bottom: 4px; }
+        .beneficios li { font-size: 0.85rem; padding: 6px 0 6px 24px; position: relative; line-height: 1.4; }
+        .beneficios li::before {
+            content: ''; position: absolute; left: 4px; top: 11px; width: 8px; height: 8px;
+            border-radius: 50%; background: var(--accent);
+        }
+
+        /* ── MOVIMIENTOS ── */
+        .mov-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 12px;
+            padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
+        }
+        .mov-row:last-child { border-bottom: none; }
+        .mov-comercio { font-weight: 600; }
+        .mov-fecha { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+        .mov-monto { font-weight: 700; white-space: nowrap; }
+        .mov-monto.pago { color: var(--green); }
+        .empty-state { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 20px 0; }
+
+        .toast-error {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(0);
+            background: var(--red); color: white; padding: 12px 20px; border-radius: 12px;
+            font-size: 0.85rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 300; max-width: 90vw; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+        }
+        .toast-error.visible { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+        .toast-error.exito { background: var(--green); }
+
+        @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
+        body { animation: pageIn 0.3s ease both; }
+        body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
+
+        @media (max-width: 600px) {
+            .header { padding: 0 16px; }
+            .page-title { position: static; left: auto; top: auto; transform: none; }
+            .main { padding: 20px 14px 80px; gap: 16px; }
+            .card { padding: 20px; }
+            .plastico { padding: 18px 20px; border-radius: 16px; }
+            .plastico-numero { font-size: 1.02rem; letter-spacing: 0.08em; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <button class="btn-back" onclick="navTo('dashboard.html')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Volver
+            </button>
+            <span class="header-logo">tuo</span>
+        </div>
+        <span class="page-title">Tarjetas</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main">
+
+        <div class="tipo-tabs" id="tipoTabs">
+            <button class="tipo-tab active" data-tipo="DEBITO" onclick="setTipo('DEBITO')">Débito</button>
+            <button class="tipo-tab" data-tipo="CREDITO" onclick="setTipo('CREDITO')">Crédito</button>
+        </div>
+
+        <!-- Sin tarjeta: solicitar -->
+        <div class="card" id="cardSolicitar" style="display:none;">
+            <div class="solicitar-ilustracion">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+            </div>
+            <div class="card-title" id="solicitarTitulo"></div>
+            <div class="card-subtitle" id="solicitarSubtitulo"></div>
+            <ul class="beneficios" id="solicitarBeneficios"></ul>
+            <div class="error-box" id="errorSolicitar"></div>
+            <button class="btn-primary" id="btnSolicitar" onclick="solicitarTarjeta()">Pedir tarjeta</button>
+        </div>
+
+        <!-- Con tarjeta -->
+        <div id="vistaTarjeta" style="width:100%; max-width:460px; display:none; flex-direction:column; gap:20px; align-items:center;">
+
+            <div class="plastico" id="plastico">
+                <div class="badge-bloqueada">BLOQUEADA</div>
+                <div class="plastico-top">
+                    <div>
+                        <div class="plastico-logo">tuo</div>
+                        <div class="plastico-tipo" id="plasticoTipo"></div>
+                    </div>
+                    <div class="chip"></div>
+                </div>
+                <div class="plastico-numero" id="plasticoNumero"></div>
+                <div class="plastico-bottom">
+                    <div>
+                        <div class="plastico-label">Titular</div>
+                        <div class="plastico-valor" id="plasticoTitular"></div>
+                    </div>
+                    <div>
+                        <div class="plastico-label">Vence</div>
+                        <div class="plastico-valor" id="plasticoVence"></div>
+                    </div>
+                    <div>
+                        <div class="plastico-label">CVV</div>
+                        <div class="plastico-valor" id="plasticoCvv"></div>
+                    </div>
+                    <div class="plastico-marca" id="plasticoMarca"></div>
+                </div>
+            </div>
+
+            <div class="acciones">
+                <button class="btn-accion" id="btnVerDatos" onclick="toggleDatos()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span id="lblVerDatos">Ver datos</span>
+                </button>
+                <button class="btn-accion peligro" id="btnBloqueo" onclick="toggleBloqueo()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span id="lblBloqueo">Bloquear</span>
+                </button>
+            </div>
+
+            <!-- Saldo disponible (débito) -->
+            <div class="card" id="cardSaldoDebito" style="display:none;">
+                <div class="resumen-label">Disponible para gastar</div>
+                <div class="resumen-valor" id="saldoDebito" style="font-size:1.5rem;"></div>
+                <div class="card-subtitle" style="margin:6px 0 0;">Tu tarjeta de débito usa el saldo de tu caja de ahorro en pesos.</div>
+            </div>
+
+            <!-- Resumen (crédito) -->
+            <div class="card" id="cardResumenCredito" style="display:none;">
+                <div class="card-title">Resumen</div>
+                <div class="card-subtitle" id="resumenCierre"></div>
+                <div class="resumen-grid">
+                    <div class="resumen-item"><div class="resumen-label">A pagar</div><div class="resumen-valor" id="resDeuda"></div></div>
+                    <div class="resumen-item"><div class="resumen-label">Disponible</div><div class="resumen-valor" id="resDisponible"></div></div>
+                </div>
+                <div class="barra"><div class="barra-fill" id="barraUso" style="width:0%"></div></div>
+                <div class="barra-leyenda"><span id="resUsoPct"></span><span id="resLimite"></span></div>
+
+                <div id="bloquePago">
+                    <div class="form-label" style="margin-top:20px;">Pagar tarjeta</div>
+                    <div class="plazo-grid tres">
+                        <button class="plazo-btn active" data-pago="TOTAL" onclick="setModoPago('TOTAL')">Total</button>
+                        <button class="plazo-btn" data-pago="MINIMO" onclick="setModoPago('MINIMO')">Mínimo</button>
+                        <button class="plazo-btn" data-pago="OTRO" onclick="setModoPago('OTRO')">Otro</button>
+                    </div>
+                    <div class="importe-input-wrap" style="margin-top:10px;">
+                        <span class="importe-symbol">$</span>
+                        <input class="input-monto" id="inputPago" type="text" inputmode="decimal" placeholder="0" oninput="formatearMonto(this)" readonly>
+                    </div>
+                    <div class="error-box" id="errorPago"></div>
+                    <button class="btn-primary" id="btnPagar" onclick="pagarTarjeta()">Pagar con mi caja de ahorro</button>
+                </div>
+            </div>
+
+            <!-- Compra -->
+            <div class="card">
+                <div class="card-title">Hacer una compra</div>
+                <div class="card-subtitle" id="compraSubtitulo"></div>
+
+                <div class="form-label">Comercio</div>
+                <input class="input-texto" id="inputComercio" type="text" maxlength="80" placeholder="Ej: Supermercado, Mercado Libre">
+
+                <div class="form-label">Monto</div>
+                <div class="importe-input-wrap">
+                    <span class="importe-symbol">$</span>
+                    <input class="input-monto" id="inputMontoCompra" type="text" inputmode="decimal" placeholder="0" oninput="formatearMonto(this); actualizarCuotaInfo();">
+                </div>
+
+                <div id="grupoCuotas" style="display:none;">
+                    <div class="form-label">Cuotas sin interés</div>
+                    <div class="plazo-grid">
+                        <button class="plazo-btn active" data-cuotas="1" onclick="setCuotas(1)">1</button>
+                        <button class="plazo-btn" data-cuotas="3" onclick="setCuotas(3)">3</button>
+                        <button class="plazo-btn" data-cuotas="6" onclick="setCuotas(6)">6</button>
+                        <button class="plazo-btn" data-cuotas="12" onclick="setCuotas(12)">12</button>
+                    </div>
+                    <div class="cuota-info" id="cuotaInfo"></div>
+                </div>
+
+                <div class="error-box" id="errorCompra"></div>
+                <button class="btn-primary" id="btnComprar" onclick="comprar()">Pagar con tarjeta</button>
+            </div>
+
+            <!-- Movimientos -->
+            <div class="card">
+                <div class="card-title" style="margin-bottom:10px;">Movimientos de la tarjeta</div>
+                <div id="listaMovimientos"><div class="empty-state">Cargando...</div></div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="toast-error" id="toastError"></div>
+
+    <script>
+        function resolverTema() {
+            const t = localStorage.getItem('tuo-theme');
+            if (t === 'light' || t === 'dark') return t;
+            const s = JSON.parse(localStorage.getItem('tuo_dark_hours') || 'null');
+            if (s?.enabled) {
+                const n = new Date(), c = n.getHours()*60+n.getMinutes();
+                const [dh,dm]=(s.desde||'20:00').split(':').map(Number);
+                const [hh,hm]=(s.hasta||'08:00').split(':').map(Number);
+                const f=dh*60+dm, e=hh*60+hm;
+                return (f>e ? c>=f||c<e : c>=f&&c<e) ? 'dark' : 'light';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        const savedTheme = resolverTema();
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+            localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
+        }
+
+        const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+        if (!u) { navTo('login.html'); }
+
+        function fmt(v) { return '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        function fmtVence(f) { const d = new Date(f); return String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + String(d.getUTCFullYear()).slice(-2); }
+        function numeroAgrupado(n) { return n.replace(/(.{4})/g, '$1 ').trim(); }
+        function numeroOculto(n) { return '•••• •••• •••• ' + n.slice(-4); }
+
+        const TEXTOS = {
+            DEBITO: {
+                titulo: 'Pedí tu tarjeta de débito',
+                subtitulo: 'Virtual e instantánea, vinculada a tu caja de ahorro en pesos.',
+                beneficios: ['Sin costo de emisión ni mantenimiento', 'Pagás con tu saldo en tiempo real', 'La bloqueás y desbloqueás cuando quieras'],
+                compra: 'El monto se descuenta al instante de tu caja de ahorro.'
+            },
+            CREDITO: {
+                titulo: 'Pedí tu tarjeta de crédito',
+                subtitulo: 'Mastercard virtual con límite de compra desde el primer día.',
+                beneficios: ['Límite inicial de $ 500.000', 'Compras en 1, 3, 6 o 12 cuotas sin interés', 'Pagás el total, el mínimo o lo que quieras desde la app'],
+                compra: 'La compra se suma a tu resumen y usa tu límite disponible.'
+            }
+        };
+
+        let tipoActual = 'DEBITO';
+        let tarjetas = { debito: null, credito: null };
+        let datosVisibles = false;
+        let cuotasActual = 1;
+        let modoPago = 'TOTAL';
+
+        function tarjetaActual() { return tipoActual === 'CREDITO' ? tarjetas.credito : tarjetas.debito; }
+
+        function setTipo(tipo) {
+            tipoActual = tipo;
+            datosVisibles = false;
+            document.querySelectorAll('#tipoTabs .tipo-tab').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
+            ['errorCompra', 'errorPago', 'errorSolicitar'].forEach(id => document.getElementById(id).classList.remove('visible'));
+            render();
+        }
+
+        function render() {
+            const t = tarjetaActual();
+            const vista = document.getElementById('vistaTarjeta');
+            const solicitar = document.getElementById('cardSolicitar');
+            const textos = TEXTOS[tipoActual];
+
+            if (!t) {
+                vista.style.display = 'none';
+                solicitar.style.display = 'block';
+                document.getElementById('solicitarTitulo').textContent = textos.titulo;
+                document.getElementById('solicitarSubtitulo').textContent = textos.subtitulo;
+                document.getElementById('solicitarBeneficios').innerHTML = textos.beneficios.map(b => `<li>${b}</li>`).join('');
+                return;
+            }
+            solicitar.style.display = 'none';
+            vista.style.display = 'flex';
+
+            const bloqueada = t.estado === 'BLOQUEADO';
+            const plastico = document.getElementById('plastico');
+            plastico.className = 'plastico ' + (tipoActual === 'CREDITO' ? 'credito' : 'debito') + (bloqueada ? ' bloqueada' : '');
+            document.getElementById('plasticoTipo').textContent = tipoActual === 'CREDITO' ? 'Crédito' : 'Débito';
+            document.getElementById('plasticoNumero').textContent = datosVisibles ? numeroAgrupado(t.numero_tarjeta) : numeroOculto(t.numero_tarjeta);
+            document.getElementById('plasticoTitular').textContent = t.nombre_titular || `${u.nombre} ${u.apellido}`.toUpperCase();
+            document.getElementById('plasticoVence').textContent = fmtVence(t.fecha_vencimiento);
+            document.getElementById('plasticoCvv').textContent = datosVisibles ? (t.cvv || '---') : '•••';
+            document.getElementById('plasticoMarca').textContent = t.marca || '';
+            document.getElementById('lblVerDatos').textContent = datosVisibles ? 'Ocultar datos' : 'Ver datos';
+            document.getElementById('lblBloqueo').textContent = bloqueada ? 'Desbloquear' : 'Bloquear';
+
+            document.getElementById('compraSubtitulo').textContent = bloqueada ? 'Tu tarjeta está bloqueada. Desbloqueala para volver a usarla.' : textos.compra;
+            document.getElementById('btnComprar').disabled = bloqueada;
+            document.getElementById('grupoCuotas').style.display = tipoActual === 'CREDITO' ? 'block' : 'none';
+
+            document.getElementById('cardSaldoDebito').style.display = tipoActual === 'DEBITO' ? 'block' : 'none';
+            document.getElementById('cardResumenCredito').style.display = tipoActual === 'CREDITO' ? 'block' : 'none';
+
+            if (tipoActual === 'DEBITO') {
+                document.getElementById('saldoDebito').textContent = fmt(t.saldo_cuenta);
+            } else {
+                const limite = Number(t.limite_compra), deuda = Number(t.deuda);
+                const usoPct = limite > 0 ? Math.min(100, deuda / limite * 100) : 0;
+                document.getElementById('resDeuda').textContent = fmt(deuda);
+                document.getElementById('resDisponible').textContent = fmt(t.disponible);
+                document.getElementById('barraUso').style.width = usoPct + '%';
+                document.getElementById('resUsoPct').textContent = `Usaste ${usoPct.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%`;
+                document.getElementById('resLimite').textContent = `Límite ${fmt(limite)}`;
+                document.getElementById('resumenCierre').textContent = `Cierra el día ${t.dia_cierre} de cada mes · Pago mínimo ${fmt(t.pago_minimo)}`;
+                document.getElementById('bloquePago').style.display = deuda > 0 ? 'block' : 'none';
+                setModoPago(modoPago);
+            }
+            actualizarCuotaInfo();
+            cargarMovimientos();
+        }
+
+        function toggleDatos() { datosVisibles = !datosVisibles; render(); }
+
+        function setCuotas(n) {
+            cuotasActual = n;
+            document.querySelectorAll('#grupoCuotas .plazo-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.cuotas) === n));
+            actualizarCuotaInfo();
+        }
+
+        function actualizarCuotaInfo() {
+            const monto = valorNumerico(document.getElementById('inputMontoCompra'));
+            const info = document.getElementById('cuotaInfo');
+            info.textContent = monto > 0 && cuotasActual > 1 ? `${cuotasActual} cuotas de ${fmt(monto / cuotasActual)}` : '';
+        }
+
+        function setModoPago(modo) {
+            modoPago = modo;
+            const t = tarjetas.credito;
+            if (!t) return;
+            document.querySelectorAll('#bloquePago .plazo-btn').forEach(b => b.classList.toggle('active', b.dataset.pago === modo));
+            const input = document.getElementById('inputPago');
+            input.readOnly = modo !== 'OTRO';
+            if (modo === 'TOTAL') input.value = Number(t.deuda).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            else if (modo === 'MINIMO') input.value = Number(t.pago_minimo).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            else { input.value = ''; input.focus(); }
+        }
+
+        let _toastTimeout = null;
+        function mostrarToast(msg, tipo) {
+            const toast = document.getElementById('toastError');
+            toast.textContent = msg;
+            toast.classList.toggle('exito', tipo === 'exito');
+            toast.classList.add('visible');
+            clearTimeout(_toastTimeout);
+            _toastTimeout = setTimeout(() => toast.classList.remove('visible'), 3500);
+        }
+
+        async function api(url, method, body) {
+            const res = await fetch(url, {
+                method, headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error inesperado');
+            return data;
+        }
+
+        // El dashboard muestra el saldo que guarda en localStorage; lo actualizamos para que al
+        // volver no muestre el saldo viejo hasta el próximo refresco.
+        function actualizarSaldoLocal(nuevoSaldo) {
+            if (nuevoSaldo === undefined) return;
+            const actual = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+            if (actual) { actual.saldo = nuevoSaldo; localStorage.setItem('usuarioLogueado', JSON.stringify(actual)); }
+        }
+
+        async function cargarTarjetas() {
+            try {
+                tarjetas = await api(`/api/tarjetas?idPersona=${u.id}`, 'GET');
+                render();
+            } catch (e) {
+                mostrarToast(e.message);
+            }
+        }
+
+        async function solicitarTarjeta() {
+            const btn = document.getElementById('btnSolicitar');
+            const err = document.getElementById('errorSolicitar');
+            err.classList.remove('visible');
+            btn.disabled = true; btn.textContent = 'Emitiendo...';
+            try {
+                await api('/api/tarjetas/emitir', 'POST', { idPersona: u.id, tipo: tipoActual });
+                mostrarToast(`¡Tu tarjeta de ${tipoActual === 'CREDITO' ? 'crédito' : 'débito'} ya está activa!`, 'exito');
+                await cargarTarjetas();
+            } catch (e) {
+                err.textContent = e.message; err.classList.add('visible');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Pedir tarjeta';
+            }
+        }
+
+        async function toggleBloqueo() {
+            const t = tarjetaActual();
+            const bloquear = t.estado !== 'BLOQUEADO';
+            try {
+                await api(`/api/tarjetas/${tipoActual.toLowerCase()}/bloqueo`, 'PUT', { idPersona: u.id, bloquear });
+                mostrarToast(bloquear ? 'Tarjeta bloqueada' : 'Tarjeta desbloqueada', 'exito');
+                await cargarTarjetas();
+            } catch (e) {
+                mostrarToast(e.message);
+            }
+        }
+
+        async function comprar() {
+            const comercio = document.getElementById('inputComercio').value.trim();
+            const monto = valorNumerico(document.getElementById('inputMontoCompra'));
+            const err = document.getElementById('errorCompra');
+            err.classList.remove('visible');
+            if (!comercio) { err.textContent = 'Ingresá el comercio'; err.classList.add('visible'); return; }
+            if (!monto || monto <= 0) { err.textContent = 'Ingresá un monto válido'; err.classList.add('visible'); return; }
+
+            const btn = document.getElementById('btnComprar');
+            btn.disabled = true; btn.textContent = 'Procesando...';
+            try {
+                const body = { idPersona: u.id, comercio, monto };
+                if (tipoActual === 'CREDITO') body.cuotas = cuotasActual;
+                const r = await api(`/api/tarjetas/${tipoActual.toLowerCase()}/comprar`, 'POST', body);
+                actualizarSaldoLocal(r.nuevoSaldo);
+                document.getElementById('inputComercio').value = '';
+                document.getElementById('inputMontoCompra').value = '';
+                setCuotas(1);
+                mostrarToast('Compra aprobada', 'exito');
+                await cargarTarjetas();
+            } catch (e) {
+                err.textContent = e.message; err.classList.add('visible');
+            } finally {
+                btn.textContent = 'Pagar con tarjeta';
+                btn.disabled = tarjetaActual()?.estado === 'BLOQUEADO';
+            }
+        }
+
+        async function pagarTarjeta() {
+            const monto = valorNumerico(document.getElementById('inputPago'));
+            const err = document.getElementById('errorPago');
+            err.classList.remove('visible');
+            if (!monto || monto <= 0) { err.textContent = 'Ingresá un monto válido'; err.classList.add('visible'); return; }
+
+            const btn = document.getElementById('btnPagar');
+            btn.disabled = true; btn.textContent = 'Procesando...';
+            try {
+                const r = await api('/api/tarjetas/credito/pagar', 'POST', { idPersona: u.id, monto });
+                actualizarSaldoLocal(r.nuevoSaldo);
+                modoPago = 'TOTAL';
+                mostrarToast('Pago acreditado', 'exito');
+                await cargarTarjetas();
+            } catch (e) {
+                err.textContent = e.message; err.classList.add('visible');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Pagar con mi caja de ahorro';
+            }
+        }
+
+        async function cargarMovimientos() {
+            const cont = document.getElementById('listaMovimientos');
+            const tipo = tipoActual;
+            try {
+                const movs = await api(`/api/tarjetas/${tipo.toLowerCase()}/movimientos?idPersona=${u.id}`, 'GET');
+                if (tipo !== tipoActual) return; // cambiaron de pestaña mientras cargaba
+                if (movs.length === 0) { cont.innerHTML = '<div class="empty-state">Todavía no usaste esta tarjeta.</div>'; return; }
+                cont.innerHTML = movs.map(m => {
+                    const fecha = new Date(m.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const esPago = m.tipo === 'PAGO';
+                    const cuotas = m.cuotas > 1 ? ` · ${m.cuotas} cuotas de ${fmt(m.monto / m.cuotas)}` : '';
+                    return `
+                        <div class="mov-row">
+                            <div>
+                                <div class="mov-comercio">${esc(m.comercio)}</div>
+                                <div class="mov-fecha">${fecha}${cuotas}</div>
+                            </div>
+                            <div class="mov-monto ${esPago ? 'pago' : ''}">${esPago ? '+' : '−'} ${fmt(m.monto)}</div>
+                        </div>`;
+                }).join('');
+            } catch (e) {
+                cont.innerHTML = `<div class="empty-state">${esc(e.message)}</div>`;
+            }
+        }
+
+        // Permite entrar directo a una pestaña: tarjetas.html?tipo=credito
+        const tipoUrl = new URLSearchParams(location.search).get('tipo');
+        if (tipoUrl && tipoUrl.toUpperCase() === 'CREDITO') {
+            tipoActual = 'CREDITO';
+            document.querySelectorAll('#tipoTabs .tipo-tab').forEach(b => b.classList.toggle('active', b.dataset.tipo === 'CREDITO'));
+        }
+
+        if (u) cargarTarjetas();
+
+        function navTo(url) {
+            document.body.classList.add('leaving');
+            setTimeout(() => { window.location.href = url; }, 230);
+        }
+        window.addEventListener('pageshow', e => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
+        });
+    </script>
+</body>
+</html>

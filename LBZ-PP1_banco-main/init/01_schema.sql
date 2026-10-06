@@ -72,9 +72,38 @@ CREATE TABLE IF NOT EXISTS Tarjetas_Credito (
     fecha_vencimiento DATE NOT NULL,
     limite_compra DECIMAL(15, 2) NOT NULL,
     dia_cierre INTEGER CHECK (dia_cierre BETWEEN 1 AND 31),
+    cvv VARCHAR(3),
+    nombre_titular VARCHAR(60),
+    deuda DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
+);
+
+-- 7b. TABLA DE TARJETAS DE DÉBITO (vinculadas a una cuenta bancaria)
+CREATE TABLE IF NOT EXISTS Tarjetas_Debito (
+    id_tarjeta SERIAL PRIMARY KEY,
+    id_producto INTEGER NOT NULL UNIQUE,
+    id_cuenta INTEGER NOT NULL,
+    numero_tarjeta VARCHAR(16) UNIQUE NOT NULL,
+    marca VARCHAR(50),
+    nombre_titular VARCHAR(60),
+    fecha_vencimiento DATE NOT NULL,
+    cvv VARCHAR(3) NOT NULL,
+    FOREIGN KEY (id_producto) REFERENCES Productos(id_producto),
+    FOREIGN KEY (id_cuenta) REFERENCES Cuentas_Bancarias(id_cuenta)
+);
+
+-- 7c. CONSUMOS DE TARJETAS (compras y pagos de resumen)
+CREATE TABLE IF NOT EXISTS Consumos_Tarjeta (
+    id_movimiento SERIAL PRIMARY KEY,
+    id_producto INTEGER NOT NULL,
+    tipo VARCHAR(10) NOT NULL, -- 'COMPRA' | 'PAGO'
+    comercio VARCHAR(80) NOT NULL,
+    monto DECIMAL(15, 2) NOT NULL,
+    cuotas INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
 );
 
 -- 8. POBLAR TABLAS MAESTRAS (Datos iniciales)
-INSERT INTO Tipos_Producto (nombre) VALUES ('CAJA_AHORRO'), ('CUENTA_CORRIENTE'), ('TARJETA_CREDITO');
+INSERT INTO Tipos_Producto (nombre) VALUES ('CAJA_AHORRO'), ('CUENTA_CORRIENTE'), ('TARJETA_CREDITO'), ('TARJETA_DEBITO');
 INSERT INTO Estados_Producto (nombre) VALUES ('ACTIVO'), ('BLOQUEADO'), ('CERRADO');

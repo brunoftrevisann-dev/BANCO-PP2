@@ -1,0 +1,128 @@
+const crypto = require('crypto');
+const db = require('../config/db');
+const Tarjeta = require('../models/tarjetaModel');
+const Persona = require('../models/personaModel');
+const { notificarTarjetaEmitida, notificarCompraTarjeta, notificarPagoTarjeta } = require('../utils/notificaciones');
+
+const TIPOS = ['DEBITO', 'CREDITO'];
+const ERRORES_NEGOCIO = [
+  'YA_TIENE', 'NO_CUENTA', 'NO_TARJETA', 'BLOQUEADA', 'SALDO_INSUFICIENTE', 'LIMITE_INSUFICIENTE',
+  'MONTO_INVALIDO', 'CUOTAS_INVALIDAS', 'SIN_DEUDA', 'MONTO_SUPERA_DEUDA'
+];
+
+const responderError = (res, error) => {
+  if (ERRORES_NEGOCIO.includes(error.code)) return res.status(422).json({ error: error.message });
+  res.status(500).json({ error: error.message });
+};
+
+const tipoValido = (tipo) => TIPOS.includes(String(tipo || '').toUpperCase()) ? String(tipo).toUpperCase() : null;
+
+exports.listar = async (req, res) => {
+  try {
+    const idPersona = parseInt(req.query.idPersona);
+    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
+    res.json(await Tarjeta.getTarjetasPersona(idPersona));
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
+exports.emitir = async (req, res) => {
+  try {
+    const { idPersona } = req.body;
+    const tipo = tipoValido(req.body.tipo);
+    if (!idPersona || !tipo) return res.status(400).json({ error: 'idPersona y tipo (DEBITO o CREDITO) son requeridos' });
+
+    const { rows } = await db.query('SELECT nombre, apellido FROM Personas WHERE id = $1', [idPersona]);
+    if (!rows[0]) return res.status(404).json({ error: 'Persona no encontrada' });
+    const nombreTitular = `${rows[0].nombre} ${rows[0].apellido}`.toUpperCase().slice(0, 26);
+
+    const tarjeta = tipo === 'CREDITO'
+      ? await Tarjeta.emitirCredito(idPersona, nombreTitular)
+      : await Tarjeta.emitirDebito(idPersona, nombreTitular);
+
+    notificarTarjetaEmitida(idPersona, { tipo, numero: tarjeta.numero_tarjeta, limite: tarjeta.limite_compra })
+      .catch(e => console.error('Error creando notificación de tarjeta emitida:', e.message));
+
+    res.status(201).json(tarjeta);
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
+exports.bloquear = async (req, res) => {
+  try {
+    const { idPersona, bloquear } = req.body;
+    const tipo = tipoValido(req.params.tipo);
+    if (!idPersona || !tipo) return res.status(400).json({ error: 'idPersona y tipo son requeridos' });
+    res.json(await Tarjeta.cambiarEstado(idPersona, tipo, bloquear !== false));
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
+exports.comprar = async (req, res) => {
+  try {
+    const { idPersona, monto, cuotas } = req.body;
+    const tipo = tipoValido(req.params.tipo);
+    const comercio = String(req.body.comercio || '').trim().slice(0, 80);
+    if (!idPersona || !tipo || !monto || !comercio) return res.status(400).json({ error: 'idPersona, comercio y monto son requeridos' });
+
+    if (tipo === 'DEBITO') {
+      const r = await Tarjeta.compraDebito(idPersona, { comercio, monto: Number(monto) });
+      // La compra con débito sale de la caja de ahorro, así que también va al historial de
+      // movimientos de la cuenta (con el CBU sentinela "TARJETA", mismo criterio que Reservas).
+      await Persona.upsertTransaccion({
+        _id: 'TARJETA-' + crypto.randomUUID(),
+        cbuOrigen: r.cbu, cbuDestino: 'TARJETA',
+        importe: Number(monto), estado: 'aprobada',
+        descripcion: `Compra con débito en ${comercio}`,
+        tipo: 'compra_debito', createdAt: new Date().toISOString()
+      }).catch(e => console.error('Error registrando compra con débito en el historial:', e.message));
+      notificarCompraTarjeta(idPersona, { tipo, comercio, monto: Number(monto) })
+        .catch(e => console.error('Error creando notificación de compra con débito:', e.message));
+      return res.status(201).json(r);
+    }
+
+    const r = await Tarjeta.compraCredito(idPersona, { comercio, monto: Number(monto), cuotas: Number(cuotas || 1) });
+    notificarCompraTarjeta(idPersona, { tipo, comercio, monto: Number(monto), cuotas: Number(cuotas || 1) })
+      .catch(e => console.error('Error creando notificación de compra con crédito:', e.message));
+    res.status(201).json(r);
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
+exports.pagar = async (req, res) => {
+  try {
+    const { idPersona, monto } = req.body;
+    if (!idPersona || !monto) return res.status(400).json({ error: 'idPersona y monto son requeridos' });
+
+    const r = await Tarjeta.pagarCredito(idPersona, Number(monto));
+
+    await Persona.upsertTransaccion({
+      _id: 'TARJETA-' + crypto.randomUUID(),
+      cbuOrigen: r.cbu, cbuDestino: 'TARJETA',
+      importe: Number(monto), estado: 'aprobada',
+      descripcion: 'Pago de resumen de tarjeta de crédito',
+      tipo: 'pago_tarjeta_credito', createdAt: new Date().toISOString()
+    }).catch(e => console.error('Error registrando pago de tarjeta en el historial:', e.message));
+    notificarPagoTarjeta(idPersona, { monto: Number(monto), deuda: r.deuda })
+      .catch(e => console.error('Error creando notificación de pago de tarjeta:', e.message));
+
+    res.json(r);
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
+exports.movimientos = async (req, res) => {
+  try {
+    const idPersona = parseInt(req.query.idPersona);
+    const tipo = tipoValido(req.params.tipo);
+    if (!idPersona || !tipo) return res.status(400).json({ error: 'idPersona y tipo son requeridos' });
+    res.json(await Tarjeta.getMovimientos(idPersona, tipo));
+  } catch (error) {
+    responderError(res, error);
+  }
+};

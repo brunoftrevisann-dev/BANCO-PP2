@@ -424,6 +424,21 @@ La nueva contraseña debe tener al menos 8 caracteres.
 
 ---
 
+### Tarjetas
+
+`:tipo` es `debito` o `credito`. Todas las operaciones reciben `idPersona` (query en los GET, body en el resto).
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/tarjetas` | Tarjeta de débito y de crédito de la persona (o `null`), con deuda/disponible/pago mínimo en crédito |
+| `POST` | `/api/tarjetas/emitir` | Emite una tarjeta. Body: `{ idPersona, tipo: 'DEBITO' \| 'CREDITO' }`. Débito queda vinculada a la caja de ahorro en ARS; crédito sale con límite de $500.000 |
+| `POST` | `/api/tarjetas/:tipo/comprar` | Compra. Body: `{ idPersona, comercio, monto, cuotas? }`. Débito descuenta el saldo al instante; crédito consume límite (cuotas 1, 3, 6 o 12 sin interés) |
+| `POST` | `/api/tarjetas/credito/pagar` | Paga el resumen de crédito desde la caja de ahorro. Body: `{ idPersona, monto }` |
+| `PUT` | `/api/tarjetas/:tipo/bloqueo` | Bloquea/desbloquea. Body: `{ idPersona, bloquear: true \| false }`. Una tarjeta bloqueada rechaza compras |
+| `GET` | `/api/tarjetas/:tipo/movimientos` | Últimos 50 movimientos de la tarjeta |
+
+---
+
 ### Proxy y utilidades
 
 | Método | Ruta | Descripción |
@@ -494,6 +509,13 @@ La nueva contraseña debe tener al menos 8 caracteres.
 ### productos.html
 - Descripción de los productos bancarios disponibles
 - Beneficios y condiciones de cada producto
+
+### tarjetas.html
+- Pestañas Débito / Crédito; si no tenés la tarjeta, la pedís desde ahí (se emite al instante)
+- Tarjeta visual con número/CVV ocultos y botón para mostrarlos, bloquear y desbloquear
+- Compras con débito (saldo de la caja de ahorro) o crédito (límite, en cuotas)
+- Resumen de crédito: deuda, disponible, uso del límite y pago total / mínimo / otro monto
+- Las compras con débito y los pagos de la tarjeta de crédito aparecen en el historial del dashboard
 
 ### seguridad.html
 - Información sobre las medidas de seguridad del banco
