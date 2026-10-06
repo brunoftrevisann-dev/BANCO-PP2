@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const db = require('../config/db');
 const Tarjeta = require('../models/tarjetaModel');
 const Persona = require('../models/personaModel');
+const { obtenerTasasTarjeta } = require('../utils/tasaTarjeta');
 const { notificarTarjetaEmitida, notificarCompraTarjeta, notificarPagoTarjeta } = require('../utils/notificaciones');
 
 const TIPOS = ['DEBITO', 'CREDITO'];
@@ -21,7 +22,31 @@ exports.listar = async (req, res) => {
   try {
     const idPersona = parseInt(req.query.idPersona);
     if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
-    res.json(await Tarjeta.getTarjetasPersona(idPersona));
+    const tasas = await obtenerTasasTarjeta();
+    const tarjetas = await Tarjeta.getTarjetasPersona(idPersona, tasas.tna);
+    res.json({ ...tarjetas, tasas });
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
+exports.tasas = async (req, res) => {
+  try {
+    res.json(await obtenerTasasTarjeta());
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
+// Simulación de una compra en cuotas con crédito: lo que se mostraría antes de confirmar.
+exports.simular = async (req, res) => {
+  try {
+    const monto = Number(req.body.monto);
+    const cuotas = Number(req.body.cuotas || 1);
+    if (!(monto > 0)) return res.status(400).json({ error: 'monto inválido' });
+    if (!Tarjeta.CUOTAS_PERMITIDAS.includes(cuotas)) return res.status(400).json({ error: `Las cuotas deben ser ${Tarjeta.CUOTAS_PERMITIDAS.join(', ')}` });
+    const tasas = await obtenerTasasTarjeta();
+    res.json({ ...Tarjeta.calcularFinanciacion(monto, cuotas, tasas.tna), tasas });
   } catch (error) {
     responderError(res, error);
   }
@@ -84,8 +109,9 @@ exports.comprar = async (req, res) => {
       return res.status(201).json(r);
     }
 
-    const r = await Tarjeta.compraCredito(idPersona, { comercio, monto: Number(monto), cuotas: Number(cuotas || 1) });
-    notificarCompraTarjeta(idPersona, { tipo, comercio, monto: Number(monto), cuotas: Number(cuotas || 1) })
+    const { tna } = await obtenerTasasTarjeta();
+    const r = await Tarjeta.compraCredito(idPersona, { comercio, monto: Number(monto), cuotas: Number(cuotas || 1), tna });
+    notificarCompraTarjeta(idPersona, { tipo, comercio, monto: Number(monto), cuotas: Number(cuotas || 1), montoCuota: r.financiacion.montoCuota, tna: r.financiacion.tna })
       .catch(e => console.error('Error creando notificación de compra con crédito:', e.message));
     res.status(201).json(r);
   } catch (error) {
@@ -98,7 +124,8 @@ exports.pagar = async (req, res) => {
     const { idPersona, monto } = req.body;
     if (!idPersona || !monto) return res.status(400).json({ error: 'idPersona y monto son requeridos' });
 
-    const r = await Tarjeta.pagarCredito(idPersona, Number(monto));
+    const { tna } = await obtenerTasasTarjeta();
+    const r = await Tarjeta.pagarCredito(idPersona, Number(monto), tna);
 
     await Persona.upsertTransaccion({
       _id: 'TARJETA-' + crypto.randomUUID(),
@@ -107,7 +134,7 @@ exports.pagar = async (req, res) => {
       descripcion: 'Pago de resumen de tarjeta de crédito',
       tipo: 'pago_tarjeta_credito', createdAt: new Date().toISOString()
     }).catch(e => console.error('Error registrando pago de tarjeta en el historial:', e.message));
-    notificarPagoTarjeta(idPersona, { monto: Number(monto), deuda: r.deuda })
+    notificarPagoTarjeta(idPersona, { monto: Number(monto), deuda: r.deuda, saldoFinanciado: r.saldoFinanciado, tna })
       .catch(e => console.error('Error creando notificación de pago de tarjeta:', e.message));
 
     res.json(r);

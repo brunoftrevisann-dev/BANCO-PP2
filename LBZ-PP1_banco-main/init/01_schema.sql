@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS Tarjetas_Credito (
     cvv VARCHAR(3),
     nombre_titular VARCHAR(60),
     deuda DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    saldo_financiado DECIMAL(15, 2) NOT NULL DEFAULT 0, -- parte del resumen que quedó sin pagar (genera interés)
+    fecha_ultimo_interes DATE DEFAULT CURRENT_DATE,
     FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
 );
 
@@ -96,10 +98,13 @@ CREATE TABLE IF NOT EXISTS Tarjetas_Debito (
 CREATE TABLE IF NOT EXISTS Consumos_Tarjeta (
     id_movimiento SERIAL PRIMARY KEY,
     id_producto INTEGER NOT NULL,
-    tipo VARCHAR(10) NOT NULL, -- 'COMPRA' | 'PAGO'
+    tipo VARCHAR(10) NOT NULL, -- 'COMPRA' | 'PAGO' | 'INTERES'
     comercio VARCHAR(80) NOT NULL,
     monto DECIMAL(15, 2) NOT NULL,
     cuotas INTEGER NOT NULL DEFAULT 1,
+    monto_cuota DECIMAL(15, 2),
+    total DECIMAL(15, 2), -- monto + interés de las cuotas
+    tna DECIMAL(8, 5),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
 );

@@ -34,10 +34,89 @@ const generarCvv = () => String(crypto.randomInt(0, 1000)).padStart(3, '0');
 
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Pago mínimo del resumen: 10% de la deuda con un piso de $1.000 (o la deuda entera si es menor).
-const pagoMinimo = (deuda) => round2(Math.min(Number(deuda), Math.max(Number(deuda) * 0.10, 1000)));
+// Pago mínimo del resumen: 10% de lo que vence con un piso de $1.000 (o el total si es menor).
+const pagoMinimo = (aPagar) => round2(Math.min(Number(aPagar), Math.max(Number(aPagar) * 0.10, 1000)));
 
 const err = (msg, code) => Object.assign(new Error(msg), { code });
+
+// Compra en cuotas: 1 cuota sin interés; 3, 6 y 12 con la TNA de tarjetas, en sistema francés
+// (cuota fija, mismo cálculo que Préstamos). La deuda suma el total con interés incluido.
+function calcularFinanciacion(monto, cuotas, tna) {
+  const n = Number(cuotas);
+  const tnaAplicada = n > 1 ? Number(tna) : 0;
+  const i = tnaAplicada / 12;
+  const cuota = i === 0 ? monto / n : (monto * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+  const montoCuota = round2(cuota);
+  const total = round2(montoCuota * n);
+  return { tna: tnaAplicada, montoCuota, total, interes: round2(total - monto) };
+}
+
+// Cuotas que todavía no vencieron (de compras en cuotas): no entran en el resumen del mes
+// aunque ya ocupen límite. La primera cuota vence en el resumen del mes de la compra.
+async function pendienteEnCuotas(client, idProducto) {
+  const { rows } = await client.query(
+    `SELECT monto, cuotas, monto_cuota, created_at FROM Consumos_Tarjeta
+     WHERE id_producto = $1 AND tipo = 'COMPRA' AND cuotas > 1
+       AND created_at > NOW() - INTERVAL '13 months'`,
+    [idProducto]
+  );
+  const hoy = new Date();
+  let pendiente = 0;
+  for (const c of rows) {
+    const f = new Date(c.created_at);
+    const meses = (hoy.getFullYear() - f.getFullYear()) * 12 + (hoy.getMonth() - f.getMonth());
+    const vencidas = Math.min(c.cuotas, meses + 1);
+    const montoCuota = c.monto_cuota !== null ? Number(c.monto_cuota) : Number(c.monto) / c.cuotas;
+    pendiente += (c.cuotas - vencidas) * montoCuota;
+  }
+  return round2(pendiente);
+}
+
+// Devenga el interés del saldo financiado (lo que quedó sin pagar del resumen) desde la última
+// vez, a la TNA de tarjetas — mismo criterio "lazy" que los frascos de Reservas: se calcula al
+// leer u operar, sin cron. Recibe la fila de la tarjeta ya lockeada y la devuelve actualizada.
+async function devengarInteres(client, t, tna) {
+  const { rows } = await client.query(
+    `SELECT (CURRENT_DATE - COALESCE(fecha_ultimo_interes, CURRENT_DATE)) AS dias FROM Tarjetas_Credito WHERE id_tarjeta = $1`,
+    [t.id_tarjeta]
+  );
+  const dias = Number(rows[0].dias);
+  if (!(Number(t.saldo_financiado) > 0) || dias <= 0) return t;
+
+  const interes = round2(Number(t.saldo_financiado) * Number(tna) * dias / 365);
+  if (interes <= 0) return t;
+  const upd = await client.query(
+    `UPDATE Tarjetas_Credito SET deuda = deuda + $1, saldo_financiado = saldo_financiado + $1, fecha_ultimo_interes = CURRENT_DATE
+     WHERE id_tarjeta = $2 RETURNING deuda, saldo_financiado`,
+    [interes, t.id_tarjeta]
+  );
+  await client.query(
+    `INSERT INTO Consumos_Tarjeta (id_producto, tipo, comercio, monto, cuotas, tna)
+     VALUES ($1, 'INTERES', $2, $3, 1, $4)`,
+    [t.id_producto, `Intereses por saldo financiado (${dias} ${dias === 1 ? 'día' : 'días'})`, interes, tna]
+  );
+  return { ...t, deuda: upd.rows[0].deuda, saldo_financiado: upd.rows[0].saldo_financiado };
+}
+
+async function resumenCredito(client, t) {
+  const pendiente = await pendienteEnCuotas(client, t.id_producto);
+  const aPagar = round2(Math.max(0, Number(t.deuda) - pendiente));
+  return {
+    a_pagar: aPagar,
+    cuotas_pendientes: round2(Math.min(pendiente, Number(t.deuda))),
+    pago_minimo: pagoMinimo(aPagar),
+    disponible: round2(Math.max(0, Number(t.limite_compra) - Number(t.deuda)))
+  };
+}
+
+const SELECT_CREDITO_LOCK = `
+  SELECT tc.*, ep.nombre AS estado
+  FROM Tarjetas_Credito tc
+  JOIN Productos pr ON tc.id_producto = pr.id_producto
+  JOIN Estados_Producto ep ON pr.id_estado_producto = ep.id_estado_producto
+  WHERE pr.id_persona = $1 AND ep.nombre != 'CERRADO'
+  ORDER BY tc.id_tarjeta DESC LIMIT 1
+  FOR UPDATE OF tc`;
 
 async function idTipoProducto(client, nombre) {
   const { rows } = await client.query(`SELECT id_tipo_producto FROM Tipos_Producto WHERE nombre = $1`, [nombre]);
@@ -70,9 +149,11 @@ const Tarjeta = {
   LIMITE_CREDITO_INICIAL,
   CUOTAS_PERMITIDAS,
   pagoMinimo,
+  calcularFinanciacion,
 
   // Devuelve las tarjetas de la persona (a lo sumo una de cada tipo) con el estado del producto.
-  getTarjetasPersona: async (idPersona) => {
+  // En crédito, antes de devolverla devenga el interés pendiente del saldo financiado.
+  getTarjetasPersona: async (idPersona, tna) => {
     const debito = await db.query(
       `SELECT td.*, ep.nombre AS estado, cb.cbu, cb.saldo AS saldo_cuenta
        FROM Tarjetas_Debito td
@@ -83,21 +164,23 @@ const Tarjeta = {
        ORDER BY td.id_tarjeta DESC LIMIT 1`,
       [idPersona]
     );
-    const credito = await db.query(
-      `SELECT tc.*, ep.nombre AS estado
-       FROM Tarjetas_Credito tc
-       JOIN Productos pr ON tc.id_producto = pr.id_producto
-       JOIN Estados_Producto ep ON pr.id_estado_producto = ep.id_estado_producto
-       WHERE pr.id_persona = $1 AND ep.nombre != 'CERRADO'
-       ORDER BY tc.id_tarjeta DESC LIMIT 1`,
-      [idPersona]
-    );
-    const tc = credito.rows[0];
-    if (tc) {
-      tc.disponible = round2(Number(tc.limite_compra) - Number(tc.deuda));
-      tc.pago_minimo = pagoMinimo(tc.deuda);
+    let tc = null;
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(SELECT_CREDITO_LOCK, [idPersona]);
+      if (rows[0]) {
+        const t = await devengarInteres(client, rows[0], tna);
+        tc = { ...t, ...(await resumenCredito(client, t)) };
+      }
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-    return { debito: debito.rows[0] || null, credito: tc || null };
+    return { debito: debito.rows[0] || null, credito: tc };
   },
 
   emitirDebito: async (idPersona, nombreTitular) => {
@@ -246,9 +329,10 @@ const Tarjeta = {
     }
   },
 
-  // Compra con crédito: no toca la cuenta, consume límite disponible (el total de la compra,
-  // aunque sea en cuotas — igual que una tarjeta real) y suma a la deuda del resumen.
-  compraCredito: async (idPersona, { comercio, monto, cuotas }) => {
+  // Compra con crédito: no toca la cuenta, consume límite disponible por el total financiado
+  // (capital + interés de las cuotas, aunque se pague mes a mes — igual que una tarjeta real).
+  // La TNA la pasa el controller, recién obtenida del BCRA: nunca viene del cliente.
+  compraCredito: async (idPersona, { comercio, monto, cuotas, tna }) => {
     if (!(Number(monto) >= MONTO_MINIMO_COMPRA)) throw err('Monto inválido', 'MONTO_INVALIDO');
     if (!CUOTAS_PERMITIDAS.includes(Number(cuotas))) throw err(`Las cuotas deben ser ${CUOTAS_PERMITIDAS.join(', ')}`, 'CUOTAS_INVALIDAS');
 
@@ -256,31 +340,26 @@ const Tarjeta = {
     try {
       await client.query('BEGIN');
 
-      const tarjetaResult = await client.query(
-        `SELECT tc.id_tarjeta, tc.id_producto, tc.limite_compra, tc.deuda, ep.nombre AS estado
-         FROM Tarjetas_Credito tc
-         JOIN Productos pr ON tc.id_producto = pr.id_producto
-         JOIN Estados_Producto ep ON pr.id_estado_producto = ep.id_estado_producto
-         WHERE pr.id_persona = $1 AND ep.nombre != 'CERRADO'
-         FOR UPDATE OF tc`,
-        [idPersona]
-      );
-      const t = tarjetaResult.rows[0];
-      if (!t) throw err('No tenés tarjeta de crédito', 'NO_TARJETA');
-      if (t.estado !== ESTADO_ACTIVO) throw err('Tu tarjeta de crédito está bloqueada', 'BLOQUEADA');
-      const disponible = Number(t.limite_compra) - Number(t.deuda);
-      if (disponible < Number(monto)) throw err('Límite disponible insuficiente', 'LIMITE_INSUFICIENTE');
+      const { rows } = await client.query(SELECT_CREDITO_LOCK, [idPersona]);
+      if (!rows[0]) throw err('No tenés tarjeta de crédito', 'NO_TARJETA');
+      if (rows[0].estado !== ESTADO_ACTIVO) throw err('Tu tarjeta de crédito está bloqueada', 'BLOQUEADA');
+      const t = await devengarInteres(client, rows[0], tna);
 
-      const nuevaDeuda = round2(Number(t.deuda) + Number(monto));
+      const fin = calcularFinanciacion(Number(monto), Number(cuotas), tna);
+      const disponible = Number(t.limite_compra) - Number(t.deuda);
+      if (disponible < fin.total) throw err('Límite disponible insuficiente', 'LIMITE_INSUFICIENTE');
+
+      const nuevaDeuda = round2(Number(t.deuda) + fin.total);
       await client.query('UPDATE Tarjetas_Credito SET deuda = $1 WHERE id_tarjeta = $2', [nuevaDeuda, t.id_tarjeta]);
       const mov = await client.query(
-        `INSERT INTO Consumos_Tarjeta (id_producto, tipo, comercio, monto, cuotas)
-         VALUES ($1, 'COMPRA', $2, $3, $4) RETURNING *`,
-        [t.id_producto, comercio, Number(monto), Number(cuotas)]
+        `INSERT INTO Consumos_Tarjeta (id_producto, tipo, comercio, monto, cuotas, monto_cuota, total, tna)
+         VALUES ($1, 'COMPRA', $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [t.id_producto, comercio, Number(monto), Number(cuotas), fin.montoCuota, fin.total, fin.tna]
       );
 
+      const resumen = await resumenCredito(client, { ...t, deuda: nuevaDeuda });
       await client.query('COMMIT');
-      return { movimiento: mov.rows[0], deuda: nuevaDeuda, disponible: round2(Number(t.limite_compra) - nuevaDeuda) };
+      return { movimiento: mov.rows[0], financiacion: fin, deuda: nuevaDeuda, ...resumen };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -289,25 +368,19 @@ const Tarjeta = {
     }
   },
 
-  // Pago del resumen de crédito desde la caja de ahorro en ARS: libera límite.
-  pagarCredito: async (idPersona, monto) => {
+  // Pago del resumen de crédito desde la caja de ahorro en ARS: libera límite. Se puede pagar
+  // hasta la deuda total (adelantando cuotas). Lo que quede sin pagar del resumen del mes pasa
+  // a ser saldo financiado y genera interés diario a la TNA de tarjetas.
+  pagarCredito: async (idPersona, monto, tna) => {
     if (!(Number(monto) > 0)) throw err('Monto inválido', 'MONTO_INVALIDO');
 
     const client = await db.connect();
     try {
       await client.query('BEGIN');
 
-      const tarjetaResult = await client.query(
-        `SELECT tc.id_tarjeta, tc.id_producto, tc.limite_compra, tc.deuda
-         FROM Tarjetas_Credito tc
-         JOIN Productos pr ON tc.id_producto = pr.id_producto
-         JOIN Estados_Producto ep ON pr.id_estado_producto = ep.id_estado_producto
-         WHERE pr.id_persona = $1 AND ep.nombre != 'CERRADO'
-         FOR UPDATE OF tc`,
-        [idPersona]
-      );
-      const t = tarjetaResult.rows[0];
-      if (!t) throw err('No tenés tarjeta de crédito', 'NO_TARJETA');
+      const { rows } = await client.query(SELECT_CREDITO_LOCK, [idPersona]);
+      if (!rows[0]) throw err('No tenés tarjeta de crédito', 'NO_TARJETA');
+      const t = await devengarInteres(client, rows[0], tna);
       if (Number(t.deuda) <= 0) throw err('No tenés deuda para pagar', 'SIN_DEUDA');
       if (Number(monto) > Number(t.deuda)) throw err('El monto supera la deuda de la tarjeta', 'MONTO_SUPERA_DEUDA');
 
@@ -324,7 +397,11 @@ const Tarjeta = {
       const nuevoSaldo = round2(Number(cuenta.saldo) - Number(monto));
       const nuevaDeuda = round2(Number(t.deuda) - Number(monto));
       await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldo, cuenta.id_cuenta]);
-      await client.query('UPDATE Tarjetas_Credito SET deuda = $1 WHERE id_tarjeta = $2', [nuevaDeuda, t.id_tarjeta]);
+      const resumen = await resumenCredito(client, { ...t, deuda: nuevaDeuda });
+      await client.query(
+        `UPDATE Tarjetas_Credito SET deuda = $1, saldo_financiado = $2, fecha_ultimo_interes = CURRENT_DATE WHERE id_tarjeta = $3`,
+        [nuevaDeuda, resumen.a_pagar, t.id_tarjeta]
+      );
       await client.query(
         `INSERT INTO Consumos_Tarjeta (id_producto, tipo, comercio, monto, cuotas)
          VALUES ($1, 'PAGO', 'Pago de resumen', $2, 1)`,
@@ -332,7 +409,7 @@ const Tarjeta = {
       );
 
       await client.query('COMMIT');
-      return { nuevoSaldo, deuda: nuevaDeuda, disponible: round2(Number(t.limite_compra) - nuevaDeuda), cbu: cuenta.cbu };
+      return { nuevoSaldo, deuda: nuevaDeuda, saldoFinanciado: resumen.a_pagar, ...resumen, cbu: cuenta.cbu };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

@@ -136,6 +136,20 @@
         .barra { height: 8px; background: var(--bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
         .barra-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: width 0.4s; }
         .barra-leyenda { display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--muted); margin-top: 6px; }
+        .sim-row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 0.84rem; color: var(--muted); }
+        .sim-row b { color: var(--text); font-weight: 700; white-space: nowrap; }
+        .tasas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+        .tasa-item { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+        .tasa-valor { font-size: 0.95rem; font-weight: 700; }
+        .tasa-fuente { font-size: 0.72rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+        .aviso-financiado {
+            display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+            background: var(--amber-bg); color: var(--amber); font-size: 0.8rem; line-height: 1.45;
+        }
+        .aviso-financiado.visible { display: block; }
+        .financiacion-box { margin-top: 12px; padding: 12px 14px; background: var(--bg); border-radius: 12px; display: none; }
+        .financiacion-box.visible { display: block; }
+        .mov-monto.interes { color: var(--amber); }
 
         /* ── FORMULARIOS ── */
         .form-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -312,11 +326,20 @@
                 <div class="card-title">Resumen</div>
                 <div class="card-subtitle" id="resumenCierre"></div>
                 <div class="resumen-grid">
-                    <div class="resumen-item"><div class="resumen-label">A pagar</div><div class="resumen-valor" id="resDeuda"></div></div>
+                    <div class="resumen-item"><div class="resumen-label">A pagar este mes</div><div class="resumen-valor" id="resDeuda"></div></div>
                     <div class="resumen-item"><div class="resumen-label">Disponible</div><div class="resumen-valor" id="resDisponible"></div></div>
                 </div>
                 <div class="barra"><div class="barra-fill" id="barraUso" style="width:0%"></div></div>
                 <div class="barra-leyenda"><span id="resUsoPct"></span><span id="resLimite"></span></div>
+                <div class="sim-row" id="filaCuotasPendientes" style="margin-top:12px;"><span>Cuotas a vencer en próximos resúmenes</span><b id="resCuotasPendientes"></b></div>
+                <div class="aviso-financiado" id="avisoFinanciado"></div>
+
+                <div class="tasas-grid">
+                    <div class="tasa-item"><div class="resumen-label">TNA</div><div class="tasa-valor" id="tasaTna">-</div></div>
+                    <div class="tasa-item"><div class="resumen-label">TEA</div><div class="tasa-valor" id="tasaTea">-</div></div>
+                    <div class="tasa-item"><div class="resumen-label">CFT (TEA)</div><div class="tasa-valor" id="tasaCft">-</div></div>
+                </div>
+                <div class="tasa-fuente" id="tasaFuente"></div>
 
                 <div id="bloquePago">
                     <div class="form-label" style="margin-top:20px;">Pagar tarjeta</div>
@@ -349,7 +372,7 @@
                 </div>
 
                 <div id="grupoCuotas" style="display:none;">
-                    <div class="form-label">Cuotas sin interés</div>
+                    <div class="form-label">Cuotas</div>
                     <div class="plazo-grid">
                         <button class="plazo-btn active" data-cuotas="1" onclick="setCuotas(1)">1</button>
                         <button class="plazo-btn" data-cuotas="3" onclick="setCuotas(3)">3</button>
@@ -357,6 +380,12 @@
                         <button class="plazo-btn" data-cuotas="12" onclick="setCuotas(12)">12</button>
                     </div>
                     <div class="cuota-info" id="cuotaInfo"></div>
+                    <div class="financiacion-box" id="financiacionBox">
+                        <div class="sim-row"><span>Cuota mensual</span><b id="finCuota"></b></div>
+                        <div class="sim-row"><span>Intereses</span><b id="finInteres"></b></div>
+                        <div class="sim-row"><span>Total a pagar</span><b id="finTotal"></b></div>
+                        <div class="sim-row"><span>TNA · TEA · CFT</span><b id="finTasas"></b></div>
+                    </div>
                 </div>
 
                 <div class="error-box" id="errorCompra"></div>
@@ -415,13 +444,27 @@
             CREDITO: {
                 titulo: 'Pedí tu tarjeta de crédito',
                 subtitulo: 'Mastercard virtual con límite de compra desde el primer día.',
-                beneficios: ['Límite inicial de $ 500.000', 'Compras en 1, 3, 6 o 12 cuotas sin interés', 'Pagás el total, el mínimo o lo que quieras desde la app'],
-                compra: 'La compra se suma a tu resumen y usa tu límite disponible.'
+                beneficios: ['Límite inicial de $ 500.000', 'En 1 pago sin interés, o en 3, 6 o 12 cuotas a la TNA de mercado que publica el BCRA', 'Pagás el total, el mínimo o lo que quieras desde la app'],
+                compra: 'La compra se suma a tu resumen y usa tu límite disponible. En 1 pago no tiene interés.'
             }
         };
 
         let tipoActual = 'DEBITO';
         let tarjetas = { debito: null, credito: null };
+        let tasas = null; // { tna, tea, cft, fuente, fecha } — viene del server (BCRA)
+
+        function fmtPct(v) { return (Number(v) * 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'; }
+
+        // Mismo cálculo que el server (sistema francés). Es solo para mostrar en vivo mientras
+        // se tipea: el server recalcula todo con la tasa vigente al confirmar la compra.
+        function calcularFinanciacion(monto, cuotas, tna) {
+            const tnaAplicada = cuotas > 1 ? tna : 0;
+            const i = tnaAplicada / 12;
+            const cuota = i === 0 ? monto / cuotas : (monto * i * Math.pow(1 + i, cuotas)) / (Math.pow(1 + i, cuotas) - 1);
+            const montoCuota = Math.round(cuota * 100) / 100;
+            const total = Math.round(montoCuota * cuotas * 100) / 100;
+            return { tna: tnaAplicada, montoCuota, total, interes: Math.round((total - monto) * 100) / 100 };
+        }
         let datosVisibles = false;
         let cuotasActual = 1;
         let modoPago = 'TOTAL';
@@ -477,12 +520,32 @@
             } else {
                 const limite = Number(t.limite_compra), deuda = Number(t.deuda);
                 const usoPct = limite > 0 ? Math.min(100, deuda / limite * 100) : 0;
-                document.getElementById('resDeuda').textContent = fmt(deuda);
+                document.getElementById('resDeuda').textContent = fmt(t.a_pagar);
                 document.getElementById('resDisponible').textContent = fmt(t.disponible);
                 document.getElementById('barraUso').style.width = usoPct + '%';
                 document.getElementById('resUsoPct').textContent = `Usaste ${usoPct.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%`;
                 document.getElementById('resLimite').textContent = `Límite ${fmt(limite)}`;
                 document.getElementById('resumenCierre').textContent = `Cierra el día ${t.dia_cierre} de cada mes · Pago mínimo ${fmt(t.pago_minimo)}`;
+                document.getElementById('filaCuotasPendientes').style.display = Number(t.cuotas_pendientes) > 0 ? 'flex' : 'none';
+                document.getElementById('resCuotasPendientes').textContent = fmt(t.cuotas_pendientes);
+
+                const aviso = document.getElementById('avisoFinanciado');
+                const financiado = Number(t.saldo_financiado);
+                aviso.classList.toggle('visible', financiado > 0 && !!tasas);
+                if (financiado > 0 && tasas) {
+                    aviso.textContent = `Tenés ${fmt(financiado)} del resumen sin pagar. Ese saldo genera interés todos los días al ${fmtPct(tasas.tna)} TNA hasta que lo canceles.`;
+                }
+
+                if (tasas) {
+                    document.getElementById('tasaTna').textContent = fmtPct(tasas.tna);
+                    document.getElementById('tasaTea').textContent = fmtPct(tasas.tea);
+                    document.getElementById('tasaCft').textContent = fmtPct(tasas.cft);
+                    const fechaTasa = tasas.fecha ? new Date(tasas.fecha + 'T12:00:00').toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : null;
+                    document.getElementById('tasaFuente').textContent = tasas.fuente === 'BCRA'
+                        ? `Tasa de financiación con tarjetas de crédito publicada por el BCRA${fechaTasa ? ` (${fechaTasa})` : ''}. Se aplica a las compras en 3, 6 y 12 cuotas y al saldo que no pagues del resumen. Sin comisiones: el CFT es igual a la TEA.`
+                        : 'No se pudo consultar la tasa del BCRA; se usa una tasa de referencia. Se aplica a las compras en cuotas y al saldo financiado.';
+                }
+
                 document.getElementById('bloquePago').style.display = deuda > 0 ? 'block' : 'none';
                 setModoPago(modoPago);
             }
@@ -501,7 +564,20 @@
         function actualizarCuotaInfo() {
             const monto = valorNumerico(document.getElementById('inputMontoCompra'));
             const info = document.getElementById('cuotaInfo');
-            info.textContent = monto > 0 && cuotasActual > 1 ? `${cuotasActual} cuotas de ${fmt(monto / cuotasActual)}` : '';
+            const box = document.getElementById('financiacionBox');
+            if (tipoActual !== 'CREDITO' || !(monto > 0)) { info.textContent = ''; box.classList.remove('visible'); return; }
+            if (cuotasActual === 1 || !tasas) {
+                info.textContent = cuotasActual === 1 ? 'En 1 pago, sin interés.' : '';
+                box.classList.remove('visible');
+                return;
+            }
+            const f = calcularFinanciacion(monto, cuotasActual, tasas.tna);
+            info.textContent = `${cuotasActual} cuotas fijas de ${fmt(f.montoCuota)}`;
+            document.getElementById('finCuota').textContent = fmt(f.montoCuota);
+            document.getElementById('finInteres').textContent = fmt(f.interes);
+            document.getElementById('finTotal').textContent = fmt(f.total);
+            document.getElementById('finTasas').textContent = `${fmtPct(tasas.tna)} · ${fmtPct(tasas.tea)} · ${fmtPct(tasas.cft)}`;
+            box.classList.add('visible');
         }
 
         function setModoPago(modo) {
@@ -511,7 +587,9 @@
             document.querySelectorAll('#bloquePago .plazo-btn').forEach(b => b.classList.toggle('active', b.dataset.pago === modo));
             const input = document.getElementById('inputPago');
             input.readOnly = modo !== 'OTRO';
-            if (modo === 'TOTAL') input.value = Number(t.deuda).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            // "Total" es lo que vence este mes; si no vence nada pero hay cuotas futuras, adelanta todo.
+            const total = Number(t.a_pagar) > 0 ? Number(t.a_pagar) : Number(t.deuda);
+            if (modo === 'TOTAL') input.value = total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             else if (modo === 'MINIMO') input.value = Number(t.pago_minimo).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             else { input.value = ''; input.focus(); }
         }
@@ -546,7 +624,9 @@
 
         async function cargarTarjetas() {
             try {
-                tarjetas = await api(`/api/tarjetas?idPersona=${u.id}`, 'GET');
+                const data = await api(`/api/tarjetas?idPersona=${u.id}`, 'GET');
+                tasas = data.tasas || null;
+                tarjetas = { debito: data.debito, credito: data.credito };
                 render();
             } catch (e) {
                 mostrarToast(e.message);
@@ -640,14 +720,24 @@
                 cont.innerHTML = movs.map(m => {
                     const fecha = new Date(m.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                     const esPago = m.tipo === 'PAGO';
-                    const cuotas = m.cuotas > 1 ? ` · ${m.cuotas} cuotas de ${fmt(m.monto / m.cuotas)}` : '';
+                    const esInteres = m.tipo === 'INTERES';
+                    const montoCuota = m.monto_cuota !== null && m.monto_cuota !== undefined ? Number(m.monto_cuota) : m.monto / m.cuotas;
+                    let detalle = '';
+                    if (m.cuotas > 1) {
+                        detalle = ` · ${m.cuotas} cuotas de ${fmt(montoCuota)}`;
+                        if (Number(m.tna) > 0) detalle += ` · TNA ${fmtPct(m.tna)} · total ${fmt(m.total)}`;
+                    } else if (m.tipo === 'COMPRA' && tipoActual === 'CREDITO') {
+                        detalle = ' · 1 pago sin interés';
+                    } else if (esInteres && Number(m.tna) > 0) {
+                        detalle = ` · TNA ${fmtPct(m.tna)}`;
+                    }
                     return `
                         <div class="mov-row">
                             <div>
                                 <div class="mov-comercio">${esc(m.comercio)}</div>
-                                <div class="mov-fecha">${fecha}${cuotas}</div>
+                                <div class="mov-fecha">${fecha}${detalle}</div>
                             </div>
-                            <div class="mov-monto ${esPago ? 'pago' : ''}">${esPago ? '+' : '−'} ${fmt(m.monto)}</div>
+                            <div class="mov-monto ${esPago ? 'pago' : esInteres ? 'interes' : ''}">${esPago ? '+' : '−'} ${fmt(m.monto)}</div>
                         </div>`;
                 }).join('');
             } catch (e) {

@@ -149,6 +149,8 @@ app.post('/api/reservas/:id/retirar', reservaController.retirarFrasco);
 
 // Tarjetas (débito vinculada a la caja de ahorro en ARS y crédito con límite)
 app.get('/api/tarjetas', tarjetaController.listar);
+app.get('/api/tarjetas/credito/tasas', tarjetaController.tasas);
+app.post('/api/tarjetas/credito/simular', tarjetaController.simular);
 app.post('/api/tarjetas/emitir', tarjetaController.emitir);
 app.post('/api/tarjetas/credito/pagar', tarjetaController.pagar);
 app.post('/api/tarjetas/:tipo/comprar', tarjetaController.comprar);
@@ -337,6 +339,14 @@ db.query(`
       cuotas        INTEGER NOT NULL DEFAULT 1,
       created_at    TIMESTAMPTZ DEFAULT NOW()
     )
+  `);
+  // TNA: cuotas con interés (monto_cuota/total/tna por compra) e interés del saldo financiado.
+  await db.query(`
+    ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS saldo_financiado DECIMAL(15,2) NOT NULL DEFAULT 0;
+    ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS fecha_ultimo_interes DATE DEFAULT CURRENT_DATE;
+    ALTER TABLE Consumos_Tarjeta ADD COLUMN IF NOT EXISTS monto_cuota DECIMAL(15,2);
+    ALTER TABLE Consumos_Tarjeta ADD COLUMN IF NOT EXISTS total DECIMAL(15,2);
+    ALTER TABLE Consumos_Tarjeta ADD COLUMN IF NOT EXISTS tna DECIMAL(8,5);
   `);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_consumos_tarjeta_producto ON Consumos_Tarjeta(id_producto, created_at DESC)`);
 })().catch(e => console.error('Error creando tablas de tarjetas:', e.message));

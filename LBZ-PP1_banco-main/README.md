@@ -430,10 +430,12 @@ La nueva contraseña debe tener al menos 8 caracteres.
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `GET` | `/api/tarjetas` | Tarjeta de débito y de crédito de la persona (o `null`), con deuda/disponible/pago mínimo en crédito |
+| `GET` | `/api/tarjetas` | Tarjeta de débito y de crédito de la persona (o `null`) + `tasas`. En crédito: `a_pagar` (lo que vence este mes), `cuotas_pendientes`, `pago_minimo`, `disponible`, `saldo_financiado` |
+| `GET` | `/api/tarjetas/credito/tasas` | TNA de financiación con tarjeta (BCRA, variable 1215), TEA y CFT |
+| `POST` | `/api/tarjetas/credito/simular` | Simula una compra en cuotas. Body: `{ monto, cuotas }` → `montoCuota`, `total`, `interes`, `tna` |
 | `POST` | `/api/tarjetas/emitir` | Emite una tarjeta. Body: `{ idPersona, tipo: 'DEBITO' \| 'CREDITO' }`. Débito queda vinculada a la caja de ahorro en ARS; crédito sale con límite de $500.000 |
-| `POST` | `/api/tarjetas/:tipo/comprar` | Compra. Body: `{ idPersona, comercio, monto, cuotas? }`. Débito descuenta el saldo al instante; crédito consume límite (cuotas 1, 3, 6 o 12 sin interés) |
-| `POST` | `/api/tarjetas/credito/pagar` | Paga el resumen de crédito desde la caja de ahorro. Body: `{ idPersona, monto }` |
+| `POST` | `/api/tarjetas/:tipo/comprar` | Compra. Body: `{ idPersona, comercio, monto, cuotas? }`. Débito descuenta el saldo al instante; crédito consume límite por el total financiado: 1 pago sin interés; 3, 6 o 12 cuotas con la TNA en sistema francés |
+| `POST` | `/api/tarjetas/credito/pagar` | Paga el resumen de crédito desde la caja de ahorro. Body: `{ idPersona, monto }`. Lo que queda sin pagar de `a_pagar` pasa a saldo financiado y genera interés diario a la TNA (se devenga al consultar u operar, sin cron) |
 | `PUT` | `/api/tarjetas/:tipo/bloqueo` | Bloquea/desbloquea. Body: `{ idPersona, bloquear: true \| false }`. Una tarjeta bloqueada rechaza compras |
 | `GET` | `/api/tarjetas/:tipo/movimientos` | Últimos 50 movimientos de la tarjeta |
 
@@ -513,8 +515,8 @@ La nueva contraseña debe tener al menos 8 caracteres.
 ### tarjetas.html
 - Pestañas Débito / Crédito; si no tenés la tarjeta, la pedís desde ahí (se emite al instante)
 - Tarjeta visual con número/CVV ocultos y botón para mostrarlos, bloquear y desbloquear
-- Compras con débito (saldo de la caja de ahorro) o crédito (límite, en cuotas)
-- Resumen de crédito: deuda, disponible, uso del límite y pago total / mínimo / otro monto
+- Compras con débito (saldo de la caja de ahorro) o crédito (límite; 1 pago sin interés o 3/6/12 cuotas con TNA, con cuota, interés, total, TNA/TEA/CFT antes de confirmar)
+- Resumen de crédito: a pagar este mes, cuotas a vencer, disponible, uso del límite, TNA/TEA/CFT del BCRA, aviso de saldo financiado y pago total / mínimo / otro monto
 - Las compras con débito y los pagos de la tarjeta de crédito aparecen en el historial del dashboard
 
 ### seguridad.html

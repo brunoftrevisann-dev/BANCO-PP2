@@ -134,8 +134,12 @@ async function notificarTarjetaEmitida(idPersona, { tipo, numero, limite }) {
   });
 }
 
-async function notificarCompraTarjeta(idPersona, { tipo, comercio, monto, cuotas }) {
-  const enCuotas = cuotas > 1 ? ` en ${cuotas} cuotas` : '';
+const fmtPct = (v) => (Number(v) * 100).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + '%';
+
+async function notificarCompraTarjeta(idPersona, { tipo, comercio, monto, cuotas, montoCuota, tna }) {
+  const enCuotas = cuotas > 1
+    ? ` en ${cuotas} cuotas${montoCuota ? ` de ${fmtMonto(montoCuota)}` : ''}${tna ? ` (TNA ${fmtPct(tna)})` : ''}`
+    : '';
   await Notificacion.crear(idPersona, {
     tipo: 'compra_tarjeta',
     titulo: `Compra con ${NOMBRE_TIPO_TARJETA[tipo]}`,
@@ -143,11 +147,14 @@ async function notificarCompraTarjeta(idPersona, { tipo, comercio, monto, cuotas
   });
 }
 
-async function notificarPagoTarjeta(idPersona, { monto, deuda }) {
+async function notificarPagoTarjeta(idPersona, { monto, deuda, saldoFinanciado, tna }) {
+  const financiado = Number(saldoFinanciado) > 0
+    ? ` Los ${fmtMonto(saldoFinanciado)} que quedaron sin pagar del resumen generan interés al ${fmtPct(tna)} TNA.`
+    : '';
   await Notificacion.crear(idPersona, {
     tipo: 'pago_tarjeta',
     titulo: 'Pago de tarjeta acreditado',
-    mensaje: `Pagaste ${fmtMonto(monto)} de tu tarjeta de crédito. ${Number(deuda) > 0 ? `Te quedan ${fmtMonto(deuda)} por pagar.` : 'No tenés deuda pendiente.'}`
+    mensaje: `Pagaste ${fmtMonto(monto)} de tu tarjeta de crédito. ${Number(deuda) > 0 ? `Te quedan ${fmtMonto(deuda)} por pagar.` : 'No tenés deuda pendiente.'}${financiado}`
   });
 }
 
