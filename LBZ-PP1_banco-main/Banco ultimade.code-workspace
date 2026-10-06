@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "Banco ultimade",
+			"path": "../.."
+		},
+		{
+			"name": ".env",
+			"path": "../../../.env"
+		}
+	],
+	"settings": {}
+}
