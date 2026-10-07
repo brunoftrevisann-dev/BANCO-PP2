@@ -11,7 +11,6 @@ const asistenteController = require('./controllers/asistenteController');
 const notificacionController = require('./controllers/notificacionController');
 const qrController = require('./controllers/qrController');
 const reservaController = require('./controllers/reservaController');
-const webauthnController = require('./controllers/webauthnController');
 const { requireAuth } = require('./utils/sesion');
 
 // Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
@@ -121,14 +120,6 @@ app.post('/api/cuenta-usd/solicitar-verificacion', requireAuth, personaControlle
 app.post('/api/cuenta-usd', requireAuth, personaController.abrirCuentaUsd);
 app.post('/api/cambiar-divisa', requireAuth, personaController.cambiarDivisa);
 
-// Login biométrico (Face ID / huella / Windows Hello) vía WebAuthn — registro requiere sesión
-// ya iniciada (con contraseña, desde settings.html); login es público, es lo que crea la sesión.
-app.post('/api/webauthn/registro/opciones', requireAuth, webauthnController.opcionesRegistro);
-app.post('/api/webauthn/registro/verificar', requireAuth, webauthnController.verificarRegistro);
-app.post('/api/webauthn/login/opciones', webauthnController.opcionesLogin);
-app.post('/api/webauthn/login/verificar', webauthnController.verificarLogin);
-app.delete('/api/webauthn/credencial/:id', requireAuth, webauthnController.eliminarCredencial);
-
 // Préstamos
 app.get('/api/prestamos/tasas', prestamoController.obtenerTasas);
 app.get('/api/prestamos/perfil-crediticio', requireAuth, prestamoController.perfilCrediticio);
@@ -172,20 +163,6 @@ db.query(`
 // comparten estas mismas columnas) — antes no había ningún límite de intentos.
 db.query(`ALTER TABLE Personas ADD COLUMN IF NOT EXISTS intentos_verificacion INTEGER NOT NULL DEFAULT 0`)
   .catch(e => console.error('Error agregando columna intentos_verificacion:', e.message));
-
-// Login biométrico (WebAuthn) — una fila por passkey registrada (una persona puede tener
-// varias: celular, notebook, etc.).
-db.query(`
-  CREATE TABLE IF NOT EXISTS Credenciales_Biometricas (
-    id            SERIAL PRIMARY KEY,
-    id_persona    INTEGER NOT NULL REFERENCES Personas(id),
-    credential_id TEXT NOT NULL UNIQUE,
-    public_key    TEXT NOT NULL,
-    counter       BIGINT NOT NULL DEFAULT 0,
-    device_label  VARCHAR(80),
-    created_at    TIMESTAMPTZ DEFAULT NOW()
-  )
-`).catch(e => console.error('Error creando tabla Credenciales_Biometricas:', e.message));
 
 // Agregar columna descripcion si no existe (mensajes en transferencias)
 db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS descripcion TEXT`)

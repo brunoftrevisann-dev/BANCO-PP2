@@ -56,25 +56,6 @@ const Persona = {
     return persona;
   },
 
-  // Mismo shape que findByCredentials, sin el chequeo de password — lo usa el login
-  // biométrico (WebAuthn), que ya autenticó a la persona por otro medio y solo necesita
-  // los datos para guardar en localStorage e iniciar sesión, igual que el login normal.
-  getParaSesion: async (idPersona) => {
-    const query = `
-      SELECT p.id, p.nombre, p.apellido, p.dni, p.email, p.telefono, p.direccion,
-             cb.cbu, cb.alias, cb.saldo, cb.moneda,
-             tp.nombre AS tipo_producto
-      FROM Personas p
-      LEFT JOIN Productos pr ON p.id = pr.id_persona
-      LEFT JOIN Cuentas_Bancarias cb ON pr.id_producto = cb.id_producto AND cb.moneda = 'ARS'
-      LEFT JOIN Tipos_Producto tp ON pr.id_tipo_producto = tp.id_tipo_producto
-      WHERE p.id = $1 AND p.verificado = TRUE
-      LIMIT 1
-    `;
-    const { rows } = await db.query(query, [idPersona]);
-    return rows[0] || null;
-  },
-
   getByCbu: async (cbu) => {
     const query = `
       SELECT cb.id_cuenta, cb.saldo, cb.alias, cb.cbu, cb.moneda,

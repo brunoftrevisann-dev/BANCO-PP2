@@ -608,18 +608,6 @@
       .replace(/'/g, '&#39;');
   };
 
-  // Login biométrico: WebAuthn no expone "qué biometría específica hay" de forma estándar —
-  // el navegador/sistema operativo ya elige solo qué pedir (Face ID, huella, Windows Hello),
-  // esto es solo para que el BOTÓN diga el nombre correcto según el dispositivo.
-  window.detectarMetodoBiometrico = function () {
-    var ua = navigator.userAgent || '';
-    if (/iPhone|iPad|iPod/.test(ua)) return 'Face ID';
-    if (/Android/.test(ua)) return 'tu huella digital';
-    if (/Macintosh/.test(ua)) return 'Touch ID';
-    if (/Windows/.test(ua)) return 'Windows Hello';
-    return 'tu huella o rostro';
-  };
-
   window.tuoI18n = {
     t: t,
     getLang: getLang,
