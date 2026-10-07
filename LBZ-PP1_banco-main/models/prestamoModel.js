@@ -248,7 +248,13 @@ const Prestamo = {
       if (Number(cuenta.saldo) < Number(cuota.monto))
         throw Object.assign(new Error('Saldo insuficiente'), { code: 'SALDO_INSUFICIENTE' });
 
-      const pagadaAntes = new Date() < new Date(cuota.fecha_vencimiento + 'T23:59:59');
+      // cuota.fecha_vencimiento llega como objeto Date (columna DATE, pg lo parsea así), no
+      // como string — concatenarle 'T23:59:59' con "+" llamaba a Date.toString() en vez de
+      // toISOString(), daba una fecha inválida, y la comparación de abajo salía siempre false:
+      // ninguna cuota se marcaba PAGADA_ANTICIPADA nunca, pagara cuando pagara.
+      const finDelDiaVencimiento = new Date(cuota.fecha_vencimiento);
+      finDelDiaVencimiento.setHours(23, 59, 59, 999);
+      const pagadaAntes = new Date() < finDelDiaVencimiento;
       const nuevoEstado = pagadaAntes ? 'PAGADA_ANTICIPADA' : 'PAGADA';
 
       const nuevoSaldo = Number(cuenta.saldo) - Number(cuota.monto);

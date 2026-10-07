@@ -595,6 +595,31 @@
     }
   };
 
+  // XSS almacenado: nombre/apellido/alias (registro, editable por cualquier usuario) y
+  // descripcion (transferencias) viajan tal cual hasta el navegador de OTRO usuario, que los
+  // interpola en innerHTML sin escapar — un nombre "<img src=x onerror=...>" se ejecutaba.
+  // Envolver esas interpolaciones con escapeHtml() en cada lugar que las muestra.
+  window.escapeHtml = function (str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  // Login biométrico: WebAuthn no expone "qué biometría específica hay" de forma estándar —
+  // el navegador/sistema operativo ya elige solo qué pedir (Face ID, huella, Windows Hello),
+  // esto es solo para que el BOTÓN diga el nombre correcto según el dispositivo.
+  window.detectarMetodoBiometrico = function () {
+    var ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/.test(ua)) return 'Face ID';
+    if (/Android/.test(ua)) return 'tu huella digital';
+    if (/Macintosh/.test(ua)) return 'Touch ID';
+    if (/Windows/.test(ua)) return 'Windows Hello';
+    return 'tu huella o rostro';
+  };
+
   window.tuoI18n = {
     t: t,
     getLang: getLang,

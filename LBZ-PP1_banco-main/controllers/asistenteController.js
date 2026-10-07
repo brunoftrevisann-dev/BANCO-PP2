@@ -167,13 +167,11 @@ async function generarConFallback(params) {
 
 exports.chat = async (req, res) => {
   try {
-    const { idPersona, mensaje, historial } = req.body;
-    if (!idPersona || !mensaje) return res.status(400).json({ error: 'idPersona y mensaje son requeridos' });
+    const idPersona = req.idPersona;
+    const { mensaje, historial } = req.body;
+    if (!mensaje) return res.status(400).json({ error: 'mensaje requerido' });
     if (String(mensaje).length > 1000) return res.status(400).json({ error: 'Mensaje demasiado largo' });
 
-    // Si idPersona no corresponde a nadie real (localStorage corrupto/desactualizado en el
-    // cliente, o un valor mal formado), registrarUsoDiario reventaría con un error de foreign key
-    // — mejor devolver un 404 claro acá que un 500 genérico de "asistente no disponible".
     const persona = await Persona.getDatosBasicos(idPersona);
     if (!persona) return res.status(404).json({ error: 'No se encontró esa cuenta' });
 

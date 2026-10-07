@@ -449,7 +449,7 @@
                             <div class="reserva-item">
                                 <div class="reserva-top">
                                     <span class="reserva-monto">${fmt(r.saldo)}</span>
-                                    <span class="reserva-tipo-label">${r.nombre || 'Frasco'} · ${fmtPct(r.tna)} TNA</span>
+                                    <span class="reserva-tipo-label">${escapeHtml(r.nombre) || 'Frasco'} · ${fmtPct(r.tna)} TNA</span>
                                 </div>
                                 <div class="reserva-detalle">Depositá o retirá cuando quieras.</div>
                                 <div class="frasco-acciones">

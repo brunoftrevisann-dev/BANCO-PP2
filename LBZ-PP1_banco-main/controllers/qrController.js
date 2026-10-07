@@ -17,6 +17,9 @@ exports.firmar = async (req, res) => {
 
     const cuenta = await Persona.getByCbu(cbu);
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
+    // Antes cualquiera (ni siquiera hacía falta estar logueado) podía pedir un QR firmado
+    // válido para el cbu de otra persona.
+    if (cuenta.id_persona !== req.idPersona) return res.status(403).json({ error: 'Esa cuenta no es tuya' });
 
     const jwt = await firmarQr({
       cbu: cuenta.cbu,
@@ -120,10 +123,10 @@ async function avisarLecturaAlEmisor(qrTexto, idPersonaLector) {
 
 exports.verificar = async (req, res) => {
   try {
-    const { qr, idPersona } = req.body;
+    const { qr } = req.body;
     const [resultado, { usado }] = await Promise.all([
       verificarQr(qr, bancosConocidos),
-      avisarLecturaAlEmisor(qr, idPersona ? Number(idPersona) : null)
+      avisarLecturaAlEmisor(qr, req.idPersona)
     ]);
 
     if (usado) {

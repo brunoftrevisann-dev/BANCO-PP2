@@ -481,11 +481,18 @@
             localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
         }
 
-        const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
-        if (!u) { navTo('login.html'); }
+        // Guarda sin sesión (TypeError reportado): este <script> NO está dentro de ninguna
+        // función (no hay DOMContentLoaded acá como en otras páginas), así que un "return"
+        // a esta altura sería un SyntaxError y rompería TODO el script, para TODOS los
+        // usuarios — no solo el que no tiene sesión. En vez de cortar la ejecución, "u" se
+        // deja en un objeto vacío seguro: navTo() ya dispara el redirect (230ms) y el resto
+        // del script no explota mientras tanto, gracias a los `|| ''`/`|| '—'` que ya tenía.
+        const uRaw = localStorage.getItem('usuarioLogueado');
+        if (!uRaw) navTo('login.html');
+        const u = JSON.parse(uRaw || '{}');
 
         // ── Poblar datos ──
-        const ini = ((u.nombre || '')[0] + (u.apellido || '')[0]).toUpperCase();
+        const ini = ((u.nombre || ' ')[0] + (u.apellido || ' ')[0]).toUpperCase();
         // Avatar: cargar imagen guardada o iniciales
         function cargarAvatar() {
             const av  = document.getElementById('avatarCircle');

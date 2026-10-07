@@ -55,8 +55,7 @@ exports.tasas = async (req, res) => {
 
 exports.listar = async (req, res) => {
   try {
-    const idPersona = parseInt(req.query.idPersona);
-    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
+    const idPersona = req.idPersona;
     res.json(await Reserva.getReservasPersona(idPersona));
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -83,8 +82,9 @@ exports.simular = async (req, res) => {
 
 exports.abrir = async (req, res) => {
   try {
-    const { idPersona, tipo, monto, plazoDias, plazoMeses, nombre } = req.body;
-    if (!idPersona || !tipo || !monto) return res.status(400).json({ error: 'idPersona, tipo y monto son requeridos' });
+    const idPersona = req.idPersona;
+    const { tipo, monto, plazoDias, plazoMeses, nombre } = req.body;
+    if (!tipo || !monto) return res.status(400).json({ error: 'tipo y monto son requeridos' });
     if (!['FIJO_MESES', 'FIJO_DIAS', 'FRASCO'].includes(tipo)) return res.status(400).json({ error: 'tipo inválido' });
     if (tipo === 'FIJO_MESES' && ![1, 2, 3].includes(Number(plazoMeses))) return res.status(400).json({ error: 'plazoMeses debe ser 1, 2 o 3' });
     if (tipo === 'FIJO_DIAS' && ![7, 14, 21, 28].includes(Number(plazoDias))) return res.status(400).json({ error: 'plazoDias debe ser 7, 14, 21 o 28' });
@@ -117,8 +117,9 @@ exports.abrir = async (req, res) => {
 exports.depositarFrasco = async (req, res) => {
   try {
     const idReserva = parseInt(req.params.id);
-    const { idPersona, monto } = req.body;
-    if (!idPersona || !monto) return res.status(400).json({ error: 'idPersona y monto son requeridos' });
+    const idPersona = req.idPersona;
+    const { monto } = req.body;
+    if (!monto) return res.status(400).json({ error: 'monto requerido' });
 
     const resultado = await Reserva.depositarFrasco(idPersona, idReserva, Number(monto));
 
@@ -140,8 +141,9 @@ exports.depositarFrasco = async (req, res) => {
 exports.retirarFrasco = async (req, res) => {
   try {
     const idReserva = parseInt(req.params.id);
-    const { idPersona, monto } = req.body;
-    if (!idPersona || !monto) return res.status(400).json({ error: 'idPersona y monto son requeridos' });
+    const idPersona = req.idPersona;
+    const { monto } = req.body;
+    if (!monto) return res.status(400).json({ error: 'monto requerido' });
 
     const resultado = await Reserva.retirarFrasco(idPersona, idReserva, Number(monto));
 

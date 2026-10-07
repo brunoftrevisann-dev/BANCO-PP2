@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const app = express();
 const personaController = require('./controllers/personaController');
 const prestamoController = require('./controllers/prestamoController');
@@ -10,6 +11,8 @@ const asistenteController = require('./controllers/asistenteController');
 const notificacionController = require('./controllers/notificacionController');
 const qrController = require('./controllers/qrController');
 const reservaController = require('./controllers/reservaController');
+const webauthnController = require('./controllers/webauthnController');
+const { requireAuth } = require('./utils/sesion');
 
 // Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
 // la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
@@ -50,6 +53,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Servir archivos estáticos desde public
 app.use(express.static(path.join(__dirname, 'public')));
@@ -93,58 +97,68 @@ app.post('/api/proxy-banco-central', async (req, res) => {
 });
 
 // Endpoints con joins
-app.get('/api/personas', personaController.obtenerPersonas);
-app.get('/api/personas/:id/roles', personaController.obtenerRoles);
-app.get('/api/personas/:id/productos', personaController.obtenerProductos);
+// GET /api/personas, GET /api/personas/:id/roles y POST /api/personas (crearPersona) se
+// eliminaron: código muerto (sin ningún caller en el frontend) que además insertaba/leía sin
+// ninguna validación ni chequeo de identidad — en vez de protegerlos, se borraron junto con
+// sus funciones en personaController.js.
+app.get('/api/personas/:id/productos', requireAuth, personaController.obtenerProductos);
 app.post('/api/personas/login', personaController.login);
-app.post('/api/personas', personaController.crearPersona);
+app.post('/api/personas/logout', personaController.logout);
 app.post('/api/personas/registrar', personaController.registrarPersona);
-app.get('/api/historial', personaController.obtenerHistorial);
-app.get('/api/buscar-persona', personaController.buscarPersona);
-app.get('/api/otra-moneda-persona', personaController.otraMonedaPersona);
-app.post('/api/transferencia', personaController.transferir);
-app.put('/api/actualizar-alias', personaController.actualizarAlias);
-app.put('/api/sincronizar-saldo', personaController.sincronizarSaldo);
+app.get('/api/historial', requireAuth, personaController.obtenerHistorial);
+app.get('/api/buscar-persona', requireAuth, personaController.buscarPersona);
+app.get('/api/otra-moneda-persona', requireAuth, personaController.otraMonedaPersona);
+app.post('/api/transferencia', requireAuth, personaController.transferir);
+app.put('/api/actualizar-alias', requireAuth, personaController.actualizarAlias);
+// /api/sincronizar-saldo eliminada: código muerto y peligroso, ver personaController.js.
 app.post('/api/verificar-cuenta', personaController.verificarCuenta);
 app.post('/api/reenviar-codigo', personaController.reenviarCodigo);
-app.post('/api/depositar', personaController.depositar);
+app.post('/api/depositar', requireAuth, personaController.depositar);
 app.post('/api/solicitar-cambio-password', personaController.solicitarCambioPassword);
 app.put('/api/confirmar-cambio-password', personaController.confirmarCambioPassword);
 app.get('/api/cotizacion-dolar', personaController.cotizacionDolar);
-app.post('/api/cuenta-usd/solicitar-verificacion', personaController.solicitarAperturaUsd);
-app.post('/api/cuenta-usd', personaController.abrirCuentaUsd);
-app.post('/api/cambiar-divisa', personaController.cambiarDivisa);
+app.post('/api/cuenta-usd/solicitar-verificacion', requireAuth, personaController.solicitarAperturaUsd);
+app.post('/api/cuenta-usd', requireAuth, personaController.abrirCuentaUsd);
+app.post('/api/cambiar-divisa', requireAuth, personaController.cambiarDivisa);
+
+// Login biométrico (Face ID / huella / Windows Hello) vía WebAuthn — registro requiere sesión
+// ya iniciada (con contraseña, desde settings.html); login es público, es lo que crea la sesión.
+app.post('/api/webauthn/registro/opciones', requireAuth, webauthnController.opcionesRegistro);
+app.post('/api/webauthn/registro/verificar', requireAuth, webauthnController.verificarRegistro);
+app.post('/api/webauthn/login/opciones', webauthnController.opcionesLogin);
+app.post('/api/webauthn/login/verificar', webauthnController.verificarLogin);
+app.delete('/api/webauthn/credencial/:id', requireAuth, webauthnController.eliminarCredencial);
 
 // Préstamos
 app.get('/api/prestamos/tasas', prestamoController.obtenerTasas);
-app.get('/api/prestamos/perfil-crediticio', prestamoController.perfilCrediticio);
-app.post('/api/prestamos/simular', prestamoController.simular);
-app.post('/api/prestamos/solicitar', prestamoController.solicitar);
-app.get('/api/prestamos', prestamoController.listar);
-app.get('/api/prestamos/proxima-cuota', prestamoController.proximaCuota);
-app.get('/api/prestamos/:id/cuotas', prestamoController.cuotas);
-app.post('/api/prestamos/:id/pagar-cuota', prestamoController.pagarCuota);
-app.post('/api/prestamos/:id/cancelar', prestamoController.cancelarAnticipado);
+app.get('/api/prestamos/perfil-crediticio', requireAuth, prestamoController.perfilCrediticio);
+app.post('/api/prestamos/simular', requireAuth, prestamoController.simular);
+app.post('/api/prestamos/solicitar', requireAuth, prestamoController.solicitar);
+app.get('/api/prestamos', requireAuth, prestamoController.listar);
+app.get('/api/prestamos/proxima-cuota', requireAuth, prestamoController.proximaCuota);
+app.get('/api/prestamos/:id/cuotas', requireAuth, prestamoController.cuotas);
+app.post('/api/prestamos/:id/pagar-cuota', requireAuth, prestamoController.pagarCuota);
+app.post('/api/prestamos/:id/cancelar', requireAuth, prestamoController.cancelarAnticipado);
 
 // Cron diario (recordatorios de cuota + escalada a Central de Deudores)
 app.get('/api/cron/prestamos-diario', cronController.diario);
 
 // Asistente de IA (atención al cliente)
-app.post('/api/asistente/chat', asistenteController.chat);
+app.post('/api/asistente/chat', requireAuth, asistenteController.chat);
 
 // Notificaciones
-app.get('/api/notificaciones', notificacionController.listar);
-app.get('/api/notificaciones/no-leidas', notificacionController.noLeidas);
-app.put('/api/notificaciones/:id/leer', notificacionController.marcarLeida);
-app.put('/api/notificaciones/marcar-todas-leidas', notificacionController.marcarTodasLeidas);
+app.get('/api/notificaciones', requireAuth, notificacionController.listar);
+app.get('/api/notificaciones/no-leidas', requireAuth, notificacionController.noLeidas);
+app.put('/api/notificaciones/:id/leer', requireAuth, notificacionController.marcarLeida);
+app.put('/api/notificaciones/marcar-todas-leidas', requireAuth, notificacionController.marcarTodasLeidas);
 
 // Reservas (plazo fijo y frasco, estilo Naranja X)
 app.get('/api/reservas/tasas', reservaController.tasas);
-app.get('/api/reservas', reservaController.listar);
-app.post('/api/reservas/simular', reservaController.simular);
-app.post('/api/reservas/abrir', reservaController.abrir);
-app.post('/api/reservas/:id/depositar', reservaController.depositarFrasco);
-app.post('/api/reservas/:id/retirar', reservaController.retirarFrasco);
+app.get('/api/reservas', requireAuth, reservaController.listar);
+app.post('/api/reservas/simular', requireAuth, reservaController.simular);
+app.post('/api/reservas/abrir', requireAuth, reservaController.abrir);
+app.post('/api/reservas/:id/depositar', requireAuth, reservaController.depositarFrasco);
+app.post('/api/reservas/:id/retirar', requireAuth, reservaController.retirarFrasco);
 
 // Columnas de verificación de email
 const db = require('./config/db');
@@ -153,6 +167,25 @@ db.query(`
   ALTER TABLE Personas ADD COLUMN IF NOT EXISTS token_verificacion VARCHAR(6);
   ALTER TABLE Personas ADD COLUMN IF NOT EXISTS token_expira TIMESTAMPTZ;
 `).catch(e => console.error('Error agregando columnas verificación:', e.message));
+
+// Rate limiting de los códigos de 6 dígitos (verificación de email + reset de contraseña,
+// comparten estas mismas columnas) — antes no había ningún límite de intentos.
+db.query(`ALTER TABLE Personas ADD COLUMN IF NOT EXISTS intentos_verificacion INTEGER NOT NULL DEFAULT 0`)
+  .catch(e => console.error('Error agregando columna intentos_verificacion:', e.message));
+
+// Login biométrico (WebAuthn) — una fila por passkey registrada (una persona puede tener
+// varias: celular, notebook, etc.).
+db.query(`
+  CREATE TABLE IF NOT EXISTS Credenciales_Biometricas (
+    id            SERIAL PRIMARY KEY,
+    id_persona    INTEGER NOT NULL REFERENCES Personas(id),
+    credential_id TEXT NOT NULL UNIQUE,
+    public_key    TEXT NOT NULL,
+    counter       BIGINT NOT NULL DEFAULT 0,
+    device_label  VARCHAR(80),
+    created_at    TIMESTAMPTZ DEFAULT NOW()
+  )
+`).catch(e => console.error('Error creando tabla Credenciales_Biometricas:', e.message));
 
 // Agregar columna descripcion si no existe (mensajes en transferencias)
 db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS descripcion TEXT`)
@@ -326,8 +359,8 @@ app.get('/api/banco/:code', async (req, res) => {
 });
 
 // QR interbancario firmado (JWT ES256)
-app.post('/api/qr/firmar', qrController.firmar);
-app.post('/api/qr/verificar', qrController.verificar);
+app.post('/api/qr/firmar', requireAuth, qrController.firmar);
+app.post('/api/qr/verificar', requireAuth, qrController.verificar);
 // Aviso de lectura (rol emisor): lo llaman los otros bancos de la cátedra, sin login.
 app.post('/api/qr/aviso-lectura', qrController.avisoLectura);
 // Polling del QR propio (cada 2s mientras el modal está abierto) para saber si ya lo

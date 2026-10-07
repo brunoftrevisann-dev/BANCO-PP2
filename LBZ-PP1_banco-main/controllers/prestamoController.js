@@ -144,8 +144,7 @@ exports.obtenerTasas = async (req, res) => {
 
 exports.perfilCrediticio = async (req, res) => {
   try {
-    const idPersona = parseInt(req.query.idPersona);
-    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
+    const idPersona = req.idPersona;
     const perfil = await calcularPerfil(idPersona, 0);
     res.json(perfil);
   } catch (error) {
@@ -155,9 +154,10 @@ exports.perfilCrediticio = async (req, res) => {
 
 exports.simular = async (req, res) => {
   try {
-    const { idPersona, monto, plazoMeses } = req.body;
-    if (!idPersona || !monto || !plazoMeses)
-      return res.status(400).json({ error: 'idPersona, monto y plazoMeses son requeridos' });
+    const idPersona = req.idPersona;
+    const { monto, plazoMeses } = req.body;
+    if (!monto || !plazoMeses)
+      return res.status(400).json({ error: 'monto y plazoMeses son requeridos' });
     if (Number(monto) <= 0) return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
     if (Number(plazoMeses) <= 0) return res.status(400).json({ error: 'El plazo debe ser mayor a 0' });
 
@@ -180,9 +180,10 @@ exports.simular = async (req, res) => {
 
 exports.solicitar = async (req, res) => {
   try {
-    const { idPersona, monto, plazoMeses } = req.body;
-    if (!idPersona || !monto || !plazoMeses)
-      return res.status(400).json({ error: 'idPersona, monto y plazoMeses son requeridos' });
+    const idPersona = req.idPersona;
+    const { monto, plazoMeses } = req.body;
+    if (!monto || !plazoMeses)
+      return res.status(400).json({ error: 'monto y plazoMeses son requeridos' });
     if (Number(monto) <= 0) return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
     if (Number(plazoMeses) <= 0) return res.status(400).json({ error: 'El plazo debe ser mayor a 0' });
 
@@ -234,8 +235,7 @@ exports.solicitar = async (req, res) => {
 
 exports.listar = async (req, res) => {
   try {
-    const idPersona = parseInt(req.query.idPersona);
-    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
+    const idPersona = req.idPersona;
     const prestamos = await Prestamo.getPrestamosPersona(idPersona);
     res.json(prestamos);
   } catch (error) {
@@ -245,8 +245,7 @@ exports.listar = async (req, res) => {
 
 exports.proximaCuota = async (req, res) => {
   try {
-    const idPersona = parseInt(req.query.idPersona);
-    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
+    const idPersona = req.idPersona;
     const cuota = await Prestamo.getProximaCuotaPersona(idPersona);
     res.json(cuota);
   } catch (error) {
@@ -257,8 +256,7 @@ exports.proximaCuota = async (req, res) => {
 exports.cuotas = async (req, res) => {
   try {
     const idPrestamo = parseInt(req.params.id);
-    const idPersona = parseInt(req.query.idPersona);
-    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
+    const idPersona = req.idPersona;
     if (!(await Prestamo.esDuenioPrestamo(idPrestamo, idPersona)))
       return res.status(404).json({ error: 'Préstamo no encontrado' });
     const cuotas = await Prestamo.getCuotasPrestamo(idPrestamo);
@@ -271,8 +269,9 @@ exports.cuotas = async (req, res) => {
 exports.pagarCuota = async (req, res) => {
   try {
     const idPrestamo = parseInt(req.params.id);
-    const { idPersona, idCuota } = req.body;
-    if (!idPersona || !idCuota) return res.status(400).json({ error: 'idPersona e idCuota son requeridos' });
+    const idPersona = req.idPersona;
+    const { idCuota } = req.body;
+    if (!idCuota) return res.status(400).json({ error: 'idCuota requerido' });
 
     const resultado = await Prestamo.pagarCuota(idPrestamo, idCuota, idPersona);
 
@@ -311,8 +310,7 @@ exports.pagarCuota = async (req, res) => {
 exports.cancelarAnticipado = async (req, res) => {
   try {
     const idPrestamo = parseInt(req.params.id);
-    const { idPersona } = req.body;
-    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
+    const idPersona = req.idPersona;
 
     const resultado = await Prestamo.cancelarAnticipado(idPrestamo, idPersona);
 

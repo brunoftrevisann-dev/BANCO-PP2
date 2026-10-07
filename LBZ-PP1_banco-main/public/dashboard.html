@@ -1607,7 +1607,11 @@
         function applyTheme(t) {
             document.documentElement.setAttribute('data-theme', t);
             document.getElementById('btnTheme').innerHTML = t === 'dark' ? SUN : MOON;
-            if (window._txsCache) inicializarGraficos(window._txsCache);
+            // Igual que los otros 4 lugares que llaman a inicializarGraficos(): el DOM de los
+            // gráficos ya no vive en dashboard.html (se mudó a estadisticas.html), así que acá
+            // puede tirar si corre antes de que cargarRecentTx() complete — es a lo sumo
+            // cosmético, nunca tiene que romper el toggle de tema.
+            if (window._txsCache) { try { inicializarGraficos(window._txsCache); } catch { /* charts are optional */ } }
         }
 
         function toggleTheme() {
@@ -1629,7 +1633,10 @@
                 error:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
                 info:    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`
             };
-            el.innerHTML = (icons[type] || icons.info) + message;
+            // Escapado siempre: varios call sites interpolan nombres/mensajes que vienen de
+            // otro usuario (nombre de contacto, mensaje de notificación de QR leído, etc.) —
+            // ningún call site de hoy necesita pasar HTML real en el mensaje.
+            el.innerHTML = (icons[type] || icons.info) + escapeHtml(message);
             container.appendChild(el);
             setTimeout(() => {
                 el.classList.add('removing');
@@ -1656,6 +1663,16 @@
         function formatCbu(cbu) {
             if (!cbu || cbu.length !== 22) return cbu;
             return `${cbu.slice(0,4)} ${cbu.slice(4,8)} ${cbu.slice(8,12)} ${cbu.slice(12,16)} ${cbu.slice(16,20)} ${cbu.slice(20)}`;
+        }
+
+        // Los CBU propios (ARS + USD si hay caja abierta) para pedirle a /api/historial SOLO
+        // los movimientos que me corresponden — el servidor ya no devuelve el banco entero.
+        function cbusPropios() {
+            const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
+            const cbus = [];
+            if (u?.cbu) cbus.push(u.cbu);
+            if (cuentaUsdDashboard?.cbu) cbus.push(cuentaUsdDashboard.cbu);
+            return cbus;
         }
 
         // Un movimiento es "mío" si involucra mi CBU en ARS o mi CBU en USD (si tengo caja abierta).
@@ -1888,7 +1905,7 @@
             document.getElementById('alias').textContent = u.alias || '-';
             document.getElementById('tipoCuenta').textContent = (u.tipo_producto || 'CAJA_AHORRO').replace(/_/g, ' ');
             actualizarSaldoDisplay(parseFloat(u.saldo) || 0, true);
-            cargarCuentaUsdDashboard();
+            _cuentaUsdDashboardPromise = cargarCuentaUsdDashboard();
             cargarBannerCuota();
 
             // Detect pending deposit from depositar.html and animate saldo
@@ -1932,6 +1949,10 @@
         }
 
         function cerrarSesion() {
+            // Limpia la cookie de sesión del lado del server (ver utils/sesion.js) además del
+            // localStorage — si no, la cookie httpOnly seguía viva y autenticada aunque la
+            // pantalla ya mostrara "deslogueado".
+            fetch('/api/personas/logout', { method: 'POST' }).catch(() => {});
             localStorage.removeItem('usuarioLogueado');
             navTo('login.html');
         }
@@ -1967,12 +1988,15 @@
 
             const itemHtml = f => {
                 const moneda     = f.moneda === 'USD' ? 'USD' : 'ARS';
-                const safeNombre = f.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                const safeCbu    = f.cbu.replace(/'/g, "\\'");
+                // Dos capas: primero se escapa para que sea un string JS válido (comillas/barras),
+                // después escapeHtml() para que ese resultado no rompa el atributo onclick="..."
+                // en el que vive (f.nombre es el nombre de un contacto, editable por cualquiera).
+                const safeNombre = escapeHtml(f.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+                const safeCbu    = escapeHtml(f.cbu.replace(/'/g, "\\'"));
                 return `<div class="fav-item" onclick="seleccionarFavorito('${safeCbu}','${safeNombre}','${moneda}')">
                     <div class="fav-avatar-sm" style="background:${avatarColor(f.nombre)};">${initials(f.nombre)}</div>
                     <div style="flex:1;min-width:0;">
-                        <div class="fav-name">${f.nombre}</div>
+                        <div class="fav-name">${escapeHtml(f.nombre)}</div>
                         <div class="fav-cbu">CBU ...${f.cbu.slice(-6)}</div>
                     </div>
                     <button class="fav-del" onclick="event.stopPropagation();eliminarFavoritoUI('${safeCbu}')" title="Eliminar favorito">
@@ -2079,6 +2103,7 @@
         let _todasPropias = [];
         let _usuarioHist  = null;
         let _txMap        = {};
+        let _detalleTxToken = 0; // evita que un doble tap rápido en abrirDetalleTx() muestre la tx equivocada
 
         function setFiltroTexto(val) {
             _filtroTexto = val;
@@ -2219,7 +2244,7 @@
                     html += `<div class="historial-item" style="animation-delay:${globalIdx * 0.04}s;" onclick="abrirDetalleTx('${txId}')">
                         <div class="historial-avatar" style="background:${bg};">${ini}<div class="historial-badge" style="background:${badgeBg};">${arrowSvg}</div></div>
                         <div class="historial-info">
-                            <div class="historial-name">${etiqueta}: ${contraparte}</div>
+                            <div class="historial-name">${etiqueta}: ${escapeHtml(contraparte)}</div>
                             ${fechaStr ? `<div class="historial-date">${fechaStr}</div>` : ''}
                             <span class="historial-estado" style="${estadoStyle}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>
                         </div>
@@ -2352,6 +2377,7 @@
 
         // ── DETALLE TRANSACCIÓN ──────────────────────────────────────────
         async function abrirDetalleTx(id) {
+            const miToken = ++_detalleTxToken;
             const t = _txMap[id];
             if (!t) return;
             const u          = _usuarioHist;
@@ -2386,7 +2412,7 @@
                     <div class="detalle-tx-section">
                         <div class="detalle-tx-section-title">Detalle</div>
                         <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
-                            ${t.descripcion}
+                            ${escapeHtml(t.descripcion)}
                         </div>
                     </div>` : ''}
                     <button class="btn-comprobante-hist" onclick="navTo('reservas.html')">Ver mis reservas</button>`;
@@ -2418,7 +2444,7 @@
                     <div class="detalle-tx-section">
                         <div class="detalle-tx-section-title">Detalle</div>
                         <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
-                            ${t.descripcion}
+                            ${escapeHtml(t.descripcion)}
                         </div>
                     </div>` : ''}
                     <button class="btn-comprobante-hist" onclick="navTo('prestamos.html')">Ver mis préstamos</button>`;
@@ -2451,7 +2477,7 @@
                     <div class="detalle-tx-section">
                         <div class="detalle-tx-section-title">Detalle</div>
                         <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
-                            ${t.descripcion}
+                            ${escapeHtml(t.descripcion)}
                         </div>
                     </div>` : ''}
                     <button class="btn-comprobante-hist" onclick="imprimirComprobanteCambio('${txId}')">
@@ -2535,11 +2561,16 @@
             const bg  = avatarColor(nombre);
             const ini = initials(nombre);
 
+            // Si mientras esperábamos los dos awaits de arriba el usuario abrió otra
+            // transacción (doble tap rápido), esta respuesta ya está vieja — no pisar el
+            // detalle que corresponde a la tx más reciente.
+            if (miToken !== _detalleTxToken) return;
+
             document.getElementById('detalleTxCuerpo').innerHTML = `
                 <div class="detalle-tx-hero">
                     <div class="detalle-tx-avatar" style="background:${bg};">${ini}</div>
                     <div class="detalle-tx-role">${labelDir}</div>
-                    <div class="detalle-tx-nombre">${nombre}</div>
+                    <div class="detalle-tx-nombre">${escapeHtml(nombre)}</div>
                 </div>
                 <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
 
@@ -2547,7 +2578,7 @@
                     <div class="detalle-tx-section-title">${labelRole}</div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">Nombre completo</span>
-                        <span class="detalle-tx-value">${nombre}</span>
+                        <span class="detalle-tx-value">${escapeHtml(nombre)}</span>
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">DNI</span>
@@ -2559,7 +2590,7 @@
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">Alias</span>
-                        <span class="detalle-tx-value">${aliasDisplay}</span>
+                        <span class="detalle-tx-value">${escapeHtml(aliasDisplay)}</span>
                     </div>
                     ${nombreBanco ? `<div class="detalle-tx-row">
                         <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.bank') : 'Banco'}</span>
@@ -2593,7 +2624,7 @@
                 <div class="detalle-tx-section">
                     <div class="detalle-tx-section-title">${window.t ? window.t('dashboard.tx.message') : 'Mensaje'}</div>
                     <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);font-size:0.88rem;color:var(--text);line-height:1.5;">
-                        ${t.descripcion}
+                        ${escapeHtml(t.descripcion)}
                     </div>
                 </div>` : ''}
 
@@ -2666,10 +2697,10 @@
             document.getElementById('pdf-persona-title').textContent = labelRole;
             const _wt = window.t || (k => k);
             document.getElementById('pdf-persona').innerHTML =
-                row(_wt('dashboard.tx.name'), nombre) +
+                row(_wt('dashboard.tx.name'), escapeHtml(nombre)) +
                 row('DNI', dni) +
                 row('CBU', cbu, 'font-size:0.72rem;') +
-                (nombreBanco ? row(_wt('dashboard.tx.alias'), alias) + rowLast(_wt('dashboard.tx.bank'), nombreBanco) : rowLast(_wt('dashboard.tx.alias'), alias));
+                (nombreBanco ? row(_wt('dashboard.tx.alias'), escapeHtml(alias)) + rowLast(_wt('dashboard.tx.bank'), nombreBanco) : rowLast(_wt('dashboard.tx.alias'), escapeHtml(alias)));
             document.getElementById('pdf-tx').innerHTML =
                 row(_wt('dashboard.tx.amount'), amtFmt, `color:${colorAmt};font-weight:700;`) +
                 row(_wt('dashboard.tx.datetime'), fechaHora) +
@@ -2849,9 +2880,14 @@
             const container = document.getElementById('recentTxList');
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             try {
+                // Esperar a cargarCuentaUsdDashboard() ANTES de armar la URL: /api/historial
+                // ahora exige el/los cbu propios como parámetro (ya no devuelve el banco entero
+                // para filtrar del lado del cliente), así que si no esperamos, el cbu en USD
+                // todavía no está disponible y esos movimientos ni se piden.
+                if (_cuentaUsdDashboardPromise) await _cuentaUsdDashboardPromise;
                 const ctrl = new AbortController();
                 const tid  = setTimeout(() => ctrl.abort(), 15000);
-                const res  = await fetch('/api/historial?minutos=1440', { signal: ctrl.signal });
+                const res = await fetch(`/api/historial?minutos=1440&cbu=${cbusPropios().join(',')}`, { signal: ctrl.signal });
                 clearTimeout(tid);
                 const data = await res.json();
                 if (!res.ok) {
@@ -2862,6 +2898,10 @@
                 const all = Array.isArray(data) ? data : (data.transactions || data.data || []);
                 window._txsCache = all;
                 all.forEach(t => t._id && _txsVistas.add(t._id));
+                // El Banco Central volvió a responder: si el banner de "no responde" había
+                // quedado prendido de una pasada anterior, se oculta — antes nunca se llamaba
+                // con false y quedaba pegado aunque el servidor ya estuviera bien.
+                mostrarBannerMantenimiento(false);
                 iniciarPolling();
                 verificarNotificaciones();
                 if (typeof Chart !== 'undefined') {
@@ -2928,7 +2968,7 @@
                                 <div class="tx-badge" style="background:${badgeBg};">${arrowSvg}</div>
                             </div>
                             <div class="tx-label">
-                                <div class="tx-name">${etiqueta ? etiqueta + ': ' : ''}${contraparte}</div>
+                                <div class="tx-name">${etiqueta ? etiqueta + ': ' : ''}${escapeHtml(contraparte)}</div>
                                 ${fechaStr ? `<div class="tx-date">${fechaStr}</div>` : ''}
                             </div>
                             <div class="tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
@@ -2989,7 +3029,7 @@
             if (!u) return;
             verificarNotificaciones();
             try {
-                const res = await fetch('/api/historial?minutos=1440');
+                const res = await fetch(`/api/historial?minutos=1440&cbu=${cbusPropios().join(',')}`);
                 if (!res.ok) return;
                 const data = await res.json();
                 const all  = Array.isArray(data) ? data : (data.transactions || data.data || []);
@@ -3139,8 +3179,8 @@
                         <div class="historial-item notif-item ${n.leida ? '' : 'no-leida'}" onclick="marcarNotifLeida(${n.id_notificacion}, this)">
                             <div class="historial-avatar" style="background:${colorNotif(n.tipo)};">${NOTIF_ICON_SVG}</div>
                             <div class="historial-info">
-                                <div class="historial-name">${n.titulo}</div>
-                                <div class="historial-date">${n.mensaje}</div>
+                                <div class="historial-name">${escapeHtml(n.titulo)}</div>
+                                <div class="historial-date">${escapeHtml(n.mensaje)}</div>
                                 <div class="historial-date">${fecha}</div>
                             </div>
                             ${n.leida ? '' : '<div class="notif-dot"></div>'}
@@ -3233,7 +3273,7 @@
             if (maxEl) maxEl.value = '';
             if (txtEl) txtEl.value = '';
             try {
-                const res  = await fetch('/api/historial?minutos=1440');
+                const res  = await fetch(`/api/historial?minutos=1440&cbu=${cbusPropios().join(',')}`);
                 const data = await res.json();
                 if (!res.ok) {
                     cuerpo.innerHTML = `<p style="color:#B91C1C;text-align:center;font-size:0.88rem;padding:20px 0;">${data.error || 'Error al cargar'}</p>`;
@@ -3580,7 +3620,7 @@
                         document.getElementById('contactoAvatarRow').innerHTML =
                             `<div style="display:flex;align-items:center;gap:12px;">
                                 <div style="width:40px;height:40px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:700;color:white;">${ini}</div>
-                                <div style="font-size:0.92rem;font-weight:700;color:var(--text);">${nombreDest}</div>
+                                <div style="font-size:0.92rem;font-weight:700;color:var(--text);">${escapeHtml(nombreDest)}</div>
                             </div>`;
                         document.getElementById('modalAgregarContacto').style.display = 'flex';
                     }, 600);
@@ -3647,6 +3687,11 @@
 
         // ── TARJETA GEMELA EN USD ────────────────────────────────────────────
         let cuentaUsdDashboard = null;
+        // Guarda la promesa de cargarCuentaUsdDashboard() para que cargarRecentTx() pueda
+        // esperarla antes de filtrar movimientos — sin esto, si el historial llegaba antes
+        // que los productos, cuentaUsdDashboard todavía era null y los movimientos en USD
+        // se perdían del widget "Últimos movimientos" en esa primera pasada.
+        let _cuentaUsdDashboardPromise = null;
 
         function fmtUsdCard(v) { return 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -4067,7 +4112,7 @@
             // If still empty, auto-fetch then generate
             if (!datos.length) {
                 showToast('Cargando datos...', 'info');
-                fetch('/api/historial?minutos=525600')
+                fetch(`/api/historial?minutos=525600&cbu=${cbusPropios().join(',')}`)
                     .then(r => r.ok ? r.json() : Promise.reject(r))
                     .then(data => {
                         const all = Array.isArray(data) ? data : (data.transactions || data.data || []);

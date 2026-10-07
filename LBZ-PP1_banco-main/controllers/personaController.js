@@ -1,6 +1,7 @@
 const Persona = require('../models/personaModel');
 const { enviarCodigoVerificacion, enviarCodigoPassword, enviarCodigoAperturaUsd, enviarAlertaNuevoDispositivo } = require('../utils/mailer');
 const fetchBC = require('../utils/fetchConTimeout');
+const { firmarSesion, setCookieSesion, limpiarCookieSesion } = require('../utils/sesion');
 const {
   notificarTransferenciaRecibida, notificarDeposito, notificarCambioDivisa,
   notificarNuevoDispositivo, notificarPasswordCambiada, notificarAliasCambiado
@@ -49,39 +50,19 @@ async function intentarAsignarAliasUsd(cbu, nombre, apellido) {
   return null;
 }
 
-exports.obtenerPersonas = async (req, res) => {
-  try {
-    const personas = await Persona.getAll();
-    res.json(personas);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.obtenerRoles = async (req, res) => {
-  try {
-    const roles = await Persona.getRoles(req.params.id);
-    if (roles.length === 0) return res.status(404).json({ error: 'Persona no encontrada o sin roles' });
-    res.json(roles);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+// obtenerPersonas (GET /api/personas), obtenerRoles (GET /api/personas/:id/roles) y
+// crearPersona (POST /api/personas) se eliminaron: código muerto sin ningún caller en el
+// frontend, y crearPersona además insertaba lo que mandara el body sin ninguna validación —
+// en vez de protegerlos con requireAuth, se borraron junto con sus rutas en app.js.
 
 exports.obtenerProductos = async (req, res) => {
   try {
-    const productos = await Persona.getProductos(req.params.id);
+    // El :id de la URL ya no se usa para decidir de quién son los productos — siempre los
+    // propios, de la sesión verificada (antes cualquiera podía pedir los productos de
+    // cualquier otra persona con solo cambiar el :id en la URL).
+    const productos = await Persona.getProductos(req.idPersona);
     if (productos.length === 0) return res.status(404).json({ error: 'Persona no encontrada o sin productos' });
     res.json(productos);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.crearPersona = async (req, res) => {
-  try {
-    const nuevaPersona = await Persona.create(req.body);
-    res.status(201).json(nuevaPersona);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -114,14 +95,37 @@ exports.login = async (req, res) => {
       })
       .catch(e => console.error('Error registrando dispositivo:', e.message));
 
+    // Sesión real: antes cada request mandaba idPersona/cbu "a mano" y el server confiaba
+    // ciegamente en eso. Ahora se firma un JWT (HS256, utils/sesion.js) y se manda en una
+    // cookie httpOnly — el navegador la adjunta solo en cada fetch del mismo origen, así que
+    // el resto de las 14 páginas no necesita ningún cambio para seguir autenticadas.
+    setCookieSesion(res, await firmarSesion(persona.id));
+
     res.json(persona);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
+exports.logout = async (req, res) => {
+  limpiarCookieSesion(res);
+  res.json({ message: 'Sesión cerrada' });
+};
+
 exports.obtenerHistorial = async (req, res) => {
   const minutos = Math.min(parseInt(req.query.minutos) || 30, 1440);
+  // Antes esto devolvía la tabla Transacciones entera (de todos los usuarios del banco) a
+  // cualquiera que llamara al endpoint, confiando en un ?cbu= que mandaba el cliente (con lo
+  // que además se podía pedir el historial de CUALQUIER otro CBU). Ahora los CBU se resuelven
+  // del lado del servidor a partir de la sesión — nunca de lo que mande el cliente.
+  let cbus;
+  try {
+    const productos = await Persona.getProductos(req.idPersona);
+    cbus = productos.map(p => p.cbu).filter(Boolean);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+  if (cbus.length === 0) return res.json([]);
   try {
     // 1. Sincronizar transacciones recientes desde BC API al local DB
     const response = await fetchBC(`${process.env.BANCO_URL}/transactions?minutos=${minutos}`, {
@@ -136,9 +140,9 @@ exports.obtenerHistorial = async (req, res) => {
   } catch { /* BC puede estar caído, continuamos con datos locales */ }
 
   try {
-    // 2. Devolver historial completo desde DB local (sin límite de tiempo)
-    const todas = await Persona.getAllTransacciones();
-    res.json(todas);
+    // 2. Devolver, desde la DB local, solo los movimientos de los CBU pedidos
+    const propias = await Persona.getTransaccionesPorCbu(cbus);
+    res.json(propias);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -207,6 +211,10 @@ exports.transferir = async (req, res) => {
 
     const cuentaOrigen = await Persona.getByCbu(cbuOrigen);
     if (!cuentaOrigen) return res.status(404).json({ error: 'Cuenta origen no encontrada' });
+    // Antes cualquiera autenticado podía poner el cbuOrigen de OTRA persona y vaciarle la
+    // cuenta — el server nunca chequeaba que la cuenta de origen fuera la suya.
+    if (cuentaOrigen.id_persona !== req.idPersona)
+      return res.status(403).json({ error: 'No podés transferir desde una cuenta que no es tuya' });
     if (Number(cuentaOrigen.saldo) < Number(importe))
       return res.status(422).json({ error: 'Saldo insuficiente' });
 
@@ -229,8 +237,16 @@ exports.transferir = async (req, res) => {
       return res.status(422).json({ error: bcData.motivoRechazo || 'Transferencia rechazada por el banco central', estado: bcData.estado });
     }
 
-    const nuevoSaldo = Number(cuentaOrigen.saldo) - Number(importe);
-    await Persona.updateSaldo(cbuOrigen, nuevoSaldo);
+    // Débito + crédito atómicos (lockean las dos cuentas y recién ahí mueven la plata) —
+    // antes esto se calculaba a partir del saldo leído más arriba, así que dos transferencias
+    // simultáneas desde la misma cuenta podían perder una de las dos (lost update).
+    let nuevoSaldo;
+    try {
+      ({ nuevoSaldoOrigen: nuevoSaldo } = await Persona.debitarYAcreditar(cbuOrigen, cbuDestino, Number(importe)));
+    } catch (error) {
+      if (error.code === 'SALDO_INSUFICIENTE') return res.status(422).json({ error: 'Saldo insuficiente' });
+      throw error;
+    }
 
     // Guardar descripcion en DB para ambas partes (tuo→tuo)
     if (bcData._id && descripcion) {
@@ -242,7 +258,6 @@ exports.transferir = async (req, res) => {
 
     const cuentaDestino = await Persona.getByCbu(cbuDestino);
     if (cuentaDestino) {
-      await Persona.updateSaldo(cbuDestino, Number(cuentaDestino.saldo) + Number(importe));
       notificarTransferenciaRecibida(cuentaDestino.id_persona, {
         monto: importe,
         nombreOrigen: `${cuentaOrigen.nombre} ${cuentaOrigen.apellido}`
@@ -279,9 +294,10 @@ exports.cotizacionDolar = async (req, res) => {
 // Paso 1: verifica que dni/telefono/email coincidan con la persona logueada y manda el código por email
 exports.solicitarAperturaUsd = async (req, res) => {
   try {
-    const { idPersona, dni, telefono, email } = req.body;
-    if (!idPersona || !dni || !telefono || !email)
-      return res.status(400).json({ error: 'idPersona, dni, telefono y email son requeridos' });
+    const idPersona = req.idPersona;
+    const { dni, telefono, email } = req.body;
+    if (!dni || !telefono || !email)
+      return res.status(400).json({ error: 'dni, telefono y email son requeridos' });
 
     const yaExiste = await Persona.getCuentaPorMoneda(idPersona, 'USD');
     if (yaExiste) return res.status(200).json(yaExiste);
@@ -302,14 +318,15 @@ exports.solicitarAperturaUsd = async (req, res) => {
 // Paso 2: confirma el código y recién ahí abre la cuenta en el Banco Central
 exports.abrirCuentaUsd = async (req, res) => {
   try {
-    const { idPersona, email, token } = req.body;
-    if (!idPersona || !email || !token) return res.status(400).json({ error: 'idPersona, email y token son requeridos' });
+    const idPersona = req.idPersona;
+    const { email, token } = req.body;
+    if (!email || !token) return res.status(400).json({ error: 'email y token son requeridos' });
 
     const existente = await Persona.getCuentaPorMoneda(idPersona, 'USD');
     if (existente) return res.status(200).json(existente);
 
     const verif = await Persona.verificarTokenPassword(email, token);
-    if (!verif.ok) return res.status(400).json({ error: verif.motivo });
+    if (!verif.ok) return res.status(verif.motivo.startsWith('Demasiados intentos') ? 429 : 400).json({ error: verif.motivo });
 
     const persona = await Persona.getDatosBasicos(idPersona);
     if (!persona) return res.status(404).json({ error: 'Persona no encontrada' });
@@ -335,7 +352,7 @@ exports.abrirCuentaUsd = async (req, res) => {
     res.status(201).json(cuenta);
   } catch (error) {
     if (error.code === '23505') {
-      const existente = await Persona.getCuentaPorMoneda(req.body.idPersona, 'USD');
+      const existente = await Persona.getCuentaPorMoneda(req.idPersona, 'USD');
       if (existente) return res.status(200).json(existente);
     }
     const msg = error.name === 'AbortError' ? 'La operación tardó demasiado. Intentá de nuevo.' : error.message;
@@ -345,9 +362,10 @@ exports.abrirCuentaUsd = async (req, res) => {
 
 exports.cambiarDivisa = async (req, res) => {
   try {
-    const { idPersona, direccion, importeUsd } = req.body;
-    if (!idPersona || !direccion || !importeUsd)
-      return res.status(400).json({ error: 'idPersona, direccion e importeUsd son requeridos' });
+    const idPersona = req.idPersona;
+    const { direccion, importeUsd } = req.body;
+    if (!direccion || !importeUsd)
+      return res.status(400).json({ error: 'direccion e importeUsd son requeridos' });
     if (!['compra', 'venta'].includes(direccion))
       return res.status(400).json({ error: 'direccion debe ser compra o venta' });
     if (Number(importeUsd) <= 0) return res.status(400).json({ error: 'El importe debe ser mayor a 0' });
@@ -400,6 +418,13 @@ exports.actualizarAlias = async (req, res) => {
     if (!/^[a-zA-Z0-9.\-]+$/.test(alias))
       return res.status(400).json({ error: 'El alias solo puede contener letras, números, puntos y guiones' });
 
+    // Antes cualquiera autenticado podía cambiarle el alias a la cuenta de otra persona con
+    // solo mandar su cbu — se chequea pertenencia ANTES de tocar nada en el Banco Central.
+    const cuentaPropia = await Persona.getByCbu(cbu);
+    if (!cuentaPropia) return res.status(404).json({ error: 'Cuenta no encontrada' });
+    if (cuentaPropia.id_persona !== req.idPersona)
+      return res.status(403).json({ error: 'Esa cuenta no es tuya' });
+
     // El Banco Central distingue mayúsculas/minúsculas en el alias: se normaliza a minúscula
     // para que después siempre se pueda encontrar sin importar cómo lo haya tipeado quien busca.
     alias = alias.toLowerCase();
@@ -443,9 +468,12 @@ exports.depositar = async (req, res) => {
 
     const cuenta = await Persona.getByCbu(cbu);
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
+    // Antes cualquiera autenticado podía acreditarle plata a la cuenta de otra persona con
+    // solo mandar su cbu — no movía su propio saldo, pero sí generaba movimientos falsos.
+    if (cuenta.id_persona !== req.idPersona)
+      return res.status(403).json({ error: 'Esa cuenta no es tuya' });
 
-    const nuevoSaldo = Number(cuenta.saldo) + Number(importe);
-    await Persona.updateSaldo(cbu, nuevoSaldo);
+    const nuevoSaldo = await Persona.acreditar(cbu, Number(importe));
 
     await Persona.upsertTransaccion({
       _id: 'DEP-' + require('crypto').randomUUID(),
@@ -488,23 +516,19 @@ exports.verificarCuenta = async (req, res) => {
     const { email, token } = req.body;
     if (!email || !token) return res.status(400).json({ error: 'email y token requeridos' });
     const resultado = await Persona.verificarToken(email, token);
-    if (!resultado.ok) return res.status(400).json({ error: resultado.motivo });
+    if (!resultado.ok) {
+      const status = resultado.motivo.startsWith('Demasiados intentos') ? 429 : 400;
+      return res.status(status).json({ error: resultado.motivo });
+    }
     res.json({ message: 'Cuenta verificada. Ya podés iniciar sesión.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-exports.sincronizarSaldo = async (req, res) => {
-  try {
-    const { cbu, nuevoSaldo } = req.body;
-    if (!cbu || nuevoSaldo === undefined) return res.status(400).json({ error: 'cbu y nuevoSaldo requeridos' });
-    await Persona.updateSaldo(cbu, Number(nuevoSaldo));
-    res.json({ saldo: Number(nuevoSaldo) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+// sincronizarSaldo (PUT /api/sincronizar-saldo) se eliminó: código muerto sin ningún caller
+// en el frontend, y dejaba que cualquiera autenticado le pusiera CUALQUIER saldo a CUALQUIER
+// cbu con solo mandarlo en el body — ni siquiera chequeaba pertenencia. Ruta borrada en app.js.
 
 exports.registrarPersona = async (req, res) => {
   try {
@@ -593,7 +617,7 @@ exports.confirmarCambioPassword = async (req, res) => {
 
     const result = await Persona.verificarTokenPassword(email, token);
     if (!result.ok)
-      return res.status(400).json({ error: result.motivo });
+      return res.status(result.motivo.startsWith('Demasiados intentos') ? 429 : 400).json({ error: result.motivo });
 
     const persona = await Persona.updatePassword(email, nuevaPassword);
     if (persona) {

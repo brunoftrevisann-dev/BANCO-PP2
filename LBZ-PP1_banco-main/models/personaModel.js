@@ -1,34 +1,22 @@
 const db = require('../config/db');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+
+const ES_HASH_BCRYPT = /^\$2[aby]\$/;
+
+// Compara una contraseña contra lo que hay guardado. Las cuentas nuevas ya se crean con hash
+// bcrypt; las viejas (de antes de este cambio) siguen en texto plano — se comparan tal cual
+// y, si coincide, se rehashean en el momento (migración perezosa y transparente, sin forzar
+// un reset masivo a nadie).
+async function compararYMigrarPassword(password, guardado, idPersona) {
+  if (ES_HASH_BCRYPT.test(guardado)) return bcrypt.compare(password, guardado);
+  if (password !== guardado) return false;
+  const hash = await bcrypt.hash(password, 10);
+  await db.query('UPDATE Personas SET password = $1 WHERE id = $2', [hash, idPersona]);
+  return true;
+}
 
 const Persona = {
-  getAll: async () => {
-    const query = `
-      SELECT p.id, p.nombre, p.apellido, p.dni,
-             tp.nombre AS producto, ep.nombre AS estado,
-             cb.saldo, tc.limite_compra
-      FROM Personas p
-      LEFT JOIN Productos pr ON p.id = pr.id_persona
-      LEFT JOIN Tipos_Producto tp ON pr.id_tipo_producto = tp.id_tipo_producto
-      LEFT JOIN Estados_Producto ep ON pr.id_estado_producto = ep.id_estado_producto
-      LEFT JOIN Cuentas_Bancarias cb ON pr.id_producto = cb.id_producto
-      LEFT JOIN Tarjetas_Credito tc ON pr.id_producto = tc.id_producto;
-    `;
-    const { rows } = await db.query(query);
-    return rows;
-  },
-
-  getRoles: async (id) => {
-    const query = `
-      SELECT r.id_rol, r.nombre_rol, r.descripcion, r.activo
-      FROM Roles r
-      JOIN Roles_x_Personas rxp ON r.id_rol = rxp.id_rol
-      WHERE rxp.id_persona = $1
-    `;
-    const { rows } = await db.query(query, [id]);
-    return rows;
-  },
-
   getProductos: async (id) => {
     const query = `
       SELECT pr.id_producto, tp.nombre AS tipo, ep.nombre AS estado, pr.fecha_alta,
@@ -45,14 +33,33 @@ const Persona = {
     return rows;
   },
 
-  create: async (data) => {
-    const { nombre, apellido, dni, email } = data;
-    const query = 'INSERT INTO Personas (nombre, apellido, dni, email) VALUES ($1, $2, $3, $4) RETURNING *';
-    const { rows } = await db.query(query, [nombre, apellido, dni, email]);
-    return rows[0];
+  findByCredentials: async (email, password) => {
+    // Ya no se puede comparar la contraseña en el WHERE de SQL (bcrypt no es un "=" directo) —
+    // se busca solo por email y se compara/migra en JS con compararYMigrarPassword().
+    const query = `
+      SELECT p.id, p.nombre, p.apellido, p.dni, p.email, p.telefono, p.direccion, p.password,
+             cb.cbu, cb.alias, cb.saldo, cb.moneda,
+             tp.nombre AS tipo_producto
+      FROM Personas p
+      LEFT JOIN Productos pr ON p.id = pr.id_persona
+      LEFT JOIN Cuentas_Bancarias cb ON pr.id_producto = cb.id_producto AND cb.moneda = 'ARS'
+      LEFT JOIN Tipos_Producto tp ON pr.id_tipo_producto = tp.id_tipo_producto
+      WHERE p.email = $1 AND p.verificado = TRUE
+      LIMIT 1
+    `;
+    const { rows } = await db.query(query, [email]);
+    const persona = rows[0];
+    if (!persona) return null;
+    const valido = await compararYMigrarPassword(password, persona.password, persona.id);
+    if (!valido) return null;
+    delete persona.password; // nunca devolver el hash al cliente
+    return persona;
   },
 
-  findByCredentials: async (email, password) => {
+  // Mismo shape que findByCredentials, sin el chequeo de password — lo usa el login
+  // biométrico (WebAuthn), que ya autenticó a la persona por otro medio y solo necesita
+  // los datos para guardar en localStorage e iniciar sesión, igual que el login normal.
+  getParaSesion: async (idPersona) => {
     const query = `
       SELECT p.id, p.nombre, p.apellido, p.dni, p.email, p.telefono, p.direccion,
              cb.cbu, cb.alias, cb.saldo, cb.moneda,
@@ -61,10 +68,10 @@ const Persona = {
       LEFT JOIN Productos pr ON p.id = pr.id_persona
       LEFT JOIN Cuentas_Bancarias cb ON pr.id_producto = cb.id_producto AND cb.moneda = 'ARS'
       LEFT JOIN Tipos_Producto tp ON pr.id_tipo_producto = tp.id_tipo_producto
-      WHERE p.email = $1 AND p.password = $2 AND p.verificado = TRUE
+      WHERE p.id = $1 AND p.verificado = TRUE
       LIMIT 1
     `;
-    const { rows } = await db.query(query, [email, password]);
+    const { rows } = await db.query(query, [idPersona]);
     return rows[0] || null;
   },
 
@@ -81,8 +88,54 @@ const Persona = {
     return rows[0] || null;
   },
 
-  updateSaldo: async (cbu, nuevoSaldo) => {
-    await db.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE cbu = $2', [nuevoSaldo, cbu]);
+  // Incremento atómico: una sola instrucción SQL, Postgres la aplica entera o nada —
+  // dos acreditaciones concurrentes a la misma cuenta nunca se pisan entre sí.
+  acreditar: async (cbu, importe) => {
+    const { rows } = await db.query(
+      'UPDATE Cuentas_Bancarias SET saldo = saldo + $1 WHERE cbu = $2 RETURNING saldo',
+      [importe, cbu]
+    );
+    return rows[0] ? Number(rows[0].saldo) : null;
+  },
+
+  // Débito del origen + crédito del destino en UNA sola transacción, bloqueando ambas
+  // filas con FOR UPDATE antes de tocarlas (mismo patrón que cambiarDivisa/pagarCuota) —
+  // reemplaza el "leer saldo, calcular en JS, pisar con un UPDATE" que tenía transferir()
+  // y que permitía perder plata con dos transferencias simultáneas desde la misma cuenta.
+  // Lockea las dos filas en una sola consulta y en orden por cbu para que dos transferencias
+  // cruzadas (A→B y B→A al mismo tiempo) no puedan deadlockear entre sí.
+  debitarYAcreditar: async (cbuOrigen, cbuDestino, importe) => {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `SELECT id_cuenta, cbu, saldo FROM Cuentas_Bancarias
+         WHERE cbu IN ($1, $2) ORDER BY cbu FOR UPDATE`,
+        [cbuOrigen, cbuDestino]
+      );
+      const origen  = rows.find(r => r.cbu === cbuOrigen);
+      const destino = rows.find(r => r.cbu === cbuDestino);
+      if (!origen) throw Object.assign(new Error('Cuenta origen no encontrada'), { code: 'NO_CUENTA' });
+      if (Number(origen.saldo) < Number(importe))
+        throw Object.assign(new Error('Saldo insuficiente'), { code: 'SALDO_INSUFICIENTE' });
+
+      const nuevoSaldoOrigen = Number(origen.saldo) - Number(importe);
+      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldoOrigen, origen.id_cuenta]);
+
+      let nuevoSaldoDestino = null;
+      if (destino) {
+        nuevoSaldoDestino = Number(destino.saldo) + Number(importe);
+        await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldoDestino, destino.id_cuenta]);
+      }
+
+      await client.query('COMMIT');
+      return { nuevoSaldoOrigen, nuevoSaldoDestino };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   updateAlias: async (cbu, nuevoAlias) => {
@@ -327,8 +380,14 @@ const Persona = {
     }
   },
 
-  getAllTransacciones: async () => {
-    const { rows } = await db.query('SELECT * FROM Transacciones ORDER BY created_at DESC');
+  // Antes era getAllTransacciones(): devolvía la tabla Transacciones ENTERA (de todo el banco,
+  // todas las cuentas) a quien pidiera /api/historial — cualquier usuario logueado podía ver
+  // los movimientos de cualquier otro. Ahora exige los cbu de la propia persona (ARS y/o USD).
+  getTransaccionesPorCbu: async (cbus) => {
+    const { rows } = await db.query(
+      'SELECT * FROM Transacciones WHERE cbu_origen = ANY($1) OR cbu_destino = ANY($1) ORDER BY created_at DESC',
+      [cbus]
+    );
     return rows.map(r => ({
       _id:             r.tx_id,
       cbuOrigen:       r.cbu_origen,
@@ -348,18 +407,19 @@ const Persona = {
 
   verificarPassword: async (email, password) => {
     const { rows } = await db.query(
-      `SELECT p.id FROM Personas p
-       WHERE LOWER(p.email) = LOWER($1) AND p.password = $2`,
-      [email, password]
+      `SELECT id, password FROM Personas WHERE LOWER(email) = LOWER($1)`,
+      [email]
     );
-    return !!rows[0];
+    const persona = rows[0];
+    if (!persona) return false;
+    return compararYMigrarPassword(password, persona.password, persona.id);
   },
 
   generarTokenPassword: async (email) => {
     const token = crypto.randomInt(100000, 999999).toString();
     const expira = new Date(Date.now() + 5 * 60 * 1000);
     const { rows } = await db.query(
-      `UPDATE Personas SET token_verificacion = $1, token_expira = $2
+      `UPDATE Personas SET token_verificacion = $1, token_expira = $2, intentos_verificacion = 0
        WHERE LOWER(email) = LOWER($3)
        RETURNING nombre`,
       [token, expira, email]
@@ -368,24 +428,35 @@ const Persona = {
     return { nombre: rows[0].nombre, token };
   },
 
+  // Rate limiting: antes no había ningún límite de intentos, así que se podían probar las
+  // 1.000.000 de combinaciones de 6 dígitos a fuerza bruta dentro de la ventana de 5 minutos.
+  // Busca por email primero (no por email+token juntos) para poder contar los intentos
+  // fallidos aunque el código no coincida.
   verificarTokenPassword: async (email, token) => {
     const { rows } = await db.query(
-      `SELECT id, token_expira FROM Personas
-       WHERE LOWER(email) = LOWER($1) AND token_verificacion = $2`,
-      [email, token]
+      `SELECT id, token_verificacion, token_expira, intentos_verificacion FROM Personas
+       WHERE LOWER(email) = LOWER($1)`,
+      [email]
     );
-    if (rows.length === 0) return { ok: false, motivo: 'Código incorrecto' };
-    if (new Date() > new Date(rows[0].token_expira)) return { ok: false, motivo: 'El código expiró. Solicitá uno nuevo.' };
+    const persona = rows[0];
+    if (!persona) return { ok: false, motivo: 'Código incorrecto' };
+    if (persona.intentos_verificacion >= 5) return { ok: false, motivo: 'Demasiados intentos. Pedí un código nuevo.' };
+    if (persona.token_verificacion !== token) {
+      await db.query('UPDATE Personas SET intentos_verificacion = intentos_verificacion + 1 WHERE id = $1', [persona.id]);
+      return { ok: false, motivo: 'Código incorrecto' };
+    }
+    if (new Date() > new Date(persona.token_expira)) return { ok: false, motivo: 'El código expiró. Solicitá uno nuevo.' };
     return { ok: true };
   },
 
   updatePassword: async (email, newPassword) => {
+    const hash = await bcrypt.hash(newPassword, 10);
     const { rows } = await db.query(
       `UPDATE Personas
        SET password = $1, token_verificacion = NULL, token_expira = NULL
        WHERE LOWER(email) = LOWER($2)
        RETURNING id`,
-      [newPassword, email]
+      [hash, email]
     );
     return rows[0] || null;
   },
@@ -394,7 +465,7 @@ const Persona = {
     const token = crypto.randomInt(100000, 999999).toString();
     const expira = new Date(Date.now() + 5 * 60 * 1000);
     const { rows } = await db.query(
-      `UPDATE Personas SET token_verificacion = $1, token_expira = $2
+      `UPDATE Personas SET token_verificacion = $1, token_expira = $2, intentos_verificacion = 0
        WHERE email = $3 AND verificado = FALSE
        RETURNING nombre, token_verificacion AS token`,
       [token, expira, email]
@@ -402,16 +473,24 @@ const Persona = {
     return rows[0] || null;
   },
 
+  // Mismo rate limiting que verificarTokenPassword: busca por email solo, para poder contar
+  // los intentos fallidos aunque el código no coincida.
   verificarToken: async (email, token) => {
     const { rows } = await db.query(
-      'SELECT id, token_expira FROM Personas WHERE email = $1 AND token_verificacion = $2',
-      [email, token]
+      'SELECT id, token_verificacion, token_expira, intentos_verificacion FROM Personas WHERE email = $1',
+      [email]
     );
-    if (rows.length === 0) return { ok: false, motivo: 'Código incorrecto' };
-    if (new Date() > new Date(rows[0].token_expira)) return { ok: false, motivo: 'El código expiró. Registrate de nuevo.' };
+    const persona = rows[0];
+    if (!persona) return { ok: false, motivo: 'Código incorrecto' };
+    if (persona.intentos_verificacion >= 5) return { ok: false, motivo: 'Demasiados intentos. Registrate de nuevo.' };
+    if (persona.token_verificacion !== token) {
+      await db.query('UPDATE Personas SET intentos_verificacion = intentos_verificacion + 1 WHERE id = $1', [persona.id]);
+      return { ok: false, motivo: 'Código incorrecto' };
+    }
+    if (new Date() > new Date(persona.token_expira)) return { ok: false, motivo: 'El código expiró. Registrate de nuevo.' };
     await db.query(
       'UPDATE Personas SET verificado = TRUE, token_verificacion = NULL, token_expira = NULL WHERE id = $1',
-      [rows[0].id]
+      [persona.id]
     );
     return { ok: true };
   },
@@ -442,11 +521,13 @@ const Persona = {
     try {
       await client.query('BEGIN');
 
-      // 2. Insertar persona en la tabla Personas
+      // 2. Insertar persona en la tabla Personas (password ya hasheada — la que va al
+      // Supabase Auth de arriba es la de verdad, porque esa la tiene que poder usar Supabase)
+      const passwordHash = await bcrypt.hash(password, 10);
       const personaResult = await client.query(
         `INSERT INTO Personas (nombre, apellido, dni, email, telefono, fecha_nac, direccion, password)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-        [nombre, apellido, dni, email, telefono, fecha_nac, domicilio, password]
+        [nombre, apellido, dni, email, telefono, fecha_nac, domicilio, passwordHash]
       );
       const persona = personaResult.rows[0];
 

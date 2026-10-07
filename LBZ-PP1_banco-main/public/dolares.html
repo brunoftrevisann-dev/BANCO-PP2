@@ -595,12 +595,15 @@
             document.getElementById('aliasUsdDisplay').style.display = 'flex';
         }
 
+        let _guardandoAliasUsd = false;
         async function guardarAliasUsd() {
+            if (_guardandoAliasUsd) return; // evita doble submit con dos clicks/taps rápidos
             const nuevoAlias = document.getElementById('inputAliasUsd').value.trim();
             const err = document.getElementById('aliasUsdError');
             err.style.display = 'none';
             if (!nuevoAlias) { err.textContent = 'El alias no puede estar vacío'; err.style.display = 'block'; return; }
             if (!/^[a-zA-Z0-9.\-]+$/.test(nuevoAlias)) { err.textContent = 'Solo letras, números, puntos y guiones'; err.style.display = 'block'; return; }
+            _guardandoAliasUsd = true;
             try {
                 const res = await fetch('/api/actualizar-alias', {
                     method: 'PUT',
@@ -615,6 +618,8 @@
             } catch {
                 err.textContent = 'Error de conexión. Intentá de nuevo.';
                 err.style.display = 'block';
+            } finally {
+                _guardandoAliasUsd = false;
             }
         }
 
