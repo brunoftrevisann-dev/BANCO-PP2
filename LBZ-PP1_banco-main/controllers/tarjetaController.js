@@ -20,10 +20,8 @@ const tipoValido = (tipo) => TIPOS.includes(String(tipo || '').toUpperCase()) ? 
 
 exports.listar = async (req, res) => {
   try {
-    const idPersona = parseInt(req.query.idPersona);
-    if (!idPersona) return res.status(400).json({ error: 'idPersona requerido' });
     const tasas = await obtenerTasasTarjeta();
-    const tarjetas = await Tarjeta.getTarjetasPersona(idPersona, tasas.tna);
+    const tarjetas = await Tarjeta.getTarjetasPersona(req.idPersona, tasas.tna);
     res.json({ ...tarjetas, tasas });
   } catch (error) {
     responderError(res, error);
@@ -54,9 +52,9 @@ exports.simular = async (req, res) => {
 
 exports.emitir = async (req, res) => {
   try {
-    const { idPersona } = req.body;
+    const idPersona = req.idPersona;
     const tipo = tipoValido(req.body.tipo);
-    if (!idPersona || !tipo) return res.status(400).json({ error: 'idPersona y tipo (DEBITO o CREDITO) son requeridos' });
+    if (!tipo) return res.status(400).json({ error: 'tipo (DEBITO o CREDITO) es requerido' });
 
     const { rows } = await db.query('SELECT nombre, apellido FROM Personas WHERE id = $1', [idPersona]);
     if (!rows[0]) return res.status(404).json({ error: 'Persona no encontrada' });
@@ -77,10 +75,10 @@ exports.emitir = async (req, res) => {
 
 exports.bloquear = async (req, res) => {
   try {
-    const { idPersona, bloquear } = req.body;
+    const { bloquear } = req.body;
     const tipo = tipoValido(req.params.tipo);
-    if (!idPersona || !tipo) return res.status(400).json({ error: 'idPersona y tipo son requeridos' });
-    res.json(await Tarjeta.cambiarEstado(idPersona, tipo, bloquear !== false));
+    if (!tipo) return res.status(400).json({ error: 'tipo es requerido' });
+    res.json(await Tarjeta.cambiarEstado(req.idPersona, tipo, bloquear !== false));
   } catch (error) {
     responderError(res, error);
   }
@@ -88,10 +86,11 @@ exports.bloquear = async (req, res) => {
 
 exports.comprar = async (req, res) => {
   try {
-    const { idPersona, monto, cuotas } = req.body;
+    const idPersona = req.idPersona;
+    const { monto, cuotas } = req.body;
     const tipo = tipoValido(req.params.tipo);
     const comercio = String(req.body.comercio || '').trim().slice(0, 80);
-    if (!idPersona || !tipo || !monto || !comercio) return res.status(400).json({ error: 'idPersona, comercio y monto son requeridos' });
+    if (!tipo || !monto || !comercio) return res.status(400).json({ error: 'comercio y monto son requeridos' });
 
     if (tipo === 'DEBITO') {
       const r = await Tarjeta.compraDebito(idPersona, { comercio, monto: Number(monto) });
@@ -121,8 +120,9 @@ exports.comprar = async (req, res) => {
 
 exports.pagar = async (req, res) => {
   try {
-    const { idPersona, monto } = req.body;
-    if (!idPersona || !monto) return res.status(400).json({ error: 'idPersona y monto son requeridos' });
+    const idPersona = req.idPersona;
+    const { monto } = req.body;
+    if (!monto) return res.status(400).json({ error: 'monto es requerido' });
 
     const { tna } = await obtenerTasasTarjeta();
     const r = await Tarjeta.pagarCredito(idPersona, Number(monto), tna);
@@ -145,10 +145,9 @@ exports.pagar = async (req, res) => {
 
 exports.movimientos = async (req, res) => {
   try {
-    const idPersona = parseInt(req.query.idPersona);
     const tipo = tipoValido(req.params.tipo);
-    if (!idPersona || !tipo) return res.status(400).json({ error: 'idPersona y tipo son requeridos' });
-    res.json(await Tarjeta.getMovimientos(idPersona, tipo));
+    if (!tipo) return res.status(400).json({ error: 'tipo es requerido' });
+    res.json(await Tarjeta.getMovimientos(req.idPersona, tipo));
   } catch (error) {
     responderError(res, error);
   }

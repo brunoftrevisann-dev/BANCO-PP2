@@ -152,15 +152,17 @@ app.post('/api/reservas/abrir', requireAuth, reservaController.abrir);
 app.post('/api/reservas/:id/depositar', requireAuth, reservaController.depositarFrasco);
 app.post('/api/reservas/:id/retirar', requireAuth, reservaController.retirarFrasco);
 
-// Tarjetas (débito vinculada a la caja de ahorro en ARS y crédito con límite)
-app.get('/api/tarjetas', tarjetaController.listar);
+// Tarjetas (débito vinculada a la caja de ahorro en ARS y crédito con límite). tasas/simular
+// son públicas (no exponen datos de nadie, mismo criterio que /api/prestamos/tasas); el resto
+// opera sobre la propia tarjeta de la sesión, nunca sobre el idPersona que mande el cliente.
+app.get('/api/tarjetas', requireAuth, tarjetaController.listar);
 app.get('/api/tarjetas/credito/tasas', tarjetaController.tasas);
 app.post('/api/tarjetas/credito/simular', tarjetaController.simular);
-app.post('/api/tarjetas/emitir', tarjetaController.emitir);
-app.post('/api/tarjetas/credito/pagar', tarjetaController.pagar);
-app.post('/api/tarjetas/:tipo/comprar', tarjetaController.comprar);
-app.put('/api/tarjetas/:tipo/bloqueo', tarjetaController.bloquear);
-app.get('/api/tarjetas/:tipo/movimientos', tarjetaController.movimientos);
+app.post('/api/tarjetas/emitir', requireAuth, tarjetaController.emitir);
+app.post('/api/tarjetas/credito/pagar', requireAuth, tarjetaController.pagar);
+app.post('/api/tarjetas/:tipo/comprar', requireAuth, tarjetaController.comprar);
+app.put('/api/tarjetas/:tipo/bloqueo', requireAuth, tarjetaController.bloquear);
+app.get('/api/tarjetas/:tipo/movimientos', requireAuth, tarjetaController.movimientos);
 
 // Columnas de verificación de email
 const db = require('./config/db');
