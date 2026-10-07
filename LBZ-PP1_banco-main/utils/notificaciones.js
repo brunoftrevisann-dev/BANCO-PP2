@@ -123,7 +123,43 @@ async function notificarAliasCambiado(idPersona, { alias }) {
   });
 }
 
+const NOMBRE_TIPO_TARJETA = { DEBITO: 'débito', CREDITO: 'crédito' };
+
+async function notificarTarjetaEmitida(idPersona, { tipo, numero, limite }) {
+  const extra = tipo === 'CREDITO' ? ` con un límite de ${fmtMonto(limite)}` : ', vinculada a tu caja de ahorro';
+  await Notificacion.crear(idPersona, {
+    tipo: 'tarjeta_emitida',
+    titulo: `Tarjeta de ${NOMBRE_TIPO_TARJETA[tipo]} lista`,
+    mensaje: `Tu tarjeta de ${NOMBRE_TIPO_TARJETA[tipo]} terminada en ${String(numero).slice(-4)} ya está activa${extra}.`
+  });
+}
+
+const fmtPct = (v) => (Number(v) * 100).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + '%';
+
+async function notificarCompraTarjeta(idPersona, { tipo, comercio, monto, cuotas, montoCuota, tna }) {
+  const enCuotas = cuotas > 1
+    ? ` en ${cuotas} cuotas${montoCuota ? ` de ${fmtMonto(montoCuota)}` : ''}${tna ? ` (TNA ${fmtPct(tna)})` : ''}`
+    : '';
+  await Notificacion.crear(idPersona, {
+    tipo: 'compra_tarjeta',
+    titulo: `Compra con ${NOMBRE_TIPO_TARJETA[tipo]}`,
+    mensaje: `Compraste ${fmtMonto(monto)}${enCuotas} en ${comercio}.`
+  });
+}
+
+async function notificarPagoTarjeta(idPersona, { monto, deuda, saldoFinanciado, tna }) {
+  const financiado = Number(saldoFinanciado) > 0
+    ? ` Los ${fmtMonto(saldoFinanciado)} que quedaron sin pagar del resumen generan interés al ${fmtPct(tna)} TNA.`
+    : '';
+  await Notificacion.crear(idPersona, {
+    tipo: 'pago_tarjeta',
+    titulo: 'Pago de tarjeta acreditado',
+    mensaje: `Pagaste ${fmtMonto(monto)} de tu tarjeta de crédito. ${Number(deuda) > 0 ? `Te quedan ${fmtMonto(deuda)} por pagar.` : 'No tenés deuda pendiente.'}${financiado}`
+  });
+}
+
 module.exports = {
+  notificarTarjetaEmitida, notificarCompraTarjeta, notificarPagoTarjeta,
   notificarTransferenciaRecibida, notificarDeposito, notificarCambioDivisa,
   notificarPrestamoOtorgado, notificarCuotaPorVencer, notificarCuotaVencida,
   notificarPrestamoSaldado, notificarPrestamoCancelado, notificarNuevoDispositivo,

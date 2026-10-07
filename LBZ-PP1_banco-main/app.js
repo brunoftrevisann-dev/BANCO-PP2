@@ -12,6 +12,7 @@ const notificacionController = require('./controllers/notificacionController');
 const qrController = require('./controllers/qrController');
 const reservaController = require('./controllers/reservaController');
 const { requireAuth } = require('./utils/sesion');
+const tarjetaController = require('./controllers/tarjetaController');
 
 // Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
 // la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
@@ -150,6 +151,16 @@ app.post('/api/reservas/simular', requireAuth, reservaController.simular);
 app.post('/api/reservas/abrir', requireAuth, reservaController.abrir);
 app.post('/api/reservas/:id/depositar', requireAuth, reservaController.depositarFrasco);
 app.post('/api/reservas/:id/retirar', requireAuth, reservaController.retirarFrasco);
+
+// Tarjetas (débito vinculada a la caja de ahorro en ARS y crédito con límite)
+app.get('/api/tarjetas', tarjetaController.listar);
+app.get('/api/tarjetas/credito/tasas', tarjetaController.tasas);
+app.post('/api/tarjetas/credito/simular', tarjetaController.simular);
+app.post('/api/tarjetas/emitir', tarjetaController.emitir);
+app.post('/api/tarjetas/credito/pagar', tarjetaController.pagar);
+app.post('/api/tarjetas/:tipo/comprar', tarjetaController.comprar);
+app.put('/api/tarjetas/:tipo/bloqueo', tarjetaController.bloquear);
+app.get('/api/tarjetas/:tipo/movimientos', tarjetaController.movimientos);
 
 // Columnas de verificación de email
 const db = require('./config/db');
@@ -294,6 +305,61 @@ db.query(`
     interes_pagado       DECIMAL(15,2) NOT NULL DEFAULT 0
   )
 `).catch(e => console.error('Error creando tabla Reservas:', e.message));
+
+// Tarjetas: tipos/estados de producto + tabla de débito + columnas nuevas en crédito + movimientos.
+// Va en una sola cadena para que las tablas existan antes de los ALTER/índices que dependen de ellas.
+(async () => {
+  await db.query(`INSERT INTO Tipos_Producto (nombre) VALUES ('TARJETA_CREDITO'), ('TARJETA_DEBITO') ON CONFLICT (nombre) DO NOTHING`);
+  await db.query(`INSERT INTO Estados_Producto (nombre) VALUES ('ACTIVO'), ('BLOQUEADO'), ('CERRADO') ON CONFLICT (nombre) DO NOTHING`);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS Tarjetas_Credito (
+      id_tarjeta        SERIAL PRIMARY KEY,
+      id_producto       INTEGER NOT NULL UNIQUE REFERENCES Productos(id_producto),
+      numero_tarjeta    VARCHAR(16) UNIQUE NOT NULL,
+      marca             VARCHAR(50),
+      fecha_vencimiento DATE NOT NULL,
+      limite_compra     DECIMAL(15,2) NOT NULL,
+      dia_cierre        INTEGER CHECK (dia_cierre BETWEEN 1 AND 31)
+    )
+  `);
+  await db.query(`
+    ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS cvv VARCHAR(3);
+    ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS nombre_titular VARCHAR(60);
+    ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS deuda DECIMAL(15,2) NOT NULL DEFAULT 0;
+  `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS Tarjetas_Debito (
+      id_tarjeta        SERIAL PRIMARY KEY,
+      id_producto       INTEGER NOT NULL UNIQUE REFERENCES Productos(id_producto),
+      id_cuenta         INTEGER NOT NULL REFERENCES Cuentas_Bancarias(id_cuenta),
+      numero_tarjeta    VARCHAR(16) UNIQUE NOT NULL,
+      marca             VARCHAR(50),
+      nombre_titular    VARCHAR(60),
+      fecha_vencimiento DATE NOT NULL,
+      cvv               VARCHAR(3) NOT NULL
+    )
+  `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS Consumos_Tarjeta (
+      id_movimiento SERIAL PRIMARY KEY,
+      id_producto   INTEGER NOT NULL REFERENCES Productos(id_producto),
+      tipo          VARCHAR(10) NOT NULL,
+      comercio      VARCHAR(80) NOT NULL,
+      monto         DECIMAL(15,2) NOT NULL,
+      cuotas        INTEGER NOT NULL DEFAULT 1,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  // TNA: cuotas con interés (monto_cuota/total/tna por compra) e interés del saldo financiado.
+  await db.query(`
+    ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS saldo_financiado DECIMAL(15,2) NOT NULL DEFAULT 0;
+    ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS fecha_ultimo_interes DATE DEFAULT CURRENT_DATE;
+    ALTER TABLE Consumos_Tarjeta ADD COLUMN IF NOT EXISTS monto_cuota DECIMAL(15,2);
+    ALTER TABLE Consumos_Tarjeta ADD COLUMN IF NOT EXISTS total DECIMAL(15,2);
+    ALTER TABLE Consumos_Tarjeta ADD COLUMN IF NOT EXISTS tna DECIMAL(8,5);
+  `);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_consumos_tarjeta_producto ON Consumos_Tarjeta(id_producto, created_at DESC)`);
+})().catch(e => console.error('Error creando tablas de tarjetas:', e.message));
 
 // Aviso de lectura del QR interbancario: registro de quién leyó el QR de quién
 // (prompt-aviso-lectura-qr.md) — no mueve plata, solo dispara la notificación
