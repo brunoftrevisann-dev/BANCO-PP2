@@ -571,6 +571,21 @@
   window.formatearMonto = formatearMonto;
   window.valorNumerico  = valorNumerico;
 
+  // Criterio único de fortaleza de contraseña (registro.html y perfil.html), antes cada página
+  // tenía el suyo y una misma contraseña podía salir "Buena" en una y "Regular" en la otra.
+  // score va de 0 a 4 (un punto por criterio cumplido); faltantes lista lo que no cumple.
+  window.PASSWORD_MIN = 8;
+  window.evaluarPassword = function (pwd) {
+    var criterios = [
+      [pwd.length >= window.PASSWORD_MIN, 'Mínimo ' + window.PASSWORD_MIN + ' caracteres'],
+      [/[A-Z]/.test(pwd), 'Al menos una mayúscula'],
+      [/[0-9]/.test(pwd), 'Al menos un número'],
+      [/[^A-Za-z0-9]/.test(pwd), 'Al menos un símbolo (!@#$…)']
+    ];
+    var faltantes = criterios.filter(function (c) { return !c[0]; }).map(function (c) { return c[1]; });
+    return { score: criterios.length - faltantes.length, faltantes: faltantes };
+  };
+
   // Compartido por dashboard.html y dolares.html: pide al servidor el QR de cobro firmado (JWT ES256,
   // ver qr-interbancario-jwt.md) para un CBU propio. Si el servidor no puede firmar, cae al CBU plano
   // (el formato de siempre) para que mostrar el QR nunca deje de andar.

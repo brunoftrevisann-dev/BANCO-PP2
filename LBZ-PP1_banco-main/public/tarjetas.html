@@ -223,7 +223,7 @@
 
         @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
-        body { animation: pageIn 0.3s ease both; }
+        body { animation: pageIn 0.3s ease backwards; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
 
         @media (max-width: 600px) {
@@ -624,7 +624,7 @@
 
         async function cargarTarjetas() {
             try {
-                const data = await api(`/api/tarjetas?idPersona=${u.id}`, 'GET');
+                const data = await api(`/api/tarjetas`, 'GET');
                 tasas = data.tasas || null;
                 tarjetas = { debito: data.debito, credito: data.credito };
                 render();
@@ -639,7 +639,7 @@
             err.classList.remove('visible');
             btn.disabled = true; btn.textContent = 'Emitiendo...';
             try {
-                await api('/api/tarjetas/emitir', 'POST', { idPersona: u.id, tipo: tipoActual });
+                await api('/api/tarjetas/emitir', 'POST', { tipo: tipoActual });
                 mostrarToast(`¡Tu tarjeta de ${tipoActual === 'CREDITO' ? 'crédito' : 'débito'} ya está activa!`, 'exito');
                 await cargarTarjetas();
             } catch (e) {
@@ -653,7 +653,7 @@
             const t = tarjetaActual();
             const bloquear = t.estado !== 'BLOQUEADO';
             try {
-                await api(`/api/tarjetas/${tipoActual.toLowerCase()}/bloqueo`, 'PUT', { idPersona: u.id, bloquear });
+                await api(`/api/tarjetas/${tipoActual.toLowerCase()}/bloqueo`, 'PUT', { bloquear });
                 mostrarToast(bloquear ? 'Tarjeta bloqueada' : 'Tarjeta desbloqueada', 'exito');
                 await cargarTarjetas();
             } catch (e) {
@@ -672,7 +672,7 @@
             const btn = document.getElementById('btnComprar');
             btn.disabled = true; btn.textContent = 'Procesando...';
             try {
-                const body = { idPersona: u.id, comercio, monto };
+                const body = { comercio, monto };
                 if (tipoActual === 'CREDITO') body.cuotas = cuotasActual;
                 const r = await api(`/api/tarjetas/${tipoActual.toLowerCase()}/comprar`, 'POST', body);
                 actualizarSaldoLocal(r.nuevoSaldo);
@@ -698,7 +698,7 @@
             const btn = document.getElementById('btnPagar');
             btn.disabled = true; btn.textContent = 'Procesando...';
             try {
-                const r = await api('/api/tarjetas/credito/pagar', 'POST', { idPersona: u.id, monto });
+                const r = await api('/api/tarjetas/credito/pagar', 'POST', { monto });
                 actualizarSaldoLocal(r.nuevoSaldo);
                 modoPago = 'TOTAL';
                 mostrarToast('Pago acreditado', 'exito');
@@ -714,7 +714,7 @@
             const cont = document.getElementById('listaMovimientos');
             const tipo = tipoActual;
             try {
-                const movs = await api(`/api/tarjetas/${tipo.toLowerCase()}/movimientos?idPersona=${u.id}`, 'GET');
+                const movs = await api(`/api/tarjetas/${tipo.toLowerCase()}/movimientos`, 'GET');
                 if (tipo !== tipoActual) return; // cambiaron de pestaña mientras cargaba
                 if (movs.length === 0) { cont.innerHTML = '<div class="empty-state">Todavía no usaste esta tarjeta.</div>'; return; }
                 cont.innerHTML = movs.map(m => {

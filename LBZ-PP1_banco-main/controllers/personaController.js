@@ -549,6 +549,8 @@ exports.registrarPersona = async (req, res) => {
       if (!password) faltantes.push('password');
       return res.status(400).json({ error: `Campos faltantes: ${faltantes.join(', ')}` });
     }
+    if (String(password).length < 8)
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 
     const resultado = await Persona.registrarConCuenta(req.body);
     let emailEnviado = true;

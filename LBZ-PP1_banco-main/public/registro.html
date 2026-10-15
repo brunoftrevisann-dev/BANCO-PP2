@@ -397,7 +397,7 @@
 
         @keyframes pageIn  { from { opacity:0; transform:translateY(12px) scale(0.99); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes pageOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-8px) scale(0.99); } }
-        body { animation: pageIn 0.3s ease both; }
+        body { animation: pageIn 0.3s ease backwards; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
     </style>
 </head>
@@ -463,7 +463,7 @@
                 </div>
                 <div class="form-group">
                     <label for="dni" data-i18n="register.dni">DNI</label>
-                    <input type="text" id="dni" name="dni" required placeholder="30123456" maxlength="10">
+                    <input type="text" id="dni" name="dni" required placeholder="30123456" maxlength="10" inputmode="numeric" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="email" data-i18n="register.email">Email</label>
@@ -487,7 +487,7 @@
 
                 <div class="form-group">
                     <label for="password" data-i18n="register.password">Contraseña</label>
-                    <input type="password" id="password" name="password" required placeholder="Mínimo 6 caracteres" autocomplete="new-password" oninput="checkStrength(this.value)">
+                    <input type="password" id="password" name="password" required placeholder="Mínimo 8 caracteres" minlength="8" autocomplete="new-password" oninput="checkStrength(this.value)">
                     <div id="strengthWrap" style="margin-top:10px;display:none;">
                         <div style="display:flex;gap:4px;margin-bottom:6px;">
                             <div class="str-bar" id="sb1"></div>
@@ -751,8 +751,8 @@
                 if (formData.password !== confirmPassword) {
                     throw new Error('Las contraseñas no coinciden');
                 }
-                if (formData.password.length < 6) {
-                    throw new Error('La contraseña debe tener al menos 6 caracteres');
+                if (formData.password.length < PASSWORD_MIN) {
+                    throw new Error(`La contraseña debe tener al menos ${PASSWORD_MIN} caracteres`);
                 }
 
                 loadingEl.classList.add('show');
@@ -864,12 +864,7 @@
             if (!val) { wrap.style.display = 'none'; return; }
             wrap.style.display = 'block';
 
-            let score = 0;
-            const issues = [];
-            if (val.length >= 8)  score++; else issues.push('Mínimo 8 caracteres');
-            if (/[A-Z]/.test(val)) score++; else issues.push('Al menos una mayúscula');
-            if (/[0-9]/.test(val)) score++; else issues.push('Al menos un número');
-            if (/[^A-Za-z0-9]/.test(val)) score++; else issues.push('Al menos un símbolo (!@#$…)');
+            const { score, faltantes: issues } = evaluarPassword(val);
 
             const levels = [
                 { cls: 'weak',   text: 'Muy débil', color: '#EF4444' },

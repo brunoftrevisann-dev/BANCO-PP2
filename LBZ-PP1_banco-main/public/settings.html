@@ -176,7 +176,7 @@
 
         @keyframes pageIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pageOut { from { opacity:1; } to { opacity:0; transform:translateY(-6px); } }
-        body { animation: pageIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+        body { animation: pageIn 0.3s cubic-bezier(0.16,1,0.3,1) backwards; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
     </style>
 </head>
@@ -585,7 +585,12 @@
             setTimeout(() => { window.location.href = url; }, 220);
         }
         window.addEventListener('pageshow', e => {
-            if (e.persisted) { document.body.classList.remove('leaving'); }
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                document.body.classList.remove('leaving');
+                document.body.style.animation = 'none';
+                void document.body.offsetHeight;
+                document.body.style.animation = '';
+            }
         });
         document.addEventListener('click', e => {
             const a = e.target.closest('a[href]');

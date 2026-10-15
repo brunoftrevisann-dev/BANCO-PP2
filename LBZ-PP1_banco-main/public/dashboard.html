@@ -7,7 +7,6 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2064%2064'%3E%3Crect%20width%3D'64'%20height%3D'64'%20rx%3D'14'%20fill%3D'%230052FF'%2F%3E%3Ctext%20x%3D'32'%20y%3D'43'%20font-family%3D'Arial%2CHelvetica%2Csans-serif'%20font-size%3D'26'%20font-weight%3D'800'%20fill%3D'white'%20text-anchor%3D'middle'%20letter-spacing%3D'-1'%3Etuo%3C%2Ftext%3E%3C%2Fsvg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="tuo-i18n.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
@@ -315,18 +314,6 @@
         .date-sep-label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
 
         /* ── ESTADÍSTICAS ── */
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-
-        .stats-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 20px; transition: background 0.3s, border-color 0.3s; }
-
-        .stats-card-title { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 14px; }
-
-        .chart-container { position: relative; height: 200px; }
-
-        .chart-empty { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; text-align: center; }
-        .chart-empty svg { opacity: 0.35; }
-        .chart-empty p { font-size: 0.78rem; color: var(--muted); font-weight: 400; max-width: 160px; line-height: 1.5; }
-
         /* ── FAVORITES ── */
         .fav-section { margin-top: 14px; }
         .fav-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
@@ -555,8 +542,8 @@
         .btn-logout-now { flex:1; padding:12px; background:var(--bg); color:var(--muted); border:1.5px solid var(--border); border-radius:12px; font-size:0.9rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
 
         /* ── RIPPLE en botones de modal ── */
-        .modal-confirm-btn, .btn-next, .btn-back { position: relative; overflow: hidden; }
-        .modal-confirm-btn .ripple, .btn-next .ripple, .btn-back .ripple {
+        .btn-next { position: relative; overflow: hidden; }
+        .btn-next .ripple {
             background: rgba(255,255,255,0.25);
         }
 
@@ -790,10 +777,6 @@
             .action-icon { width: 38px; height: 38px; }
             .action-label { font-size: 0.72rem; }
 
-            /* Stats & charts */
-            .stats-grid { grid-template-columns: 1fr; }
-            .chart-container { height: 160px; }
-
             /* Recent TX */
             .recent-tx-section { padding: 4px 14px; }
             .tx-name { font-size: 0.82rem; }
@@ -858,7 +841,7 @@
 
         @keyframes pageIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pageOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-6px); } }
-        body { animation: pageIn 0.3s ease both; }
+        body { animation: pageIn 0.3s ease backwards; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
 
         .btn-comprobante-hist {
@@ -1616,11 +1599,6 @@
         function applyTheme(t) {
             document.documentElement.setAttribute('data-theme', t);
             document.getElementById('btnTheme').innerHTML = t === 'dark' ? SUN : MOON;
-            // Igual que los otros 4 lugares que llaman a inicializarGraficos(): el DOM de los
-            // gráficos ya no vive en dashboard.html (se mudó a estadisticas.html), así que acá
-            // puede tirar si corre antes de que cargarRecentTx() complete — es a lo sumo
-            // cosmético, nunca tiene que romper el toggle de tema.
-            if (window._txsCache) { try { inicializarGraficos(window._txsCache); } catch { /* charts are optional */ } }
         }
 
         function toggleTheme() {
@@ -1715,7 +1693,7 @@
         // Símbolo de moneda para un MOVIMIENTO (historial/detalle/exportaciones) — no confundir con
         // el símbolo de "mi propia cuenta" del selector de origen en el modal de transferencia, que
         // intencionalmente sigue mostrando "US$" (ver plan: alcance limitado a la lista de movimientos).
-        function simboloMoneda(esUsd) { return esUsd ? 'USD $' : '$'; }
+        function simboloMoneda(esUsd) { return esUsd ? 'US$' : '$'; }
 
         // ── NOMBRE CACHE ─────────────────────────────────────────────────
         function guardarNombreCbu(cbu, nombre) {
@@ -1787,7 +1765,6 @@
         if (!saldoUsdVisible) document.getElementById('saldoUsdCard').textContent = 'US$ ******';
 
         let saldoReal = 0;
-        let _lastVisitChecked = false;
         let _txsVistas = new Set();
         let _notifsQrVistas = new Set(); // ids de notificaciones de "aviso de lectura" ya toasteadas
         let _pollingInterval = null;
@@ -2068,12 +2045,6 @@
             cerrarModalContacto();
             showToast(`${_nombrePendienteContacto} agregado a contactos`);
             renderizarFavoritos();
-        }
-
-        function transferirAContacto(cbu, nombre) {
-            abrirModalTransferencia();
-            document.getElementById('inputBusqueda').value = cbu;
-            buscarDestinatario();
         }
 
         // ── SOUNDS ───────────────────────────────────────────────────────
@@ -2814,118 +2785,6 @@
             return groups;
         }
 
-        // ── CHART UTILS ──────────────────────────────────────────────────
-        let chartMotivosInst = null, chartIngresosInst = null, chartGastosInst = null;
-
-        function destroyCharts() {
-            chartMotivosInst?.destroy();
-            chartIngresosInst?.destroy();
-            chartGastosInst?.destroy();
-            chartMotivosInst = chartIngresosInst = chartGastosInst = null;
-        }
-
-        function groupByMonth(txs) {
-            const m = {};
-            txs.forEach(t => {
-                const f = t.fecha || t.createdAt || t.timestamp || t.created_at;
-                if (!f) return;
-                const d   = new Date(f);
-                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                m[key] = (m[key] || 0) + Number(t.importe || 0);
-            });
-            return m;
-        }
-
-        function last6Months() {
-            const result = [];
-            const now = new Date();
-            for (let i = 5; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                const label = d.toLocaleDateString('es-AR', { month: 'short' }).replace('.','') + " '" + String(d.getFullYear()).slice(2);
-                result.push({ key, label });
-            }
-            return result;
-        }
-
-        function inicializarGraficos(todasLasTx) {
-            if (typeof Chart === 'undefined') return;
-            const u     = JSON.parse(localStorage.getItem('usuarioLogueado'));
-            if (!u) return;
-            const dark  = document.documentElement.getAttribute('data-theme') === 'dark';
-            const clr   = dark
-                ? { grid: '#2C2C2E', text: '#8E8E8E', barIn: '#3B82F6', barOut: '#EF4444' }
-                : { grid: '#E5E5E5', text: '#6B6B6B', barIn: '#0052FF', barOut: '#B91C1C' };
-
-            destroyCharts();
-
-            // Pie — motivos from localStorage (scoped per user so other accounts don't pollute)
-            const motivosRaw = JSON.parse(localStorage.getItem('tuo_transferencias_' + u.cbu) || '[]');
-            const mTotals    = {};
-            motivosRaw.forEach(m => { mTotals[m.motivo] = (mTotals[m.motivo] || 0) + Number(m.importe); });
-            const pieLabels  = Object.keys(mTotals);
-            const pieVals    = Object.values(mTotals);
-            const ctxPie     = document.getElementById('chartMotivos');
-            const emptyDiv   = document.getElementById('chartMotivosEmpty');
-
-            if (pieLabels.length === 0) {
-                ctxPie.style.display = 'none';
-                emptyDiv.style.display = 'flex';
-            } else {
-                ctxPie.style.display = 'block';
-                emptyDiv.style.display = 'none';
-                const PIE_COLORS = ['#0052FF','#7C3AED','#059669','#D97706','#DB2777','#0284C7','#DC2626','#10B981','#F59E0B','#0891B2'];
-                chartMotivosInst = new Chart(ctxPie, {
-                    type: 'doughnut',
-                    data: {
-                        labels: pieLabels,
-                        datasets: [{ data: pieVals, backgroundColor: PIE_COLORS.slice(0, pieLabels.length), borderWidth: 0 }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { color: clr.text, font: { family: 'Inter', size: 10 }, padding: 10, boxWidth: 12 } },
-                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
-                        }
-                    }
-                });
-            }
-
-            // Bar charts — API data
-            const recibidas = todasLasTx.filter(t => t.cbuDestino === u.cbu);
-            const enviadas  = todasLasTx.filter(t => t.cbuOrigen  === u.cbu);
-            const meses     = last6Months();
-            const labels    = meses.map(m => m.label);
-            const grpIn     = groupByMonth(recibidas);
-            const grpOut    = groupByMonth(enviadas);
-            const dataIn    = meses.map(m => grpIn[m.key]  || 0);
-            const dataOut   = meses.map(m => grpOut[m.key] || 0);
-
-            const barOpts = (color) => ({
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => ` $${Number(ctx.raw).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` } }
-                },
-                scales: {
-                    x: { grid: { color: clr.grid }, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, autoSkip: false, maxRotation: 0 } },
-                    y: { grid: { color: clr.grid }, beginAtZero: true, ticks: { color: clr.text, font: { family: 'Inter', size: 10 }, callback: v => '$' + v.toLocaleString('es-AR') } }
-                }
-            });
-
-            chartIngresosInst = new Chart(document.getElementById('chartIngresos'), {
-                type: 'bar',
-                data: { labels, datasets: [{ data: dataIn, backgroundColor: dark ? 'rgba(59,130,246,0.25)' : 'rgba(0,82,255,0.15)', borderColor: clr.barIn, borderWidth: 2, borderRadius: 6 }] },
-                options: barOpts(clr.barIn)
-            });
-
-            chartGastosInst = new Chart(document.getElementById('chartGastos'), {
-                type: 'bar',
-                data: { labels, datasets: [{ data: dataOut, backgroundColor: dark ? 'rgba(239,68,68,0.25)' : 'rgba(185,28,28,0.12)', borderColor: clr.barOut, borderWidth: 2, borderRadius: 6 }] },
-                options: barOpts(clr.barOut)
-            });
-        }
-
         // ── RECENT TRANSACTIONS ──────────────────────────────────────────
         async function cargarRecentTx() {
             if (_cargandoRecent) return;
@@ -2945,7 +2804,6 @@
                 const data = await res.json();
                 if (!res.ok) {
                     container.innerHTML = emptyState(window.t ? window.t('dashboard.historial.unavailable') : 'Sin movimientos disponibles.');
-                    try { inicializarGraficos([]); } catch { /* charts are optional */ }
                     return;
                 }
                 const all = Array.isArray(data) ? data : (data.transactions || data.data || []);
@@ -2957,17 +2815,6 @@
                 mostrarBannerMantenimiento(false);
                 iniciarPolling();
                 verificarNotificaciones();
-                if (typeof Chart !== 'undefined') {
-                    try { inicializarGraficos(all); } catch { /* charts are optional */ }
-                } else {
-                    const waitChart = setInterval(() => {
-                        if (typeof Chart !== 'undefined') {
-                            clearInterval(waitChart);
-                            try { inicializarGraficos(window._txsCache || []); } catch { /* ok */ }
-                        }
-                    }, 200);
-                    setTimeout(() => clearInterval(waitChart), 10000);
-                }
 
                 const propias = deduplicarTxs(all.filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
                 propias.forEach(t => {
@@ -3038,7 +2885,6 @@
                     : 'No se pudo cargar. Verificá que el servidor esté activo.';
                 container.innerHTML = emptyState(msg);
                 mostrarBannerMantenimiento(true);
-                try { inicializarGraficos([]); } catch { /* charts are optional */ }
             } finally {
                 _cargandoRecent = false;
                 _inicializado   = true;
@@ -4104,9 +3950,15 @@
             });
         }
 
+        // Un gesto que empieza dentro de un modal es para scrollear el modal, no la página:
+        // sin esto, estando arriba de todo, arrastrar hacia abajo la lista de un modal
+        // disparaba el refresh de fondo.
+        const SELECTOR_OVERLAYS = '.modal-overlay, .confirm-overlay, #onboardingOverlay, #autoLogoutModal';
+        const dentroDeOverlay = (target) => !!(target instanceof Element && target.closest(SELECTOR_OVERLAYS));
+
         // Desktop: rueda del mouse cuando ya está en el tope
         window.addEventListener('wheel', e => {
-            if (_pulling) return;
+            if (_pulling || dentroDeOverlay(e.target)) return;
             if (window.scrollY === 0 && e.deltaY < 0) {
                 _pullAcc += Math.abs(e.deltaY);
                 const pct = Math.min(_pullAcc / 120, 1);
@@ -4120,9 +3972,13 @@
 
         // Mobile/trackpad táctil
         let _touchY0 = 0;
-        window.addEventListener('touchstart', e => { _touchY0 = e.touches[0].clientY; }, { passive: true });
+        let _touchEnOverlay = false;
+        window.addEventListener('touchstart', e => {
+            _touchY0 = e.touches[0].clientY;
+            _touchEnOverlay = dentroDeOverlay(e.target);
+        }, { passive: true });
         window.addEventListener('touchmove', e => {
-            if (_pulling || window.scrollY > 0) return;
+            if (_pulling || _touchEnOverlay || window.scrollY > 0) return;
             const dy = e.touches[0].clientY - _touchY0;
             if (dy > 0) {
                 const pct = Math.min(dy / 80, 1);
@@ -4337,7 +4193,7 @@
                 this.appendChild(circle);
             });
         }
-        document.querySelectorAll('.modal-confirm-btn, .btn-next, .btn-back').forEach(addRipple);
+        document.querySelectorAll('.btn-next').forEach(addRipple);
 
         // ── QR DEL CBU ──────────────────────────────────────────────────
         let _qrCbuActual = null;
