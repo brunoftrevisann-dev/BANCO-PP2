@@ -72,29 +72,8 @@ app.get('/registro', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'registro.html'));
 });
 
-// Proxy hacia API del Banco Central (evita CORS)
-app.post('/api/proxy-banco-central', async (req, res) => {
-  try {
-    const ctrl = new AbortController();
-    const tid  = setTimeout(() => ctrl.abort(), 12000);
-    const response = await fetch(`${process.env.BANCO_URL}/persons`, {
-      method: 'POST',
-      signal: ctrl.signal,
-      headers: {
-        'x-environment': process.env.BANCO_ENV,
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.BANCO_TOKEN
-      },
-      body: JSON.stringify(req.body)
-    });
-    clearTimeout(tid);
-    const data = await response.json();
-    res.status(response.status).json(data);
-  } catch (error) {
-    const msg = error.name === 'AbortError' ? 'Timeout: la API externa tardó demasiado' : error.message;
-    res.status(504).json({ error: msg });
-  }
-});
+// POST /api/proxy-banco-central se eliminó: reenviaba cualquier body al Banco Central con
+// nuestra API key sin pedir auth. El alta en el Banco Central ahora la hace registrarPersona.
 
 // Endpoints con joins
 // GET /api/personas, GET /api/personas/:id/roles y POST /api/personas (crearPersona) se

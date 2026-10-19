@@ -530,12 +530,26 @@ exports.verificarCuenta = async (req, res) => {
 // en el frontend, y dejaba que cualquiera autenticado le pusiera CUALQUIER saldo a CUALQUIER
 // cbu con solo mandarlo en el body — ni siquiera chequeaba pertenencia. Ruta borrada en app.js.
 
+const PALABRAS_ALIAS = [
+  'sol', 'luna', 'estrella', 'rio', 'mar', 'montana', 'cielo', 'tierra',
+  'viento', 'fuego', 'agua', 'piedra', 'flor', 'arbol', 'verde', 'azul',
+  'oro', 'plata', 'brillo', 'luz', 'noche', 'dia', 'alba', 'amanecer',
+  'paz', 'vida', 'fuerza', 'valor', 'sueno', 'esperanza', 'feliz', 'nuevo'
+];
+function generarAliasRegistro() {
+  const shuffled = [...PALABRAS_ALIAS].sort(() => 0.5 - Math.random());
+  return `${shuffled[0]}.${shuffled[1]}.${shuffled[2]}`;
+}
+
+// El CBU y el alias los obtiene el servidor del Banco Central: antes los pedía el navegador
+// (vía /api/proxy-banco-central, abierto y sin auth) y los mandaba acá, y se guardaban sin
+// verificar — cualquiera podía registrarse con un CBU inventado o ajeno.
 exports.registrarPersona = async (req, res) => {
   try {
-    const { nombre, apellido, dni, email, telefono, fecha_nac, domicilio, cbu, alias, password } = req.body;
+    const { nombre, apellido, dni, email, telefono, fecha_nac, domicilio, password } = req.body;
 
     // Validar campos requeridos
-    if (!nombre || !apellido || !dni || !email || !telefono || !fecha_nac || !domicilio || !cbu || !alias || !password) {
+    if (!nombre || !apellido || !dni || !email || !telefono || !fecha_nac || !domicilio || !password) {
       const faltantes = [];
       if (!nombre) faltantes.push('nombre');
       if (!apellido) faltantes.push('apellido');
@@ -544,18 +558,38 @@ exports.registrarPersona = async (req, res) => {
       if (!telefono) faltantes.push('telefono');
       if (!fecha_nac) faltantes.push('fecha_nac');
       if (!domicilio) faltantes.push('domicilio');
-      if (!cbu) faltantes.push('cbu');
-      if (!alias) faltantes.push('alias');
       if (!password) faltantes.push('password');
       return res.status(400).json({ error: `Campos faltantes: ${faltantes.join(', ')}` });
     }
     if (String(password).length < 8)
       return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 
-    const resultado = await Persona.registrarConCuenta(req.body);
+    const bcRes = await fetchBC(`${process.env.BANCO_URL}/persons`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.BANCO_TOKEN,
+        'x-environment': process.env.BANCO_ENV,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ nombre, apellido, dni })
+    });
+    const bcData = await bcRes.json().catch(() => ({}));
+    if (!bcRes.ok) {
+      if (String(bcData.error || '').includes('ya existe'))
+        return res.status(409).json({ error: 'El usuario ya está registrado en el Banco Central' });
+      return res.status(bcRes.status >= 500 ? 502 : bcRes.status)
+        .json({ error: bcData.error || 'Error al registrar en el Banco Central' });
+    }
+    if (!bcData.cbu) return res.status(502).json({ error: 'El Banco Central no devolvió el CBU de la cuenta' });
+
+    const resultado = await Persona.registrarConCuenta({
+      nombre, apellido, dni, email, telefono, fecha_nac, domicilio, password,
+      cbu: bcData.cbu,
+      alias: bcData.alias || generarAliasRegistro()
+    });
     let emailEnviado = true;
     try {
-      await enviarCodigoVerificacion(req.body.email, req.body.nombre, resultado.token);
+      await enviarCodigoVerificacion(email, nombre, resultado.token);
     } catch (emailError) {
       console.error('Error enviando email de verificación:', emailError.message);
       emailEnviado = false;
@@ -566,9 +600,11 @@ exports.registrarPersona = async (req, res) => {
         : 'Cuenta creada pero no pudimos enviar el email. Usá la opción de reenviar código.',
       pendingVerification: true,
       emailEnviado,
-      email: req.body.email
+      email
     });
   } catch (error) {
+    if (error.name === 'AbortError')
+      return res.status(504).json({ error: 'El Banco Central tardó demasiado en responder. Intentá de nuevo.' });
     if (error.code === '23505' || error.message.includes('duplicate') || error.message.includes('unique')) {
       const detail = (error.detail || '').toLowerCase();
       if (detail.includes('dni')) return res.status(409).json({ error: 'El DNI ya está registrado' });

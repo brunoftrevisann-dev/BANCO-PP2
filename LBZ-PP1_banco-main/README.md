@@ -446,7 +446,6 @@ La nueva contraseña debe tener al menos 8 caracteres.
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/api/banco/:code` | Info de banco por código (proxy a BC API, timeout 8s) |
-| `POST` | `/api/proxy-banco-central` | Proxy a BC API `/persons` para crear persona en BC |
 | `GET` | `/api/tablas/:tabla` | Datos crudos de tablas para inspección |
 
 #### Tablas disponibles en `/api/tablas/:tabla`
@@ -646,10 +645,9 @@ Requieren `tuo_vibration !== '0'` y soporte de `navigator.vibrate` (Android Chro
 ### Registro de nuevo usuario
 
 ```
-registro.html (paso 1: datos personales)
-    → POST /api/proxy-banco-central        — BC crea persona, devuelve CBU + alias
-    → registro.html (paso 2: contraseña)
-    → POST /api/personas/registrar         — DB local: Persona + Producto + Cuenta
+registro.html (datos personales + contraseña)
+    → POST /api/personas/registrar         — el servidor crea la persona en BC (CBU + alias)
+                                             y después en la DB local: Persona + Producto + Cuenta
     → Email OTP enviado (6 dígitos, 5 min)
     → registro.html (paso 3: código)
     → POST /api/verificar-cuenta

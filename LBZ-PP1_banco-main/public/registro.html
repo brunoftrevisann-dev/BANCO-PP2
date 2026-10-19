@@ -709,17 +709,6 @@
             });
         });
 
-        function generarAlias() {
-            const palabras = [
-                'sol', 'luna', 'estrella', 'rio', 'mar', 'montana', 'cielo', 'tierra',
-                'viento', 'fuego', 'agua', 'piedra', 'flor', 'arbol', 'verde', 'azul',
-                'oro', 'plata', 'brillo', 'luz', 'noche', 'dia', 'alba', 'amanecer',
-                'paz', 'vida', 'fuerza', 'valor', 'sueno', 'esperanza', 'feliz', 'nuevo'
-            ];
-            const shuffled = palabras.sort(() => 0.5 - Math.random());
-            return `${shuffled[0]}.${shuffled[1]}.${shuffled[2]}`;
-        }
-
         function setProgress(pct) {
             document.getElementById('progressFill').style.width = pct + '%';
         }
@@ -757,54 +746,20 @@
 
                 loadingEl.classList.add('show');
                 btn.disabled = true;
-                setProgress(30);
+                setProgress(40);
 
-                const response = await fetch('/api/proxy-banco-central', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nombre: formData.nombre,
-                        apellido: formData.apellido,
-                        dni: formData.dni
-                    })
-                });
-
-                const apiResult = await response.json();
-                setProgress(60);
-
-                if (!response.ok) {
-                    if (apiResult.error && apiResult.error.includes('ya existe')) {
-                        throw new Error('El usuario ya está registrado en el Banco Central');
-                    }
-                    throw new Error(apiResult.error || 'Error al registrar en el Banco Central');
-                }
-
-                // Use the alias assigned by BC API so both systems stay in sync.
-                // Fall back to a generated alias only if BC API didn't return one.
-                const alias = apiResult.alias || generarAlias();
-
+                // El servidor da de alta la persona en el Banco Central y guarda el CBU que le devuelve
                 const localResponse = await fetch('/api/personas/registrar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nombre: formData.nombre,
-                        apellido: formData.apellido,
-                        dni: formData.dni,
-                        email: formData.email,
-                        telefono: formData.telefono,
-                        fecha_nac: formData.fecha_nac,
-                        domicilio: formData.domicilio,
-                        password: formData.password,
-                        cbu: apiResult.cbu,
-                        alias: alias
-                    })
+                    body: JSON.stringify(formData)
                 });
 
                 setProgress(90);
 
                 if (!localResponse.ok) {
-                    const errorData = await localResponse.json();
-                    throw new Error(errorData.error || 'Error al guardar en la base de datos');
+                    const errorData = await localResponse.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Error al registrar la cuenta');
                 }
 
                 const localResult = await localResponse.json();
