@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const fetchConTimeout = require('../utils/fetchConTimeout');
 
 const ES_HASH_BCRYPT = /^\$2[aby]\$/;
 
@@ -481,18 +482,26 @@ const Persona = {
     const { nombre, apellido, dni, email, telefono, fecha_nac, domicilio, cbu, alias, password } = data;
 
     // 1. Crear usuario en Supabase Auth (aparece en el panel de Autenticación)
-    const authRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/admin/users`, {
-      method: 'POST',
-      headers: {
-        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email, password, email_confirm: true })
-    });
+    let authRes;
+    try {
+      authRes = await fetchConTimeout(`${process.env.SUPABASE_URL}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: {
+          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password, email_confirm: true })
+      });
+    } catch (err) {
+      // Se convierte el AbortError en un error común: si no, registrarPersona lo reportaría
+      // como timeout del Banco Central, que a esta altura ya respondió bien.
+      if (err.name === 'AbortError') throw new Error('Supabase Auth tardó demasiado en responder. Intentá de nuevo.');
+      throw err;
+    }
 
     if (!authRes.ok) {
-      const authError = await authRes.json();
+      const authError = await authRes.json().catch(() => ({}));
       throw new Error(authError.message || 'Error al crear usuario en Supabase Auth');
     }
 
@@ -545,7 +554,7 @@ const Persona = {
     } catch (error) {
       await client.query('ROLLBACK');
       // Si la transacción DB falló, eliminar el usuario de Auth para no dejar huérfanos
-      await fetch(`${process.env.SUPABASE_URL}/auth/v1/admin/users/${authUser.id}`, {
+      await fetchConTimeout(`${process.env.SUPABASE_URL}/auth/v1/admin/users/${authUser.id}`, {
         method: 'DELETE',
         headers: {
           'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
