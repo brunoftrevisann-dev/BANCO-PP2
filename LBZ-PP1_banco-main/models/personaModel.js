@@ -17,6 +17,32 @@ async function compararYMigrarPassword(password, guardado, idPersona) {
   return true;
 }
 
+function borrarUsuarioAuth(id) {
+  return fetchConTimeout(`${process.env.SUPABASE_URL}/auth/v1/admin/users/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+    }
+  });
+}
+
+// Si la creación en Supabase Auth no respondió, el usuario pudo haberse creado igual y quedaría
+// huérfano (sin fila en Personas), bloqueando ese email para siempre. Se borra por el id que
+// generamos nosotros; si todavía no existe (404) se reintenta una vez, por si Supabase seguía
+// procesando el alta. Corre en segundo plano para no demorar la respuesta al usuario.
+function limpiarUsuarioAuthHuerfano(id) {
+  (async () => {
+    for (let intento = 1; intento <= 2; intento++) {
+      try {
+        const res = await borrarUsuarioAuth(id);
+        if (res.ok) return;
+      } catch {}
+      if (intento === 1) await new Promise(r => setTimeout(r, 5000));
+    }
+  })();
+}
+
 const Persona = {
   getProductos: async (id) => {
     const query = `
@@ -481,7 +507,9 @@ const Persona = {
   registrarConCuenta: async (data) => {
     const { nombre, apellido, dni, email, telefono, fecha_nac, domicilio, cbu, alias, password } = data;
 
-    // 1. Crear usuario en Supabase Auth (aparece en el panel de Autenticación)
+    // 1. Crear usuario en Supabase Auth (aparece en el panel de Autenticación). El id lo
+    // generamos acá para poder borrarlo aunque Supabase no llegue a responder.
+    const authId = crypto.randomUUID();
     let authRes;
     try {
       authRes = await fetchConTimeout(`${process.env.SUPABASE_URL}/auth/v1/admin/users`, {
@@ -491,9 +519,10 @@ const Persona = {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password, email_confirm: true })
+        body: JSON.stringify({ id: authId, email, password, email_confirm: true })
       });
     } catch (err) {
+      limpiarUsuarioAuthHuerfano(authId);
       // Se convierte el AbortError en un error común: si no, registrarPersona lo reportaría
       // como timeout del Banco Central, que a esta altura ya respondió bien.
       if (err.name === 'AbortError') throw new Error('Supabase Auth tardó demasiado en responder. Intentá de nuevo.');
@@ -507,7 +536,13 @@ const Persona = {
 
     const authUser = await authRes.json();
 
-    const client = await db.connect();
+    let client;
+    try {
+      client = await db.connect();
+    } catch (error) {
+      await borrarUsuarioAuth(authUser.id || authId).catch(() => {});
+      throw error;
+    }
     try {
       await client.query('BEGIN');
 
@@ -554,13 +589,7 @@ const Persona = {
     } catch (error) {
       await client.query('ROLLBACK');
       // Si la transacción DB falló, eliminar el usuario de Auth para no dejar huérfanos
-      await fetchConTimeout(`${process.env.SUPABASE_URL}/auth/v1/admin/users/${authUser.id}`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-        }
-      }).catch(() => {});
+      await borrarUsuarioAuth(authUser.id || authId).catch(() => {});
       throw error;
     } finally {
       client.release();
