@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const moverSaldo = require('../utils/moverSaldo');
 const crypto = require('crypto');
 const Persona = require('./personaModel');
 const { notificarReservaVencida } = require('../utils/notificaciones');
@@ -51,8 +52,7 @@ const Reserva = {
         [idProducto, tipo, nombre || null, Number(monto), tna, plazoDias || null, plazoMeses || null]
       );
 
-      const nuevoSaldo = Number(cuenta.saldo) - Number(monto);
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldo, cuenta.id_cuenta]);
+      const nuevoSaldo = await moverSaldo(client, cuenta.id_cuenta, -Number(monto));
 
       await client.query('COMMIT');
       return { ...reservaResult.rows[0], cbu: cuenta.cbu, nuevoSaldo };
@@ -210,11 +210,11 @@ const Reserva = {
       if (Number(cuenta.saldo) < Number(monto))
         throw Object.assign(new Error('Saldo insuficiente'), { code: 'SALDO_INSUFICIENTE' });
 
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [Number(cuenta.saldo) - Number(monto), cuenta.id_cuenta]);
-      await client.query('UPDATE Reservas SET saldo = saldo + $1 WHERE id_reserva = $2', [Number(monto), idReserva]);
+      await moverSaldo(client, cuenta.id_cuenta, -Number(monto));
+      const frasco = await client.query('UPDATE Reservas SET saldo = saldo + $1 WHERE id_reserva = $2 RETURNING saldo', [Number(monto), idReserva]);
 
       await client.query('COMMIT');
-      return { nuevoSaldoFrasco: Number(reserva.saldo) + Number(monto) };
+      return { nuevoSaldoFrasco: Number(frasco.rows[0].saldo) };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -250,11 +250,11 @@ const Reserva = {
       const cuenta = cuentaResult.rows[0];
       if (!cuenta) throw Object.assign(new Error('No se encontró tu caja de ahorro en ARS'), { code: 'NO_CUENTA' });
 
-      await client.query('UPDATE Reservas SET saldo = saldo - $1 WHERE id_reserva = $2', [Number(monto), idReserva]);
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [Number(cuenta.saldo) + Number(monto), cuenta.id_cuenta]);
+      const frasco = await client.query('UPDATE Reservas SET saldo = saldo - $1 WHERE id_reserva = $2 RETURNING saldo', [Number(monto), idReserva]);
+      const nuevoSaldoArs = await moverSaldo(client, cuenta.id_cuenta, Number(monto));
 
       await client.query('COMMIT');
-      return { nuevoSaldoFrasco: Number(reserva.saldo) - Number(monto), nuevoSaldoArs: Number(cuenta.saldo) + Number(monto) };
+      return { nuevoSaldoFrasco: Number(frasco.rows[0].saldo), nuevoSaldoArs };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

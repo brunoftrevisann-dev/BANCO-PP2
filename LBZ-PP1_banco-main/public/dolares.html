@@ -315,8 +315,8 @@
                 <div class="importe-label">Cuánto querés operar</div>
                 <div class="importe-input-wrap">
                     <span class="importe-symbol">US$</span>
-                    <input id="importeUsd" class="input-dep" type="number" min="0.01" step="0.01"
-                        placeholder="0,00" oninput="previsualizar()" onkeydown="if(event.key==='Enter') operar()">
+                    <input id="importeUsd" class="input-dep" type="text" inputmode="decimal"
+                        placeholder="0,00" oninput="formatearMonto(this); previsualizar()" onkeydown="if(event.key==='Enter') operar()">
                 </div>
                 <div id="conversionPreview" class="conversion-preview"></div>
                 <div id="opError" class="dep-error"></div>
@@ -446,7 +446,7 @@
             const quien = nombreLector || 'Alguien';
             const sufijo = nombreBanco ? ` desde ${nombreBanco}` : '';
             let texto = `${quien} escaneó tu QR${sufijo}.`;
-            if (_qrMontoActualUsd) texto += ` Esperando el pago de US$${(_qrMontoActualUsd).toLocaleString('es-AR', { minimumFractionDigits: 2 })}…`;
+            if (_qrMontoActualUsd) texto += ` Esperando el pago de US$${(_qrMontoActualUsd).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}…`;
             document.getElementById('qrUsadoTextoUsd').textContent = texto;
             document.getElementById('qrContenidoNormalUsd').style.display = 'none';
             document.getElementById('qrContenidoUsadoUsd').style.display = '';
@@ -632,7 +632,7 @@
         }
 
         function previsualizar() {
-            const val = Number(document.getElementById('importeUsd').value);
+            const val = valorNumerico(document.getElementById('importeUsd'));
             const preview = document.getElementById('conversionPreview');
             const btn = document.getElementById('btnOperar');
             if (!val || val <= 0 || !cotizacion) {
@@ -649,7 +649,7 @@
         }
 
         async function operar() {
-            const importeUsd = Number(document.getElementById('importeUsd').value);
+            const importeUsd = valorNumerico(document.getElementById('importeUsd'));
             const err = document.getElementById('opError');
             const btn = document.getElementById('btnOperar');
             err.style.display = 'none';

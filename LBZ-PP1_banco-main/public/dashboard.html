@@ -1874,6 +1874,16 @@
                 </div>`).join('');
         }
 
+        // Declaradas acá y no junto a la tarjeta USD: el INIT de abajo las usa al cargar la
+        // página, y un `let` usado antes de su línea tira "Cannot access ... before
+        // initialization", lo que cortaba el resto del script (movimientos, banner de cuota, etc.).
+        let cuentaUsdDashboard = null;
+        // Guarda la promesa de cargarCuentaUsdDashboard() para que cargarRecentTx() pueda
+        // esperarla antes de filtrar movimientos — sin esto, si el historial llegaba antes
+        // que los productos, cuentaUsdDashboard todavía era null y los movimientos en USD
+        // se perdían del widget "Últimos movimientos" en esa primera pasada.
+        let _cuentaUsdDashboardPromise = null;
+
         // ── INIT ─────────────────────────────────────────────────────────
         const userData = localStorage.getItem('usuarioLogueado');
 
@@ -2238,7 +2248,7 @@
                             ${fechaStr ? `<div class="historial-date">${fechaStr}</div>` : ''}
                             <span class="historial-estado" style="${estadoStyle}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>
                         </div>
-                        <div class="historial-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                        <div class="historial-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:4px;"><path d="M9 18l6-6-6-6"/></svg>
                     </div>`;
                     globalIdx++;
@@ -2596,7 +2606,7 @@
                     <div class="detalle-tx-role">${labelDir}</div>
                     <div class="detalle-tx-nombre">${escapeHtml(nombre)}</div>
                 </div>
-                <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                <div class="detalle-tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
 
                 <div class="detalle-tx-section">
                     <div class="detalle-tx-section-title">${labelRole}</div>
@@ -2630,7 +2640,7 @@
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.amount') : 'Monto'}</span>
-                        <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                        <span class="detalle-tx-value" style="color:${colorAmt};font-weight:700;">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="detalle-tx-row">
                         <span class="detalle-tx-label">${window.t ? window.t('dashboard.tx.status') : 'Estado'}</span>
@@ -2698,7 +2708,7 @@
             const signo         = esEnvio ? '−' : '+';
             const rawFecha      = t.fecha || t.createdAt || t.timestamp || t.created_at;
             const fechaHora     = rawFecha ? new Date(rawFecha).toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-            const amtFmt        = `${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+            const amtFmt        = `${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
             const row = (label, value, vs = '') =>
                 `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;border-bottom:1px solid #E5E5E5;font-size:0.81rem;gap:14px;background:#fff;">
@@ -2876,7 +2886,7 @@
                                 <div class="tx-name">${etiqueta ? etiqueta + ': ' : ''}${escapeHtml(contraparte)}</div>
                                 ${fechaStr ? `<div class="tx-date">${fechaStr}</div>` : ''}
                             </div>
-                            <div class="tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                            <div class="tx-amount" style="color:${colorAmt};">${signo} ${simboloMoneda(esUsd)} ${Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         </div>`;
                 }).join('');
             } catch (err) {
@@ -2986,7 +2996,7 @@
                         const nombre = (t.personaOrigen?.nombre && t.personaOrigen?.apellido)
                             ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`
                             : (getNombrePorCbu(t.cbuOrigen) || 'Alguien');
-                        const monto = Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+                        const monto = Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         showToast(`+ US$${monto} recibido de ${nombre}`);
                         if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
                     });
@@ -3010,7 +3020,7 @@
                     const nombre = (t.personaOrigen?.nombre && t.personaOrigen?.apellido)
                         ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`
                         : (getNombrePorCbu(t.cbuOrigen) || 'Alguien');
-                    const monto = Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+                    const monto = Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     showToast(`+ $${monto} recibido de ${nombre}`);
                     if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
                 });
@@ -3177,10 +3187,16 @@
             if (maxEl) maxEl.value = '';
             if (txtEl) txtEl.value = '';
             try {
-                const res  = await fetch(`/api/historial?minutos=1440&cbu=${cbusPropios().join(',')}`);
-                const data = await res.json();
+                // Mismo manejo que cargarRecentTx: timeout de 15 s y mensaje entendible si se
+                // cae la conexión, en vez de quedar cargando o mostrar "Failed to fetch".
+                if (_cuentaUsdDashboardPromise) await _cuentaUsdDashboardPromise;
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 15000);
+                const res  = await fetch(`/api/historial?minutos=1440&cbu=${cbusPropios().join(',')}`, { signal: ctrl.signal });
+                clearTimeout(tid);
+                const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                    cuerpo.innerHTML = `<p style="color:#B91C1C;text-align:center;font-size:0.88rem;padding:20px 0;">${data.error || 'Error al cargar'}</p>`;
+                    cuerpo.innerHTML = `<p style="color:#B91C1C;text-align:center;font-size:0.88rem;padding:20px 0;">${escapeHtml(data.error || 'Error al cargar')}</p>`;
                     return;
                 }
                 const all    = Array.isArray(data) ? data : (data.transactions || data.data || []);
@@ -3197,7 +3213,11 @@
                 _todasPropias = propias;
                 renderHistorialFiltrado();
             } catch (err) {
-                cuerpo.innerHTML = `<p style="color:#B91C1C;text-align:center;font-size:0.88rem;padding:20px 0;">Error de conexión: ${err.message}</p>`;
+                const msg = err?.name === 'AbortError'
+                    ? 'El servidor tardó demasiado. Verificá que esté corriendo.'
+                    : 'No se pudo cargar. Verificá que el servidor esté activo.';
+                cuerpo.innerHTML = `<p style="color:#B91C1C;text-align:center;font-size:0.88rem;padding:20px 0;">${msg}</p>`;
+                mostrarBannerMantenimiento(true);
             }
         }
 
@@ -3510,7 +3530,7 @@
                 const fmt        = simbolo + ' ' + data.nuevoSaldo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const nombreDest = document.getElementById('destinatarioNombre').textContent;
                 document.getElementById('mensajeResultado').textContent =
-                    `Enviaste ${simbolo} ${importe.toLocaleString('es-AR', { minimumFractionDigits: 2 })} a ${nombreDest}`;
+                    `Enviaste ${simbolo} ${importe.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} a ${nombreDest}`;
                 document.getElementById('nuevoSaldoDisplay').textContent = fmt;
                 playSound('egreso');
                 mostrarPaso(3);
@@ -3590,12 +3610,7 @@
         }
 
         // ── TARJETA GEMELA EN USD ────────────────────────────────────────────
-        let cuentaUsdDashboard = null;
-        // Guarda la promesa de cargarCuentaUsdDashboard() para que cargarRecentTx() pueda
-        // esperarla antes de filtrar movimientos — sin esto, si el historial llegaba antes
-        // que los productos, cuentaUsdDashboard todavía era null y los movimientos en USD
-        // se perdían del widget "Últimos movimientos" en esa primera pasada.
-        let _cuentaUsdDashboardPromise = null;
+        // (cuentaUsdDashboard y _cuentaUsdDashboardPromise se declaran antes del INIT)
 
         function fmtUsdCard(v) { return 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -4257,7 +4272,7 @@
             const quien = nombreLector || 'Alguien';
             const sufijo = nombreBanco ? ` desde ${nombreBanco}` : '';
             let texto = `${quien} escaneó tu QR${sufijo}.`;
-            if (_qrMontoActual) texto += ` Esperando el pago de ${(_qrMontoActual).toLocaleString('es-AR', { minimumFractionDigits: 2 })}…`;
+            if (_qrMontoActual) texto += ` Esperando el pago de ${(_qrMontoActual).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}…`;
             document.getElementById('qrUsadoTexto').textContent = texto;
             document.getElementById('qrContenidoNormal').style.display = 'none';
             document.getElementById('qrContenidoUsado').style.display = '';
@@ -4434,7 +4449,7 @@
                     ? (t.personaDestino ? `${t.personaDestino.nombre} ${t.personaDestino.apellido}` : t.cbuDestino)
                     : (t.personaOrigen  ? `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}` : t.cbuOrigen);
                 const negativo = esCambio ? esCambioCompra : esPrestamo ? (t.cbuOrigen !== 'PRESTAMO') : esReserva ? (t.cbuOrigen !== 'RESERVA') : esTarjeta ? (t.cbuOrigen !== 'TARJETA') : esEnvio;
-                const importe = (negativo ? '-' : '+') + simboloMoneda(esUsdRow) + ' ' + Number(t.importe).toLocaleString('es-AR', {minimumFractionDigits:2});
+                const importe = (negativo ? '-' : '+') + simboloMoneda(esUsdRow) + ' ' + Number(t.importe).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 return [fecha, tipo, nombre, importe, t.estado || '', t.motivoRechazo || ''];
             });
             const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');

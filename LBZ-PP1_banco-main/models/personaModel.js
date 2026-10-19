@@ -2,6 +2,7 @@ const db = require('../config/db');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const fetchConTimeout = require('../utils/fetchConTimeout');
+const moverSaldo = require('../utils/moverSaldo');
 
 const ES_HASH_BCRYPT = /^\$2[aby]\$/;
 
@@ -127,13 +128,11 @@ const Persona = {
       if (Number(origen.saldo) < Number(importe))
         throw Object.assign(new Error('Saldo insuficiente'), { code: 'SALDO_INSUFICIENTE' });
 
-      const nuevoSaldoOrigen = Number(origen.saldo) - Number(importe);
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldoOrigen, origen.id_cuenta]);
+      const nuevoSaldoOrigen = await moverSaldo(client, origen.id_cuenta, -Number(importe));
 
       let nuevoSaldoDestino = null;
       if (destino) {
-        nuevoSaldoDestino = Number(destino.saldo) + Number(importe);
-        await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldoDestino, destino.id_cuenta]);
+        nuevoSaldoDestino = await moverSaldo(client, destino.id_cuenta, Number(importe));
       }
 
       await client.query('COMMIT');
@@ -252,20 +251,22 @@ const Persona = {
       const usd = rows.find(r => r.moneda === 'USD');
       if (!ars || !usd) throw Object.assign(new Error('Necesitás una caja en ARS y otra en USD para operar'), { code: 'NO_CUENTA' });
 
-      let nuevoArs, nuevoUsd, importeArs;
+      // importeArs se redondea a centavos: es lo que se mueve de verdad (la columna es DECIMAL(15,2))
+      // y lo que se le muestra al usuario, en vez de un float con 10 decimales.
+      let importeArs, deltaArs, deltaUsd;
       if (direccion === 'compra') {
-        importeArs = importeUsd * tasaVenta;
+        importeArs = Math.round(importeUsd * tasaVenta * 100) / 100;
         if (Number(ars.saldo) < importeArs) throw Object.assign(new Error('Saldo insuficiente en ARS'), { code: 'SALDO_INSUFICIENTE' });
-        nuevoArs = Number(ars.saldo) - importeArs;
-        nuevoUsd = Number(usd.saldo) + importeUsd;
+        deltaArs = -importeArs;
+        deltaUsd = importeUsd;
       } else {
-        importeArs = importeUsd * tasaCompra;
+        importeArs = Math.round(importeUsd * tasaCompra * 100) / 100;
         if (Number(usd.saldo) < importeUsd) throw Object.assign(new Error('Saldo insuficiente en USD'), { code: 'SALDO_INSUFICIENTE' });
-        nuevoArs = Number(ars.saldo) + importeArs;
-        nuevoUsd = Number(usd.saldo) - importeUsd;
+        deltaArs = importeArs;
+        deltaUsd = -importeUsd;
       }
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoArs, ars.id_cuenta]);
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoUsd, usd.id_cuenta]);
+      const nuevoArs = await moverSaldo(client, ars.id_cuenta, deltaArs);
+      const nuevoUsd = await moverSaldo(client, usd.id_cuenta, deltaUsd);
       await client.query('COMMIT');
       return { saldoArs: nuevoArs, saldoUsd: nuevoUsd, importeArs, cbuArs: ars.cbu, cbuUsd: usd.cbu };
     } catch (error) {

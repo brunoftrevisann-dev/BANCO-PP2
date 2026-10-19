@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const moverSaldo = require('../utils/moverSaldo');
 
 const Prestamo = {
   // CBUs (ARS y USD si tiene) de una persona, para el cálculo de ingreso/egreso
@@ -257,8 +258,7 @@ const Prestamo = {
       const pagadaAntes = new Date() < finDelDiaVencimiento;
       const nuevoEstado = pagadaAntes ? 'PAGADA_ANTICIPADA' : 'PAGADA';
 
-      const nuevoSaldo = Number(cuenta.saldo) - Number(cuota.monto);
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldo, cuenta.id_cuenta]);
+      const nuevoSaldo = await moverSaldo(client, cuenta.id_cuenta, -Number(cuota.monto));
       await client.query('UPDATE Cuotas SET estado = $1, fecha_pago = NOW() WHERE id_cuota = $2', [nuevoEstado, idCuota]);
 
       const restantesResult = await client.query(
@@ -314,14 +314,13 @@ const Prestamo = {
          WHERE id_prestamo = $1 AND estado IN ('PAGADA', 'PAGADA_ANTICIPADA')`,
         [idPrestamo]
       );
-      const capitalPendiente = Number(prestamo.monto) - Number(capitalPagadoResult.rows[0].pagado);
+      const capitalPendiente = Math.round((Number(prestamo.monto) - Number(capitalPagadoResult.rows[0].pagado)) * 100) / 100;
       if (capitalPendiente <= 0)
         throw Object.assign(new Error('Este préstamo ya está saldado'), { code: 'YA_SALDADO' });
       if (Number(cuenta.saldo) < capitalPendiente)
         throw Object.assign(new Error('Saldo insuficiente para cancelar'), { code: 'SALDO_INSUFICIENTE' });
 
-      const nuevoSaldo = Number(cuenta.saldo) - capitalPendiente;
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldo, cuenta.id_cuenta]);
+      const nuevoSaldo = await moverSaldo(client, cuenta.id_cuenta, -capitalPendiente);
       await client.query(
         `UPDATE Cuotas SET estado = 'CANCELADA' WHERE id_prestamo = $1 AND estado IN ('PENDIENTE', 'VENCIDA')`,
         [idPrestamo]

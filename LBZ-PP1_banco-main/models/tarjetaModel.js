@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const moverSaldo = require('../utils/moverSaldo');
 const crypto = require('crypto');
 
 // Límite de compra con el que se emite toda tarjeta de crédito nueva. No hay scoring propio
@@ -311,8 +312,7 @@ const Tarjeta = {
       if (t.estado !== ESTADO_ACTIVO) throw err('Tu tarjeta de débito está bloqueada', 'BLOQUEADA');
       if (Number(t.saldo) < Number(monto)) throw err('Saldo insuficiente', 'SALDO_INSUFICIENTE');
 
-      const nuevoSaldo = round2(Number(t.saldo) - Number(monto));
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldo, t.id_cuenta]);
+      const nuevoSaldo = await moverSaldo(client, t.id_cuenta, -Number(monto));
       const mov = await client.query(
         `INSERT INTO Consumos_Tarjeta (id_producto, tipo, comercio, monto, cuotas)
          VALUES ($1, 'COMPRA', $2, $3, 1) RETURNING *`,
@@ -394,9 +394,8 @@ const Tarjeta = {
       if (!cuenta) throw err('No se encontró tu caja de ahorro en ARS', 'NO_CUENTA');
       if (Number(cuenta.saldo) < Number(monto)) throw err('Saldo insuficiente', 'SALDO_INSUFICIENTE');
 
-      const nuevoSaldo = round2(Number(cuenta.saldo) - Number(monto));
+      const nuevoSaldo = await moverSaldo(client, cuenta.id_cuenta, -Number(monto));
       const nuevaDeuda = round2(Number(t.deuda) - Number(monto));
-      await client.query('UPDATE Cuentas_Bancarias SET saldo = $1 WHERE id_cuenta = $2', [nuevoSaldo, cuenta.id_cuenta]);
       const resumen = await resumenCredito(client, { ...t, deuda: nuevaDeuda });
       await client.query(
         `UPDATE Tarjetas_Credito SET deuda = $1, saldo_financiado = $2, fecha_ultimo_interes = CURRENT_DATE WHERE id_tarjeta = $3`,
