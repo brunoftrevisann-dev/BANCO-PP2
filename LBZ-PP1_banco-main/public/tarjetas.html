@@ -500,10 +500,15 @@
             const plastico = document.getElementById('plastico');
             plastico.className = 'plastico ' + (tipoActual === 'CREDITO' ? 'credito' : 'debito') + (bloqueada ? ' bloqueada' : '');
             document.getElementById('plasticoTipo').textContent = tipoActual === 'CREDITO' ? 'Crédito' : 'Débito';
-            document.getElementById('plasticoNumero').textContent = datosVisibles ? numeroAgrupado(t.numero_tarjeta) : numeroOculto(t.numero_tarjeta);
+            // t.numero_tarjeta ya viene enmascarado del servidor salvo justo después de emitir
+            // (ver solicitarTarjeta) — "Ver datos" solo tiene sentido, y solo se muestra, en ese
+            // momento puntual: el servidor nunca vuelve a mandar el CVV en ninguna otra carga.
+            const hayDatosReales = !!t.cvv;
+            document.getElementById('btnVerDatos').style.display = hayDatosReales ? '' : 'none';
+            document.getElementById('plasticoNumero').textContent = (datosVisibles && hayDatosReales) ? numeroAgrupado(t.numero_tarjeta) : numeroOculto(t.numero_tarjeta);
             document.getElementById('plasticoTitular').textContent = t.nombre_titular || `${u.nombre} ${u.apellido}`.toUpperCase();
             document.getElementById('plasticoVence').textContent = fmtVence(t.fecha_vencimiento);
-            document.getElementById('plasticoCvv').textContent = datosVisibles ? (t.cvv || '---') : '•••';
+            document.getElementById('plasticoCvv').textContent = (datosVisibles && hayDatosReales) ? t.cvv : '•••';
             document.getElementById('plasticoMarca').textContent = t.marca || '';
             document.getElementById('lblVerDatos').textContent = datosVisibles ? 'Ocultar datos' : 'Ver datos';
             document.getElementById('lblBloqueo').textContent = bloqueada ? 'Desbloquear' : 'Bloquear';
@@ -639,9 +644,20 @@
             err.classList.remove('visible');
             btn.disabled = true; btn.textContent = 'Emitiendo...';
             try {
-                await api('/api/tarjetas/emitir', 'POST', { tipo: tipoActual });
+                // El servidor manda el número y CVV completos ÚNICA vez, en esta respuesta
+                // (después, /api/tarjetas los devuelve enmascarados para siempre) — igual que
+                // una tarjeta física, que se puede leer entera solo cuando llega. cargarTarjetas()
+                // pisaría esto con la versión enmascarada, así que se mergea DESPUÉS de recargar.
+                const tarjetaNueva = await api('/api/tarjetas/emitir', 'POST', { tipo: tipoActual });
                 mostrarToast(`¡Tu tarjeta de ${tipoActual === 'CREDITO' ? 'crédito' : 'débito'} ya está activa!`, 'exito');
                 await cargarTarjetas();
+                const key = tipoActual === 'CREDITO' ? 'credito' : 'debito';
+                if (tarjetas[key]) {
+                    tarjetas[key].numero_tarjeta = tarjetaNueva.numero_tarjeta;
+                    tarjetas[key].cvv = tarjetaNueva.cvv;
+                    datosVisibles = true;
+                    render();
+                }
             } catch (e) {
                 err.textContent = e.message; err.classList.add('visible');
             } finally {

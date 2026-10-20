@@ -40,6 +40,26 @@ const pagoMinimo = (aPagar) => round2(Math.min(Number(aPagar), Math.max(Number(a
 
 const err = (msg, code) => Object.assign(new Error(msg), { code });
 
+// Namespace propio para no colisionar con otros usos de advisory lock que pueda haber en el
+// futuro (el segundo argumento es el idPersona). Serializa emitirDebito/emitirCredito por
+// persona: dos clicks simultáneos en "Emitir tarjeta" ya no pueden leer "no tiene" los dos antes
+// de que el primero llegue a insertar — el segundo espera a que el primero termine (COMMIT o
+// ROLLBACK libera el lock solo, no hace falta soltarlo a mano) y ahí sí ve la tarjeta recién
+// creada. Antes el chequeo "¿ya tiene tarjeta?" era un SELECT sin lock seguido de un INSERT:
+// dos requests concurrentes podían pasar las dos, dejando a la persona con dos tarjetas activas
+// y el límite de crédito duplicado.
+const LOCK_NS_EMITIR_TARJETA = 847201;
+async function lockearEmisionTarjeta(client, idPersona) {
+  await client.query('SELECT pg_advisory_xact_lock($1, $2)', [LOCK_NS_EMITIR_TARJETA, idPersona]);
+}
+
+// Oculta todo menos los últimos 4 dígitos, mismo formato que ya usaba el frontend para la vista
+// "oculta" (tarjetas.html numeroOculto()) — ahora es el ÚNICO formato que el servidor manda en
+// los listados, el número completo ya no sale de la base salvo en el momento de emitir la tarjeta.
+function enmascararNumero(numero) {
+  return numero ? '•••• •••• •••• ' + numero.slice(-4) : numero;
+}
+
 // Compra en cuotas: 1 cuota sin interés; 3, 6 y 12 con la TNA de tarjetas, en sistema francés
 // (cuota fija, mismo cálculo que Préstamos). La deuda suma el total con interés incluido.
 function calcularFinanciacion(monto, cuotas, tna) {
@@ -61,12 +81,17 @@ async function pendienteEnCuotas(client, idProducto) {
        AND created_at > NOW() - INTERVAL '13 months'`,
     [idProducto]
   );
-  const hoy = new Date();
+  const hoy = Date.now();
   let pendiente = 0;
   for (const c of rows) {
-    const f = new Date(c.created_at);
-    const meses = (hoy.getFullYear() - f.getFullYear()) * 12 + (hoy.getMonth() - f.getMonth());
-    const vencidas = Math.min(c.cuotas, meses + 1);
+    // Antes esto contaba "meses de calendario" (hoy.getMonth() - f.getMonth()), así que una
+    // compra del 31/1 consultada el 1/2 (1 día real después) ya contaba como una cuota vencida
+    // de más, mientras que una compra del 1/1 consultada el 28/1 (27 días después) todavía
+    // contaba 0 — el resultado dependía del día del mes de la compra, no del tiempo real
+    // transcurrido. Ahora son días reales / 30, mismo criterio que ya usa Reservas para sus
+    // propios vencimientos (fecha_vencimiento - fecha_alta en días, no en meses).
+    const diasTranscurridos = Math.floor((hoy - new Date(c.created_at).getTime()) / 86400000);
+    const vencidas = Math.min(c.cuotas, Math.floor(diasTranscurridos / 30) + 1);
     const montoCuota = c.monto_cuota !== null ? Number(c.monto_cuota) : Number(c.monto) / c.cuotas;
     pendiente += (c.cuotas - vencidas) * montoCuota;
   }
@@ -153,10 +178,18 @@ const Tarjeta = {
   calcularFinanciacion,
 
   // Devuelve las tarjetas de la persona (a lo sumo una de cada tipo) con el estado del producto.
-  // En crédito, antes de devolverla devenga el interés pendiente del saldo financiado.
+  // En crédito, antes de devolverla devenga el interés pendiente del saldo financiado. El CVV
+  // nunca sale de acá (ni hace falta: no sirve para nada una vez que la tarjeta ya está emitida)
+  // y el número completo se enmascara — el PAN+CVV completos solo se devuelven una vez, en el
+  // momento de emitirDebito/emitirCredito, igual que una tarjeta física que se puede leer entera
+  // solo cuando llega. Antes esto venía completo en cada carga de la pantalla (vía `td.*`/`tc.*`),
+  // así que cualquier inspección de Network, extensión de navegador o futuro bug de XSS alcanzaba
+  // para sacar el PAN + CVV completos — exactamente lo que hace falta para un fraude "card-not-present".
   getTarjetasPersona: async (idPersona, tna) => {
     const debito = await db.query(
-      `SELECT td.*, ep.nombre AS estado, cb.cbu, cb.saldo AS saldo_cuenta
+      `SELECT td.id_tarjeta, td.id_producto, td.id_cuenta, td.numero_tarjeta, td.marca,
+              td.nombre_titular, td.fecha_vencimiento,
+              ep.nombre AS estado, cb.cbu, cb.saldo AS saldo_cuenta
        FROM Tarjetas_Debito td
        JOIN Productos pr ON td.id_producto = pr.id_producto
        JOIN Estados_Producto ep ON pr.id_estado_producto = ep.id_estado_producto
@@ -165,6 +198,9 @@ const Tarjeta = {
        ORDER BY td.id_tarjeta DESC LIMIT 1`,
       [idPersona]
     );
+    const filaDebito = debito.rows[0] || null;
+    if (filaDebito) filaDebito.numero_tarjeta = enmascararNumero(filaDebito.numero_tarjeta);
+
     let tc = null;
     const client = await db.connect();
     try {
@@ -173,6 +209,8 @@ const Tarjeta = {
       if (rows[0]) {
         const t = await devengarInteres(client, rows[0], tna);
         tc = { ...t, ...(await resumenCredito(client, t)) };
+        tc.numero_tarjeta = enmascararNumero(tc.numero_tarjeta);
+        delete tc.cvv;
       }
       await client.query('COMMIT');
     } catch (error) {
@@ -181,13 +219,14 @@ const Tarjeta = {
     } finally {
       client.release();
     }
-    return { debito: debito.rows[0] || null, credito: tc };
+    return { debito: filaDebito, credito: tc };
   },
 
   emitirDebito: async (idPersona, nombreTitular) => {
     const client = await db.connect();
     try {
       await client.query('BEGIN');
+      await lockearEmisionTarjeta(client, idPersona);
 
       const existente = await client.query(
         `SELECT 1 FROM Tarjetas_Debito td
@@ -237,6 +276,7 @@ const Tarjeta = {
     const client = await db.connect();
     try {
       await client.query('BEGIN');
+      await lockearEmisionTarjeta(client, idPersona);
 
       const existente = await client.query(
         `SELECT 1 FROM Tarjetas_Credito tc
