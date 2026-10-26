@@ -218,6 +218,15 @@ exports.transferir = async (req, res) => {
     if (Number(cuentaOrigen.saldo) < Number(importe))
       return res.status(422).json({ error: 'Saldo insuficiente' });
 
+    // Si el destino es una cuenta propia de tuo, se conoce su moneda real de antemano — nunca
+    // se movía plata 1:1 entre monedas distintas (ej. transferir pesos a una cuenta en dólares
+    // ajena) sin pasar por cambiarDivisa ni ninguna conversión: se acreditaba el mismo número
+    // en la otra moneda, plata gratis. Para un cbu de otro banco esto no se puede chequear acá
+    // (no sabemos su moneda de antemano), queda del lado del Banco Central.
+    const cuentaDestino = await Persona.getByCbu(cbuDestino);
+    if (cuentaDestino && cuentaDestino.moneda !== cuentaOrigen.moneda)
+      return res.status(400).json({ error: 'No podés transferir entre cuentas de monedas distintas' });
+
     const bcRes = await fetchBC(`${process.env.BANCO_URL}/transactions`, {
       method: 'POST',
       headers: {
@@ -256,7 +265,6 @@ exports.transferir = async (req, res) => {
       }).catch(() => {});
     }
 
-    const cuentaDestino = await Persona.getByCbu(cbuDestino);
     if (cuentaDestino) {
       notificarTransferenciaRecibida(cuentaDestino.id_persona, {
         monto: importe,
