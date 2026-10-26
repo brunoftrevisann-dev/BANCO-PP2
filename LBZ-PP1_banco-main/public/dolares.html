@@ -74,7 +74,7 @@
         .card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
         .card-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
 
-        /* ── MODAL QR ── */
+        /* MODAL QR */
         .qr-overlay {
             display: none; position: fixed; inset: 0; z-index: 200;
             background: rgba(0,0,0,0.45); align-items: center; justify-content: center; padding: 20px;
@@ -188,8 +188,7 @@
             .header { padding: 0 16px; }
             .main { padding: 24px 16px 60px; }
             .card { padding: 22px 20px; }
-            /* el QR de 220x220 + el padding del overlay/panel/wrap no entraba en
-               phones muy angostos (~320-340px de ancho) — se achica el padding */
+            /* El QR de 220 px más el padding no entraba en phones de ~320 px. */
             .qr-overlay { padding: 12px; }
             .qr-panel { padding: 18px; }
             .qr-canvas-wrap { padding: 8px; }
@@ -428,8 +427,7 @@
             } else {
                 canvas.innerHTML = '<div style="padding:20px;color:#6B6B6B;font-size:0.82rem;">Cargando QR…</div>';
             }
-            // QR de un solo uso: polling cada 2s mientras está en pantalla (ver dashboard.html
-            // y la memoria del proyecto para la justificación de por qué no es Realtime).
+            // QR de un solo uso: polling cada 2 s mientras está en pantalla.
             const jti = decodificarJtiDeJwtUsd(contenidoQr);
             if (jti) {
                 _qrPollIntervalUsd = setInterval(async () => {
@@ -468,7 +466,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 cotizacion = data;
-                // Solo se muestra el MEP: es la única cotización que usa la operatoria de compra/venta de esta pantalla.
+                // Solo el MEP: es la única cotización que usa la compra y venta de esta pantalla.
                 const filas = [
                     ['MEP', data.mep],
                 ];
@@ -512,7 +510,6 @@
             document.getElementById('aliasUsd').textContent = cuentaUsd.alias || 'Sin alias';
         }
 
-        // ── WIZARD DE VERIFICACIÓN PARA ABRIR LA CAJA EN USD ────────────────
         function mostrarPasoDatos() {
             document.getElementById('pasoIntro').style.display = 'none';
             document.getElementById('pasoCodigo').style.display = 'none';
@@ -582,7 +579,6 @@
             }
         }
 
-        // ── ALIAS DE LA CAJA EN USD ──────────────────────────────────────────
         function mostrarEditAliasUsd() {
             document.getElementById('inputAliasUsd').value = cuentaUsd.alias || '';
             document.getElementById('editAliasUsdForm').style.display = 'block';

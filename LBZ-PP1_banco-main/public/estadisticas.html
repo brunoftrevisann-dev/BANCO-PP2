@@ -38,7 +38,7 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        /* ── HEADER ── */
+        /* HEADER */
         .header {
             background: var(--white); border-bottom: 1px solid var(--border);
             padding: 0 40px; height: 62px;
@@ -64,14 +64,14 @@
         }
         .btn-theme:hover { color: var(--text); border-color: #aaa; }
 
-        /* ── LAYOUT ── */
+        /* LAYOUT */
         .main {
             max-width: 720px; margin: 0 auto;
             padding: 32px 24px 64px;
             display: flex; flex-direction: column; gap: 16px;
         }
 
-        /* ── HERO SALDO ── */
+        /* HERO SALDO */
         .hero-card {
             background: var(--accent);
             border-radius: 20px; padding: 28px 32px;
@@ -93,7 +93,7 @@
             font-size: 0.84rem; color: rgba(255,255,255,0.55); margin-top: 10px; font-weight: 400;
         }
 
-        /* ── KPI CARDS ── */
+        /* KPI CARDS */
         .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
         .kpi-card {
@@ -121,7 +121,7 @@
         .kpi-val.red   { color: var(--red); }
         .kpi-val.blue  { color: var(--accent); }
 
-        /* ── CHART CARD ── */
+        /* CHART CARD */
         .chart-card {
             background: var(--white); border: 1px solid var(--border);
             border-radius: 16px; padding: 22px 24px;
@@ -146,7 +146,7 @@
 
         .chart-wrap { position: relative; height: 220px; }
 
-        /* ── MOTIVOS ── */
+        /* MOTIVOS */
         .motivos-layout {
             display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center;
         }
@@ -165,7 +165,7 @@
         }
         .motivo-amt { font-size: 0.83rem; font-weight: 600; color: var(--muted); flex-shrink: 0; }
 
-        /* ── EMPTY ── */
+        /* EMPTY */
         .chart-empty {
             height: 100%; display: flex; flex-direction: column;
             align-items: center; justify-content: center; gap: 8px;
@@ -173,7 +173,7 @@
         }
         .chart-empty p { font-size: 0.8rem; max-width: 200px; line-height: 1.5; }
 
-        /* ── RESPONSIVE ── */
+        /* RESPONSIVE */
         @media (max-width: 600px) {
             .header { padding: 0 16px; }
             .main { padding: 20px 16px 60px; gap: 12px; }
@@ -337,7 +337,6 @@
                 ? { grid: '#2C2C2E', tick: '#8E8E8E', barIn: '#3B82F6', barOut: '#F87171' }
                 : { grid: '#F0F0F0', tick: '#9E9E9E', barIn: '#0052FF', barOut: '#DC2626' };
 
-            // ── KPIs ──
             const depositos = txs.filter(t => t.cbuOrigen === 'DEPOSITO' && t.cbuDestino === u.cbu);
             const ingresos  = txs.filter(t => t.cbuDestino === u.cbu && t.cbuOrigen !== 'DEPOSITO' && (t.estado === 'aprobada' || t.estado === 'approved'));
             const gastos    = txs.filter(t => t.cbuOrigen  === u.cbu && (t.estado === 'aprobada' || t.estado === 'approved'));
@@ -348,7 +347,6 @@
             document.getElementById('valGastos').textContent   = fmt(gastos.reduce((s, t) => s + Number(t.importe), 0));
             document.getElementById('valDepositos').textContent= fmt(depositos.reduce((s, t) => s + Number(t.importe), 0));
 
-            // ── GRÁFICO COMBINADO ──
             const meses  = last6Months();
             const labels = meses.map(m => m.label);
             const grpIn  = groupByMonth(ingresos);
@@ -393,7 +391,6 @@
                 }
             });
 
-            // ── MOTIVOS ──
             const PIE_COLORS = ['#0052FF','#7C3AED','#059669','#D97706','#DB2777','#0284C7','#DC2626','#10B981'];
             const motivosRaw = JSON.parse(localStorage.getItem('tuo_transferencias_' + u.cbu) || '[]');
             const mTotals = {};

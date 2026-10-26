@@ -6,17 +6,12 @@ const fetchBC = require('../utils/fetchConTimeout');
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// gemini-3.5-flash-lite: confirmado en vivo contra la API real (ver sesión de diseño) — es el
-// modelo más liviano/barato del tier gratis de Google AI Studio, sin tarjeta. gemini-2.5-flash
-// ya no acepta cuentas nuevas y gemini-3.8-flash devolvió 503 por demanda, así que se dejan como
-// candidatos de fallback en ese orden.
+// El más liviano del tier gratis; los otros son fallback (2.5-flash ya no acepta cuentas nuevas).
 const MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash'];
 
-// Tope diario por persona: protege la cuota gratuita compartida (1.500 req/día en total para
-// TODOS los usuarios) de que una sola cuenta la agote sola, ya sea por error o por abuso.
+// La cuota gratuita (1.500 req/día) es compartida por todos los usuarios.
 const MAX_MENSAJES_DIARIOS = 30;
-// Tope de vueltas del loop de tool-calling por mensaje, para no quedar en un ciclo infinito
-// si el modelo insiste en pedir la misma tool una y otra vez.
+// Corta el loop si el modelo insiste en pedir la misma tool.
 const MAX_ITERACIONES_TOOLS = 5;
 
 const SYSTEM_INSTRUCTION = `Sos el asistente virtual de tuo, un banco digital argentino. Hablás en español rioplatense, de forma breve, clara y cordial, tratando de "vos" al usuario.
@@ -91,10 +86,7 @@ async function obtenerCotizacionDolar() {
 
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Misma convención que Persona.cambiarDivisa en personaModel.js: comprar dólares (ARS->USD) se
-// paga a la tasa de VENTA del que vende los dólares; vender dólares (USD->ARS) se recibe a la
-// tasa de COMPRA. Cálculo real hecho en código, no por el modelo, para evitar el error de
-// redondeo que aparecía cuando el propio LLM intentaba estimarlo de memoria.
+// El cálculo lo hace el código y no el modelo, que redondeaba mal estimándolo de memoria.
 async function convertirMoneda(monto, desde, hasta, tipoCotizacion = 'blue') {
   if (desde === hasta) return { montoConvertido: round2(monto), tasaUsada: null, tipoCotizacion };
   const cot = await obtenerCotizacionDolar();
@@ -108,15 +100,13 @@ async function convertirMoneda(monto, desde, hasta, tipoCotizacion = 'blue') {
   throw new Error('Solo se puede convertir entre ARS y USD');
 }
 
-// Ejecuta la tool pedida por el modelo, siempre filtrando por el idPersona de la sesión que
-// llegó al endpoint — nunca por algo que el modelo "decida" pasar como argumento. Así es
-// estructuralmente imposible que el chat termine mostrando datos de otra cuenta.
+// Filtra siempre por el idPersona de la sesión, nunca por un argumento que mande el modelo.
 async function ejecutarTool(nombre, idPersona, args) {
   switch (nombre) {
     case 'obtener_cuentas':
       return await Asistente.obtenerCuentas(idPersona);
     case 'buscar_movimientos':
-      // Gemini exige que "response" sea un objeto, no un array — de ahí el { movimientos: [...] }
+      // Gemini exige que "response" sea un objeto, no un array.
       return { movimientos: await Asistente.buscarMovimientos(idPersona, args?.limite) };
     case 'obtener_perfil_crediticio': {
       const perfil = await calcularPerfil(idPersona, 0);
@@ -146,9 +136,7 @@ async function ejecutarTool(nombre, idPersona, args) {
 async function generarConFallback(params) {
   let ultimoError;
   for (const model of MODELOS) {
-    // Una falla de red (sin .status: "fetch failed", socket colgado, DNS, etc.) es transitoria
-    // y no dice nada sobre el modelo en sí — vale la pena un segundo intento con el mismo modelo
-    // antes de darlo por caído y pasar al siguiente.
+    // Un error de red sin status es transitorio: se reintenta el mismo modelo antes de pasar al siguiente.
     for (let intento = 0; intento < 2; intento++) {
       try {
         return await ai.models.generateContent({ ...params, model });
@@ -158,8 +146,7 @@ async function generarConFallback(params) {
         break;
       }
     }
-    // Solo probamos el siguiente modelo si este está caído/sobrecargado, no si el request
-    // en sí está mal formado (ahí fallaría igual con cualquier modelo).
+    // Un request mal formado fallaría igual con cualquier modelo.
     if (ultimoError.status !== 503 && ultimoError.status !== 429 && ultimoError.status !== undefined) throw ultimoError;
   }
   throw ultimoError;
@@ -201,7 +188,6 @@ exports.chat = async (req, res) => {
         break;
       }
 
-      // Modelo pidió una o más tools: las ejecutamos todas y devolvemos los resultados juntos
       contents.push({ role: 'model', parts: r.candidates[0].content.parts });
       const partsRespuesta = [];
       for (const call of r.functionCalls) {
@@ -211,10 +197,7 @@ exports.chat = async (req, res) => {
         } catch (e) {
           resultado = { error: e.message || 'No se pudo obtener ese dato ahora' };
         }
-        // Defensa extra: Gemini rechaza el request entero si "response" no es un objeto
-        // (ver el fix de buscar_movimientos/obtener_prestamos_activos más arriba). Si algún
-        // tool futuro se olvida de envolver un array o devuelve un primitivo, esto evita que
-        // rompa toda la conversación en vez de solo esa respuesta.
+        // Gemini rechaza el request entero si "response" no es un objeto.
         if (resultado === null || typeof resultado !== 'object' || Array.isArray(resultado)) {
           resultado = { valor: resultado };
         }

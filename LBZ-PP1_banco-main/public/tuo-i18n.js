@@ -2,10 +2,8 @@
 (function () {
   'use strict';
 
-  // ── TRANSLATIONS ────────────────────────────────────────────────────────────
   var DICT = {
     es: {
-      // Common
       'common.back': 'Volver',
       'common.home': 'Inicio',
       'common.save': 'Guardar',
@@ -20,14 +18,12 @@
       'common.close': 'Cerrar',
       'common.version': 'Versión 1.0.0',
 
-      // Nav / Header
       'nav.home': 'Inicio',
       'nav.products': 'Productos',
       'nav.security': 'Seguridad',
       'nav.login': 'Log in',
       'nav.open_account': 'Abrir Cuenta',
 
-      // Settings page
       'settings.title': 'Ajustes',
       'settings.appearance': 'Apariencia',
       'settings.theme': 'Tema',
@@ -69,7 +65,6 @@
       'settings.vibration': 'Vibración',
       'settings.vibration.sub': 'Vibración al confirmar acciones',
 
-      // Settings toasts
       'toast.theme_updated': 'Tema actualizado',
       'toast.schedule_saved': 'Horario guardado',
       'toast.autologout_on': 'Cierre automático activado',
@@ -85,7 +80,6 @@
       'toast.vibration_off': 'Vibración desactivada',
       'settings.cache.confirm': 'Se borrarán los datos en caché de este dispositivo. No afecta tu cuenta ni tus movimientos.',
 
-      // Dashboard
       'dashboard.available': 'Saldo disponible',
       'dashboard.savings': 'Caja de Ahorro',
       'dashboard.actions': 'Acciones rápidas',
@@ -146,7 +140,6 @@
       'dashboard.tx.alias': 'Alias',
       'dashboard.tx.bank': 'Banco',
 
-      // Login
       'login.title': 'Bienvenido a tuo',
       'login.subtitle': 'Ingresá a tu cuenta',
       'login.email': 'Email',
@@ -157,7 +150,6 @@
       'login.register': 'Registrate',
       'login.biometric': 'Acceso biométrico',
 
-      // Registro
       'register.title': 'Crear cuenta',
       'register.subtitle': 'Abrí tu cuenta en minutos',
       'register.name': 'Nombre',
@@ -171,7 +163,6 @@
       'register.have_account': '¿Ya tenés cuenta?',
       'register.login': 'Iniciá sesión',
 
-      // Perfil
       'profile.title': 'Mi perfil',
       'profile.personal': 'Datos personales',
       'profile.name': 'Nombre',
@@ -187,7 +178,6 @@
       'profile.view_map': 'Ver en mapa',
       'profile.activity_empty': 'Sin registros disponibles.',
 
-      // Seguridad page
       'security.page.badge': 'Tu seguridad',
       'security.page.hero_title_html': 'Tu dinero protegido,<br>siempre y en todo <span>lugar</span>.',
       'security.page.hero_sub': 'La seguridad en tuo no es un extra, es el núcleo de todo lo que hacemos. Cada transacción, cada dato, cada acceso está protegido.',
@@ -218,22 +208,17 @@
       'security.page.stat2_label': 'Monitoreo continuo de actividad sospechosa y fraude',
       'security.page.stat3_label': 'Costo por activar todas las capas de seguridad disponibles',
 
-      // Footer
       'footer.rights': '© 2025 tuo · Todos los derechos reservados',
 
-      // Depositar
       'deposit.title': 'Depositar',
       'deposit.back': 'Volver',
 
-      // Contactos
       'contacts.title': 'Contactos',
 
-      // Estadísticas
       'stats.title': 'Estadísticas',
     },
 
     en: {
-      // Common
       'common.back': 'Back',
       'common.home': 'Home',
       'common.save': 'Save',
@@ -248,14 +233,12 @@
       'common.close': 'Close',
       'common.version': 'Version 1.0.0',
 
-      // Nav / Header
       'nav.home': 'Home',
       'nav.products': 'Products',
       'nav.security': 'Security',
       'nav.login': 'Log in',
       'nav.open_account': 'Open Account',
 
-      // Settings page
       'settings.title': 'Settings',
       'settings.appearance': 'Appearance',
       'settings.theme': 'Theme',
@@ -297,7 +280,6 @@
       'settings.vibration': 'Vibration',
       'settings.vibration.sub': 'Vibrate on action confirmation',
 
-      // Settings toasts
       'toast.theme_updated': 'Theme updated',
       'toast.schedule_saved': 'Schedule saved',
       'toast.autologout_on': 'Auto close enabled',
@@ -313,7 +295,6 @@
       'toast.vibration_off': 'Vibration disabled',
       'settings.cache.confirm': 'Cached data on this device will be deleted. Your account and transactions are not affected.',
 
-      // Dashboard
       'dashboard.available': 'Available balance',
       'dashboard.savings': 'Savings Account',
       'dashboard.actions': 'Quick actions',
@@ -374,7 +355,6 @@
       'dashboard.tx.alias': 'Alias',
       'dashboard.tx.bank': 'Bank',
 
-      // Login
       'login.title': 'Welcome to tuo',
       'login.subtitle': 'Sign in to your account',
       'login.email': 'Email',
@@ -385,7 +365,6 @@
       'login.register': 'Sign up',
       'login.biometric': 'Biometric access',
 
-      // Registro
       'register.title': 'Create account',
       'register.subtitle': 'Open your account in minutes',
       'register.name': 'First name',
@@ -399,7 +378,6 @@
       'register.have_account': 'Already have an account?',
       'register.login': 'Sign in',
 
-      // Perfil
       'profile.title': 'My profile',
       'profile.personal': 'Personal information',
       'profile.name': 'Name',
@@ -415,7 +393,6 @@
       'profile.view_map': 'View on map',
       'profile.activity_empty': 'No records available.',
 
-      // Seguridad page
       'security.page.badge': 'Your security',
       'security.page.hero_title_html': 'Your money protected,<br>always and <span>everywhere</span>.',
       'security.page.hero_sub': 'Security at tuo is not an add-on — it is the core of everything we do. Every transaction, every piece of data, every access is protected.',
@@ -446,22 +423,16 @@
       'security.page.stat2_label': 'Continuous monitoring of suspicious activity and fraud',
       'security.page.stat3_label': 'Cost to activate all available security layers',
 
-      // Footer
       'footer.rights': '© 2025 tuo · All rights reserved',
 
-      // Depositar
       'deposit.title': 'Deposit',
       'deposit.back': 'Back',
 
-      // Contactos
       'contacts.title': 'Contacts',
 
-      // Estadísticas
       'stats.title': 'Statistics',
     }
   };
-
-  // ── CORE FUNCTIONS ──────────────────────────────────────────────────────────
 
   function getLang() {
     return localStorage.getItem('tuo_lang') || 'es';
@@ -498,15 +469,11 @@
     });
   }
 
-  // ── FONT SIZE ────────────────────────────────────────────────────────────────
-
   function applyFontSize() {
     var size = localStorage.getItem('tuo_font_size') || 'md';
     var scaleMap = { sm: '88%', md: '100%', lg: '112%', xl: '125%' };
     document.documentElement.style.fontSize = scaleMap[size] || '100%';
   }
-
-  // ── VIBRATION ────────────────────────────────────────────────────────────────
 
   function vibrate(pattern) {
     if (localStorage.getItem('tuo_vibration') === '0') return;
@@ -519,12 +486,7 @@
   function vibrateSuccess() { vibrate([10, 5, 10, 5, 30]); }
   function vibrateError() { vibrate([50, 10, 50]); }
 
-  // ── DETECCIÓN DE MOBILE ──────────────────────────────────────────────────────
-  // Mismo breakpoint que ya usan todos los @media (max-width: 600px) del resto de
-  // la app — agrega la clase "is-mobile" a <html> para que el CSS pueda usar
-  // selectores tipo `html.is-mobile .algo` donde un @media no alcance (por ej.
-  // reglas que dependen de JS), y expone window.tuoEsMobile() para ramas de JS
-  // (ej. UX distinta del escáner de QR en celular).
+  // Mismo breakpoint que los @media (max-width: 600px), para reglas que dependen de JS.
   var mqMobile = window.matchMedia('(max-width: 600px)');
   function actualizarClaseMobile(e) {
     document.documentElement.classList.toggle('is-mobile', e.matches);
@@ -537,28 +499,21 @@
   }
   window.tuoEsMobile = function () { return mqMobile.matches; };
 
-  // ── INIT ─────────────────────────────────────────────────────────────────────
-
-  // Apply font size immediately — document.documentElement is always available
+  // document.documentElement ya existe: no hace falta esperar al DOM.
   applyFontSize();
 
-  // Apply translations once DOM is parsed
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', applyI18n);
   } else {
     applyI18n();
   }
 
-  // ── FORMATO DE MONTOS ───────────────────────────────────────────────────────
-  // Compartido por dashboard.html, depositar.html y prestamos.html: formatea un input de
-  // monto con puntos de miles mientras se escribe (estilo es-AR: "1.234.567,89"). El input
-  // queda como texto (un <input type="number"> no puede mostrar separadores), así que hay
-  // que leerlo con valorNumerico() en vez de Number()/parseFloat() directo.
+  // El input queda como texto (type=number no muestra separadores): leerlo con valorNumerico().
   function formatearMonto(input) {
     var crudo = input.value.replace(/[^\d,]/g, '');
-    var idx = crudo.lastIndexOf(','); // todo lo que hay después de la ÚLTIMA coma es la parte decimal;
-    var entero = idx === -1 ? crudo : crudo.slice(0, idx).replace(/,/g, ''); // así una coma de más
-    var decimal = idx === -1 ? undefined : crudo.slice(idx + 1);            // no borra dígitos, solo se ignora
+    var idx = crudo.lastIndexOf(','); // después de la última coma va la parte decimal; las comas de más se ignoran
+    var entero = idx === -1 ? crudo : crudo.slice(0, idx).replace(/,/g, '');
+    var decimal = idx === -1 ? undefined : crudo.slice(idx + 1);
     var enteroFmt = entero.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     input.value = decimal !== undefined ? (enteroFmt + ',' + decimal.slice(0, 2)) : enteroFmt;
   }
@@ -566,14 +521,10 @@
     return parseFloat((input.value || '').replace(/\./g, '').replace(',', '.')) || 0;
   }
 
-  // ── PUBLIC API ────────────────────────────────────────────────────────────────
-
   window.formatearMonto = formatearMonto;
   window.valorNumerico  = valorNumerico;
 
-  // Criterio único de fortaleza de contraseña (registro.html y perfil.html), antes cada página
-  // tenía el suyo y una misma contraseña podía salir "Buena" en una y "Regular" en la otra.
-  // score va de 0 a 4 (un punto por criterio cumplido); faltantes lista lo que no cumple.
+  // score de 0 a 4, un punto por criterio; faltantes lista los que no cumple.
   window.PASSWORD_MIN = 8;
   window.evaluarPassword = function (pwd) {
     var criterios = [
@@ -586,9 +537,7 @@
     return { score: criterios.length - faltantes.length, faltantes: faltantes };
   };
 
-  // Compartido por dashboard.html y dolares.html: pide al servidor el QR de cobro firmado (JWT ES256,
-  // ver qr-interbancario-jwt.md) para un CBU propio. Si el servidor no puede firmar, cae al CBU plano
-  // (el formato de siempre) para que mostrar el QR nunca deje de andar.
+  // Si el servidor no puede firmar, cae al CBU plano para que el QR nunca deje de andar.
   window.obtenerContenidoQr = async function (cbu, monto) {
     try {
       var ctrl = new AbortController();
@@ -610,10 +559,7 @@
     }
   };
 
-  // XSS almacenado: nombre/apellido/alias (registro, editable por cualquier usuario) y
-  // descripcion (transferencias) viajan tal cual hasta el navegador de OTRO usuario, que los
-  // interpola en innerHTML sin escapar — un nombre "<img src=x onerror=...>" se ejecutaba.
-  // Envolver esas interpolaciones con escapeHtml() en cada lugar que las muestra.
+  // Nombres, alias y descripciones los escribe otro usuario: escaparlos siempre antes de usar innerHTML.
   window.escapeHtml = function (str) {
     return String(str == null ? '' : str)
       .replace(/&/g, '&amp;')
@@ -635,7 +581,6 @@
     vibrateError: vibrateError
   };
 
-  // Expose t() globally as shorthand
   window.t = t;
 
 })();

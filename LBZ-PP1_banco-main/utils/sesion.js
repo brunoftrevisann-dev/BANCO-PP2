@@ -1,9 +1,6 @@
-// Sesiones reales (cookie httpOnly + JWT) — antes todo endpoint confiaba ciegamente en el
-// idPersona/cbu que mandaba el cliente en el body/query, así que cualquiera podía operar como
-// si fuera otra persona con solo conocer su id o cbu. Reusa `jose` (ya es dependencia, usado
-// para firmar los QR interbancarios) en vez de agregar jsonwebtoken — misma API.
+// Sesión en cookie httpOnly con JWT: la identidad sale siempre de acá, nunca del body ni de la query.
 const NOMBRE_COOKIE = 'tuo_session';
-const DURACION_MS = 30 * 24 * 60 * 60 * 1000; // 30 días — primera vez que hay sesiones, sin refresh tokens todavía
+const DURACION_MS = 30 * 24 * 60 * 60 * 1000; // 30 días, sin refresh tokens
 
 let joseModulo = null;
 async function jose() {
@@ -38,9 +35,7 @@ async function verificarSesion(token) {
 function setCookieSesion(res, token) {
   res.cookie(NOMBRE_COOKIE, token, {
     httpOnly: true,
-    // secure:true exige HTTPS — en local (node app.js, sin HTTPS) el navegador directamente
-    // ignora la cookie si se manda así, y el login "funciona" pero ninguna request siguiente
-    // queda autenticada. Vercel pone NODE_ENV=production solo en producción (HTTPS real).
+    // En local no hay HTTPS, y con secure:true el navegador descarta la cookie.
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: DURACION_MS
@@ -51,9 +46,7 @@ function limpiarCookieSesion(res) {
   res.clearCookie(NOMBRE_COOKIE);
 }
 
-// Middleware: exige una sesión válida y deja el id de la persona en req.idPersona. Nunca lee
-// idPersona/cbu del body/query para decidir identidad — esa es la causa raíz del problema que
-// esto corrige, así que el resto del código tiene que empezar a confiar solo en req.idPersona.
+// Deja el id en req.idPersona: el resto del código tiene que confiar solo en ese valor.
 function requireAuth(req, res, next) {
   const token = req.cookies?.[NOMBRE_COOKIE];
   if (!token) return res.status(401).json({ error: 'No autenticado' });

@@ -1,16 +1,7 @@
-// Edge Function pública (sin login) que recibe el "aviso de lectura" del QR
-// interbancario de otros bancos de la cátedra — ver prompt-aviso-lectura-qr.md.
+// Edge Function pública que recibe el aviso de lectura de otros bancos (prompt-aviso-lectura-qr.md).
+// Es un proxy delgado a propósito: la lógica vive en qrController.avisoLectura.
 //
-// Es un PROXY DELGADO a propósito: toda la lógica real (verificar el QR con nuestra
-// propia clave pública, buscar la cuenta, deduplicar en los últimos 30s, crear la
-// notificación) ya está implementada y probada en el backend de Express
-// (controllers/qrController.js → exports.avisoLectura), que corre contra la misma
-// base de Postgres. Esta función existe solo para que `avisoUrl` sea una Edge
-// Function de Supabase, igual que en los otros bancos — no duplica ni reimplementa
-// nada de esa lógica en Deno.
-//
-// Variable de entorno requerida (Project Settings → Edge Functions → Secrets):
-//   BACKEND_AVISO_URL = https://banco-tuo.vercel.app/api/qr/aviso-lectura
+// Secret requerido: BACKEND_AVISO_URL = https://banco-tuo.vercel.app/api/qr/aviso-lectura
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -64,8 +55,7 @@ Deno.serve(async (req: Request) => {
       headers: { ...CORS_HEADERS, 'Content-Type': resp.headers.get('content-type') || 'application/json' },
     });
   } catch {
-    // Backend caído, en mantenimiento, o timeout — esto nunca debería frenar un pago
-    // del lado de quien nos avisa, pero sí le devolvemos un error honesto.
+    // No debería frenar el pago de quien nos avisa, pero el error se informa igual.
     return new Response(JSON.stringify({ error: 'no se pudo contactar el backend' }), {
       status: 502,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },

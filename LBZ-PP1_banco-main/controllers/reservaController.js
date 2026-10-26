@@ -5,18 +5,12 @@ const { notificarReservaAbierta, notificarReservaVencida } = require('../utils/n
 
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Diferencias propias de tuo, no vienen de ninguna API: ningún plazo fijo bancario real baja de
-// 30 días (mínimo legal BCRA), así que la semanal y el frasco no tienen tasa de mercado posible.
-// Naranja X real paga menos en sus productos cortos/flexibles que en el fijo largo, pero la
-// diferencia real es chica (1-2 puntos porcentuales entre un plazo y el siguiente, no un porcentaje
-// multiplicativo) — por eso son puntos porcentuales restados, no un factor como 0.70/0.45, que con
-// una tasa base de ~20% abría una brecha de 6-11 puntos, mucho más de lo que se ve en la realidad.
+// Ningún plazo fijo real baja de 30 días (mínimo BCRA): la semanal y el frasco restan puntos a la tasa fija.
 const DIFERENCIA_SEMANAL_PP = 0.015; // 1.5 puntos porcentuales menos que la fija
 const DIFERENCIA_FRASCO_PP = 0.03;   // 3 puntos porcentuales menos que la fija (1.5 menos que la semanal)
 const TNA_MINIMA = 0.01;             // piso de seguridad, para que nunca quede negativa si la tasa base es muy baja
 
-// Promedia la tnaClientes (o la banda de tasas[] que cubra el plazo pedido) de los bancos de
-// api.argentinadatos.com — mismo criterio de "promedio, no una entidad puntual" que préstamos.
+// Promedio de todos los bancos, no una entidad puntual (mismo criterio que préstamos).
 async function calcularTnaFijaReferencia(plazoDias) {
   const res = await fetchBC('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo', {}, 10000);
   if (!res.ok) throw new Error('No se pudo obtener la tasa de referencia de plazo fijo');
@@ -89,7 +83,7 @@ exports.abrir = async (req, res) => {
     if (tipo === 'FIJO_MESES' && ![1, 2, 3].includes(Number(plazoMeses))) return res.status(400).json({ error: 'plazoMeses debe ser 1, 2 o 3' });
     if (tipo === 'FIJO_DIAS' && ![7, 14, 21, 28].includes(Number(plazoDias))) return res.status(400).json({ error: 'plazoDias debe ser 7, 14, 21 o 28' });
 
-    // La tasa nunca se confía del cliente: se vuelve a calcular acá, igual que cambiarDivisa con el MEP.
+    // La tasa nunca se confía del cliente.
     const plazoDiasEquivalente = tipo === 'FIJO_MESES' ? Number(plazoMeses) * 30 : (tipo === 'FIJO_DIAS' ? Number(plazoDias) : 30);
     const tasas = await calcularTasas(plazoDiasEquivalente);
     const tna = tasas[tipo];

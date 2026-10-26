@@ -30,9 +30,7 @@ function plantillaCodigo({ nombre, mensaje, codigo, disclaimer }) {
   `;
 }
 
-// Mismo header/footer/paleta que plantillaCodigo, pero sin la caja de código — para avisos
-// que no son un código de verificación (vencimiento de cuota, nuevo dispositivo, etc.).
-// `filas` es opcional: una lista de {label, value} que se muestra como detalle.
+// Variante de plantillaCodigo sin la caja de código, para avisos; `filas` es opcional.
 function plantillaAviso({ nombre, titulo, mensaje, filas, disclaimer }) {
   const filasHtml = (filas || []).map(f => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E5E5E5;">

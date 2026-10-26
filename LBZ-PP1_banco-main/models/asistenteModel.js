@@ -1,11 +1,8 @@
 const db = require('../config/db');
 
-// Todas las funciones de acá son de SOLO LECTURA y siempre reciben idPersona como filtro —
-// es la garantía estructural de que la IA nunca puede terminar mostrando datos de otra cuenta,
-// sin importar qué le pida el texto libre del usuario (ver system prompt en asistenteController).
+// Todo es de solo lectura y filtra por idPersona: la IA nunca puede ver datos de otra cuenta.
 
 const Asistente = {
-  // Saldo + CBU/alias de las cajas (ARS y USD si tiene) de la persona logueada
   obtenerCuentas: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT cb.moneda, cb.saldo, cb.cbu, cb.alias
@@ -22,7 +19,6 @@ const Asistente = {
     };
   },
 
-  // Últimos movimientos de las cuentas propias (ingresos y egresos, cualquier moneda)
   buscarMovimientos: async (idPersona, limite = 10) => {
     const cuentasResult = await db.query(
       `SELECT cb.cbu, cb.moneda
@@ -58,7 +54,6 @@ const Asistente = {
     });
   },
 
-  // Préstamos activos (y su progreso) de la persona, para no repetir el JOIN acá
   obtenerPrestamosActivos: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT p.id_prestamo, p.monto, p.plazo_meses, p.cuota_monto, p.estado,
@@ -84,8 +79,7 @@ const Asistente = {
     }));
   },
 
-  // Contador diario de mensajes de IA por persona (protege el tope gratuito de Gemini).
-  // Devuelve la cantidad ya usada HOY después de sumar este mensaje.
+  // Devuelve la cantidad usada hoy, ya contando este mensaje.
   registrarUsoDiario: async (idPersona) => {
     const { rows } = await db.query(
       `INSERT INTO Asistente_Uso (id_persona, fecha, cantidad)

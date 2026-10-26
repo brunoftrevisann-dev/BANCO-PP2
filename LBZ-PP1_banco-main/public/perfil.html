@@ -63,7 +63,7 @@
             display: flex; flex-direction: column; gap: 20px;
         }
 
-        /* ── AVATAR CARD ── */
+        /* AVATAR CARD */
         .avatar-card {
             background: var(--accent); border-radius: 20px; padding: 28px 24px;
             display: flex; align-items: center; gap: 20px;
@@ -94,7 +94,7 @@
         .avatar-name { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 3px; }
         .avatar-email { font-size: 0.82rem; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* ── SECTION CARD ── */
+        /* SECTION CARD */
         .section-card {
             background: var(--white); border: 1px solid var(--border);
             border-radius: 16px; overflow: hidden;
@@ -111,7 +111,7 @@
         }
         .section-title { font-size: 0.88rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
 
-        /* ── INFO ROWS ── */
+        /* INFO ROWS */
         .info-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 13px 20px; border-bottom: 1px solid var(--border); gap: 12px;
@@ -122,7 +122,7 @@
         .copy-btn { font-size: 0.7rem; color: var(--accent); cursor: pointer; font-weight: 600; flex-shrink: 0; background: none; border: none; font-family: 'Inter', sans-serif; padding: 0; }
         .copy-btn:hover { text-decoration: underline; }
 
-        /* ── ALIAS ── */
+        /* ALIAS */
         .alias-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 14px 20px; gap: 12px;
@@ -157,7 +157,7 @@
         }
         .field-err { font-size: 0.78rem; color: var(--error-text); margin-top: 6px; display: none; }
 
-        /* ── PASSWORD ── */
+        /* PASSWORD */
         .pwd-body { padding: 16px 20px 20px; }
         .pwd-group { margin-bottom: 16px; }
         .pwd-label {
@@ -211,7 +211,7 @@
         }
         .btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
 
-        /* ── ACTIVITY ── */
+        /* ACTIVITY */
         .activity-list { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
         .activity-item {
             display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
@@ -240,7 +240,7 @@
         }
         .btn-ver-mapa:hover { background: rgba(0,82,255,0.15); }
 
-        /* ── MAP MODAL ── */
+        /* MAP MODAL */
         #mapModal {
             position: fixed; inset: 0; z-index: 500;
             background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
@@ -445,7 +445,7 @@
 
     </main>
 
-    <!-- ── MAPA DE ACCESO ── -->
+    <!-- MAPA DE ACCESO -->
     <div id="mapModal" onclick="if(event.target===this) cerrarMapa()">
         <div class="map-panel" onclick="event.stopPropagation()">
             <div class="map-header">
@@ -481,19 +481,12 @@
             localStorage.setItem('tuo-theme', dark ? 'light' : 'dark');
         }
 
-        // Guarda sin sesión (TypeError reportado): este <script> NO está dentro de ninguna
-        // función (no hay DOMContentLoaded acá como en otras páginas), así que un "return"
-        // a esta altura sería un SyntaxError y rompería TODO el script, para TODOS los
-        // usuarios — no solo el que no tiene sesión. En vez de cortar la ejecución, "u" se
-        // deja en un objeto vacío seguro: navTo() ya dispara el redirect (230ms) y el resto
-        // del script no explota mientras tanto, gracias a los `|| ''`/`|| '—'` que ya tenía.
+        // Script de nivel superior: un return sería SyntaxError, así que sin sesión se usa {} hasta el redirect.
         const uRaw = localStorage.getItem('usuarioLogueado');
         if (!uRaw) navTo('login.html');
         const u = JSON.parse(uRaw || '{}');
 
-        // ── Poblar datos ──
         const ini = ((u.nombre || ' ')[0] + (u.apellido || ' ')[0]).toUpperCase();
-        // Avatar: cargar imagen guardada o iniciales
         function cargarAvatar() {
             const av  = document.getElementById('avatarCircle');
             const img = localStorage.getItem('tuo_avatar_' + (u.cbu || ''));
@@ -536,7 +529,6 @@
         document.getElementById('infoCbu').textContent       = u.cbu || '—';
         document.getElementById('aliasDisplay').textContent  = u.alias || '—';
 
-        // ── Actividad ──
         const actLog = JSON.parse(localStorage.getItem('tuo_activity_' + (u.cbu || '')) || '[]');
         const actEl  = document.getElementById('activityList');
         if (actLog.length > 0) {
@@ -581,7 +573,6 @@
             }).join('');
         }
 
-        // ── Copiar CBU ──
         function copiarCbu() {
             if (!u.cbu) return;
             navigator.clipboard.writeText(u.cbu).then(() => {
@@ -591,7 +582,6 @@
             });
         }
 
-        // ── Alias ──
         function mostrarFormAlias() {
             document.getElementById('inputAlias').value = u.alias || '';
             document.getElementById('aliasForm').style.display = 'block';
@@ -633,7 +623,6 @@
             }
         }
 
-        // ── Contraseña ──
         function toggleVer(id, btn) {
             const inp = document.getElementById(id);
             inp.type = inp.type === 'password' ? 'text' : 'password';
@@ -740,7 +729,6 @@
             }
         }
 
-        // ── Nav ──
         function navTo(url) {
             document.body.classList.add('leaving');
             setTimeout(() => { window.location.href = url; }, 230);
@@ -762,7 +750,6 @@
             navTo(href);
         });
 
-        // ── MAPA DE ACCESO ───────────────────────────────────────────────
         let _leafletMap = null;
 
         function abrirMapa(lat, lon, lugar, dispositivo) {
@@ -770,7 +757,7 @@
             document.getElementById('mapSub').textContent  = dispositivo || '';
             document.getElementById('mapModal').classList.add('open');
 
-            // Destruir instancia anterior para evitar conflicto de Leaflet
+            // Leaflet falla si se inicializa dos veces sobre el mismo contenedor.
             if (_leafletMap) { _leafletMap.remove(); _leafletMap = null; }
 
             setTimeout(() => {
@@ -780,7 +767,6 @@
                     maxZoom: 18
                 }).addTo(_leafletMap);
 
-                // Marcador personalizado azul
                 const icon = L.divIcon({
                     className: '',
                     html: `<div style="width:36px;height:36px;background:#0052FF;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 4px 14px rgba(0,82,255,0.45);display:flex;align-items:center;justify-content:center;">

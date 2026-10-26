@@ -28,7 +28,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── TICKER DE COTIZACIÓN ── */
+        /* TICKER DE COTIZACIÓN */
         .usd-ticker {
             position: fixed; top: 0; left: 0; right: 0; z-index: 101;
             height: 34px; overflow: hidden;
@@ -54,7 +54,7 @@
             .usd-ticker-track { animation: none; }
         }
 
-        /* ── HEADER ── */
+        /* HEADER */
         header {
             position: fixed;
             top: 34px; left: 0; right: 0;
@@ -130,7 +130,7 @@
 
         .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
 
-        /* ── HERO ── */
+        /* HERO */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -220,7 +220,7 @@
             color: var(--muted);
         }
 
-        /* ── CARD MOCKUP ── */
+        /* CARD MOCKUP */
         .hero-visual {
             flex: 1;
             display: flex;
@@ -356,7 +356,7 @@
             text-align: right;
         }
 
-        /* ── FEATURES ── */
+        /* FEATURES */
         .features {
             padding: 120px 48px;
             max-width: 1200px;
@@ -423,7 +423,7 @@
             line-height: 1.6;
         }
 
-        /* ── FOOTER ── */
+        /* FOOTER */
         footer {
             border-top: 1px solid var(--border);
             padding: 40px 48px;
@@ -455,7 +455,7 @@
             footer { flex-direction: column; gap: 16px; padding: 32px 24px; }
         }
 
-        /* ── SPLASH ── */
+        /* SPLASH */
         #splash {
             position: fixed; inset: 0; z-index: 9999;
             background: #0052FF;
@@ -609,9 +609,7 @@
     </footer>
 
     <script>
-        // ── TICKER DE COTIZACIÓN ──
-        // Solo MEP (la cotización que usa tuo para comprar/vender dólares) y la TNA de referencia
-        // de préstamos personales — no oficial ni blue, que acá son solo informativos sin uso real.
+        // Solo MEP y la TNA de préstamos: oficial y blue no se usan en ninguna operación de tuo.
         (async function cargarTickerDolar() {
             const fmt = v => Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const fmtPct = v => (Number(v) * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
@@ -627,8 +625,7 @@
                 if (tasaRes.ok && typeof tasaData.tna === 'number') {
                     bloque += `<span>TNA préstamos personales: <b>${fmtPct(tasaData.tna)}</b></span>`;
                 }
-                // se repite muchas veces y se duplica ese bloque completo: así el "tramo" nunca es
-                // más angosto que la pantalla (sea cual sea su ancho) y el loop nunca se ve cortado
+                // Con el bloque repetido, el tramo nunca es más angosto que la pantalla y el loop no se corta.
                 const contenido = bloque.repeat(8);
                 document.getElementById('usdTickerTrack').innerHTML = contenido + contenido;
             } catch {
@@ -652,7 +649,6 @@
             setTimeout(() => ocultarSplash(), 1600);
         }
 
-        // ── PARALLAX tarjeta ─────────────────────────────────────────────
         const cardScene = document.querySelector('.card-scene');
         if (cardScene) {
             document.addEventListener('mousemove', e => {

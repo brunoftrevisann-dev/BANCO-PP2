@@ -1,17 +1,9 @@
-// Edge Function PRIVADA (protegida con un secret interno propio, no con el verify_jwt de
-// Supabase) que firma los QR de Banco Tuo — ver prompt-aviso-lectura-qr.md v2, sección 1.
+// Edge Function privada que firma los QR de Banco Tuo: es la única pieza que toca la clave privada.
+// No verifica cuentas, solo firma lo que le llega; por eso exige el secret compartido con Express.
 //
-// Es la única pieza del sistema que toca la clave privada de firma: vive solo en el secret
-// de Supabase QR_JWT_PRIVATE_KEY (JWK, con "d"), nunca en Express/Vercel/el repo. El backend
-// de Express (utils/qrJwt.js → firmarQr) le pide la firma a esta función por HTTP, mandando
-// los claims ya resueltos (cbu/alias/moneda/monto) y un secret compartido (QR_FIRMAR_INTERNAL_SECRET)
-// que demuestra que el pedido viene de nuestro propio backend y no de cualquiera en internet
-// — esta función NO verifica cuentas ni nada más, solo firma lo que le llega, así que si
-// estuviera abierta al público cualquiera podría pedir un QR firmado con cualquier CBU.
-//
-// Variables de entorno requeridas (Project Settings → Edge Functions → Secrets):
+// Secrets requeridos (Project Settings → Edge Functions → Secrets):
 //   QR_JWT_PRIVATE_KEY        = JWK privado completo, JSON de una línea (con "d")
-//   QR_FIRMAR_INTERNAL_SECRET = secreto compartido con Express (mismo valor en ambos lados)
+//   QR_FIRMAR_INTERNAL_SECRET = mismo valor que en Express
 
 import { SignJWT, importJWK } from 'npm:jose@5';
 

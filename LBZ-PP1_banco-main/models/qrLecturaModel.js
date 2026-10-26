@@ -1,11 +1,7 @@
 const db = require('../config/db');
 
 const QrLectura = {
-  // QR de un solo uso (cuando el QR tiene jti): INSERT atómico contra el índice único
-  // parcial de jti — la PRIMERA lectura gana la carrera y "cierra" el QR; cualquier otra
-  // (de cualquier banco) choca contra el índice y nunca llega a insertar. Evita la
-  // condición de carrera de "leer si existe, después insertar" con dos personas escaneando
-  // a la vez: el ON CONFLICT lo resuelve en un solo round-trip a la base.
+  // El índice único parcial de jti hace que la primera lectura gane la carrera en un solo round-trip.
   intentarCerrarConJti: async ({ idPersona, cbu, jti, bancoLector, nombreLector }) => {
     const insert = await db.query(
       `INSERT INTO Qr_Lecturas (id_persona, cbu, jti, banco_lector, nombre_lector)
@@ -18,7 +14,7 @@ const QrLectura = {
 
     const existente = await db.query(`SELECT * FROM Qr_Lecturas WHERE jti = $1 LIMIT 1`, [jti]);
     const fila = existente.rows[0];
-    if (!fila) return { resultado: 'primera', fila: null }; // carrera rarísima, no debería pasar
+    if (!fila) return { resultado: 'primera', fila: null }; // carrera rarísima
     const mismoLector = fila.banco_lector === bancoLector && (fila.nombre_lector || null) === (nombreLector || null);
     return { resultado: mismoLector ? 'repetida_mismo_lector' : 'usado_por_otro', fila };
   },
@@ -28,8 +24,7 @@ const QrLectura = {
     return rows[0] || null;
   },
 
-  // QR sin jti (viejos): nunca se cierran, solo se ignoran repetidos de la misma cuenta +
-  // banco dentro de los 30s (la cámara suele leer el mismo cuadro varias veces seguidas).
+  // La cámara suele leer el mismo cuadro varias veces seguidas.
   yaAvisado: async ({ bancoLector, cbu }) => {
     const { rows } = await db.query(
       `SELECT 1 FROM Qr_Lecturas

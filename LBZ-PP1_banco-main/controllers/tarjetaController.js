@@ -36,7 +36,6 @@ exports.tasas = async (req, res) => {
   }
 };
 
-// Simulación de una compra en cuotas con crédito: lo que se mostraría antes de confirmar.
 exports.simular = async (req, res) => {
   try {
     const monto = Number(req.body.monto);
@@ -73,6 +72,37 @@ exports.emitir = async (req, res) => {
   }
 };
 
+// Por instancia del servidor: en Vercel cada instancia lleva su propia cuenta, pero igual frena la fuerza bruta.
+const FALLOS_MAX = 5;
+const VENTANA_FALLOS_MS = 15 * 60 * 1000;
+const fallosVerDatos = new Map();
+
+exports.verDatos = async (req, res) => {
+  try {
+    const idPersona = req.idPersona;
+    const tipo = tipoValido(req.params.tipo);
+    const password = String(req.body.password || '');
+    if (!tipo || !password) return res.status(400).json({ error: 'tipo y contraseña son requeridos' });
+
+    const ahora = Date.now();
+    const fallos = (fallosVerDatos.get(idPersona) || []).filter(t => ahora - t < VENTANA_FALLOS_MS);
+    if (fallos.length >= FALLOS_MAX)
+      return res.status(429).json({ error: 'Demasiados intentos. Probá de nuevo en 15 minutos.' });
+
+    if (!(await Persona.verificarPasswordPorId(idPersona, password))) {
+      fallosVerDatos.set(idPersona, [...fallos, ahora]);
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+    fallosVerDatos.delete(idPersona);
+
+    const datos = await Tarjeta.getDatosCompletos(idPersona, tipo);
+    if (!datos) return res.status(404).json({ error: 'No tenés esa tarjeta' });
+    res.json(datos);
+  } catch (error) {
+    responderError(res, error);
+  }
+};
+
 exports.bloquear = async (req, res) => {
   try {
     const { bloquear } = req.body;
@@ -94,8 +124,7 @@ exports.comprar = async (req, res) => {
 
     if (tipo === 'DEBITO') {
       const r = await Tarjeta.compraDebito(idPersona, { comercio, monto: Number(monto) });
-      // La compra con débito sale de la caja de ahorro, así que también va al historial de
-      // movimientos de la cuenta (con el CBU sentinela "TARJETA", mismo criterio que Reservas).
+      // Sale de la caja de ahorro, así que va al historial con el CBU sentinela "TARJETA".
       await Persona.upsertTransaccion({
         _id: 'TARJETA-' + crypto.randomUUID(),
         cbuOrigen: r.cbu, cbuDestino: 'TARJETA',

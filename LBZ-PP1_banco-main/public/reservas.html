@@ -74,7 +74,7 @@
         .card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
         .card-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
 
-        /* ── SELECTOR DE TIPO ── */
+        /* SELECTOR DE TIPO */
         .tipo-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
         .tipo-tab {
             padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg);
@@ -83,7 +83,7 @@
         }
         .tipo-tab.active { border-color: var(--accent); background: var(--accent); color: white; }
 
-        /* ── SIMULADOR (mismas clases que prestamos.html) ── */
+        /* SIMULADOR (mismas clases que prestamos.html) */
         .form-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
         .form-label:first-child { margin-top: 0; }
         .importe-input-wrap { position: relative; }
@@ -125,7 +125,7 @@
         .error-box { color: var(--red); font-size: 0.8rem; margin-top: 10px; display: none; }
         .error-box.visible { display: block; }
 
-        /* ── RESERVAS ACTIVAS ── */
+        /* RESERVAS ACTIVAS */
         .reserva-item { padding: 16px 0; border-bottom: 1px solid var(--border); }
         .reserva-item:last-child { border-bottom: none; }
         .reserva-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
@@ -154,7 +154,7 @@
         .toast-error.visible { opacity: 1; transform: translateX(-50%) translateY(-6px); }
         .toast-error.exito { background: var(--green); }
 
-        /* ── HISTORIAL ── */
+        /* HISTORIAL */
         .historial-row {
             display: flex; justify-content: space-between; align-items: center;
             padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
@@ -172,11 +172,10 @@
         body { animation: pageIn 0.3s ease backwards; }
         body.leaving { animation: pageOut 0.22s ease forwards; pointer-events:none; }
 
-        /* ── RESPONSIVE ── */
+        /* RESPONSIVE */
         @media (max-width: 600px) {
             .header { padding: 0 16px; }
-            /* el título centrado con position:absolute puede pisar "Volver tuo" en
-               pantallas angostas — en mobile pasa a fluir en el flex normal */
+            /* Centrado con position:absolute pisa "Volver tuo" en pantallas angostas. */
             .page-title { position: static; left: auto; top: auto; transform: none; }
             .main { padding: 20px 14px 80px; gap: 16px; }
             .card { padding: 20px; }
@@ -352,7 +351,6 @@
             }
         }
 
-        // Toast con el estilo del banco, en vez del alert() nativo.
         let _toastTimeout = null;
         function mostrarToast(msg, tipo) {
             const toast = document.getElementById('toastError');

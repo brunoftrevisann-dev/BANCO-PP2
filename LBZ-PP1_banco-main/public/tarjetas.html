@@ -74,7 +74,7 @@
         .card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
         .card-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
 
-        /* ── SELECTOR DÉBITO / CRÉDITO ── */
+        /* SELECTOR DÉBITO / CRÉDITO */
         .tipo-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; max-width: 460px; }
         .tipo-tab {
             padding: 11px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--white);
@@ -83,7 +83,7 @@
         }
         .tipo-tab.active { border-color: var(--accent); background: var(--accent); color: white; }
 
-        /* ── TARJETA PLÁSTICA ── */
+        /* TARJETA PLÁSTICA */
         .plastico {
             position: relative; width: 100%; max-width: 460px; aspect-ratio: 1.586;
             border-radius: 20px; padding: 24px 26px; color: white; overflow: hidden;
@@ -117,7 +117,7 @@
         }
         .plastico.bloqueada .badge-bloqueada { display: block; }
 
-        /* ── ACCIONES DE LA TARJETA ── */
+        /* ACCIONES DE LA TARJETA */
         .acciones { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; max-width: 460px; }
         .btn-accion {
             display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -128,7 +128,7 @@
         .btn-accion:hover { border-color: var(--accent); color: var(--accent); }
         .btn-accion.peligro:hover { border-color: var(--red); color: var(--red); }
 
-        /* ── RESUMEN DE CRÉDITO ── */
+        /* RESUMEN DE CRÉDITO */
         .resumen-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
         .resumen-item { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
         .resumen-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
@@ -151,7 +151,7 @@
         .financiacion-box.visible { display: block; }
         .mov-monto.interes { color: var(--amber); }
 
-        /* ── FORMULARIOS ── */
+        /* FORMULARIOS */
         .form-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
         .form-label:first-child { margin-top: 0; }
         .importe-input-wrap { position: relative; }
@@ -187,7 +187,7 @@
         .error-box { color: var(--red); font-size: 0.8rem; margin-top: 10px; display: none; }
         .error-box.visible { display: block; }
 
-        /* ── SOLICITAR ── */
+        /* SOLICITAR */
         .solicitar-ilustracion {
             width: 100%; aspect-ratio: 1.586; border-radius: 16px; margin-bottom: 18px;
             border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center;
@@ -200,7 +200,7 @@
             border-radius: 50%; background: var(--accent);
         }
 
-        /* ── MOVIMIENTOS ── */
+        /* MOVIMIENTOS */
         .mov-row {
             display: flex; justify-content: space-between; align-items: center; gap: 12px;
             padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
@@ -312,6 +312,15 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <span id="lblBloqueo">Bloquear</span>
                 </button>
+            </div>
+
+            <div class="card" id="panelVerDatos" style="display:none;">
+                <div class="card-title">Ver datos de la tarjeta</div>
+                <div class="card-subtitle">Por seguridad, confirmá tu contraseña. Los datos se ocultan solos en 60 segundos.</div>
+                <input class="input-texto" id="inputPassDatos" type="password" autocomplete="current-password" placeholder="Tu contraseña"
+                    onkeydown="if(event.key==='Enter') confirmarVerDatos()">
+                <div class="error-box" id="errorDatos"></div>
+                <button class="btn-primary" id="btnConfirmarDatos" onclick="confirmarVerDatos()">Ver datos</button>
             </div>
 
             <!-- Saldo disponible (débito) -->
@@ -455,8 +464,7 @@
 
         function fmtPct(v) { return (Number(v) * 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'; }
 
-        // Mismo cálculo que el server (sistema francés). Es solo para mostrar en vivo mientras
-        // se tipea: el server recalcula todo con la tasa vigente al confirmar la compra.
+        // Solo para mostrar en vivo: el servidor recalcula todo con la tasa vigente al confirmar.
         function calcularFinanciacion(monto, cuotas, tna) {
             const tnaAplicada = cuotas > 1 ? tna : 0;
             const i = tnaAplicada / 12;
@@ -466,6 +474,8 @@
             return { tna: tnaAplicada, montoCuota, total, interes: Math.round((total - monto) * 100) / 100 };
         }
         let datosVisibles = false;
+        let datosRevelados = { DEBITO: null, CREDITO: null };
+        let _timerOcultarDatos = null;
         let cuotasActual = 1;
         let modoPago = 'TOTAL';
 
@@ -473,7 +483,10 @@
 
         function setTipo(tipo) {
             tipoActual = tipo;
+            clearTimeout(_timerOcultarDatos);
             datosVisibles = false;
+            datosRevelados = { DEBITO: null, CREDITO: null };
+            document.getElementById('panelVerDatos').style.display = 'none';
             document.querySelectorAll('#tipoTabs .tipo-tab').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
             ['errorCompra', 'errorPago', 'errorSolicitar'].forEach(id => document.getElementById(id).classList.remove('visible'));
             render();
@@ -500,15 +513,13 @@
             const plastico = document.getElementById('plastico');
             plastico.className = 'plastico ' + (tipoActual === 'CREDITO' ? 'credito' : 'debito') + (bloqueada ? ' bloqueada' : '');
             document.getElementById('plasticoTipo').textContent = tipoActual === 'CREDITO' ? 'Crédito' : 'Débito';
-            // t.numero_tarjeta ya viene enmascarado del servidor salvo justo después de emitir
-            // (ver solicitarTarjeta) — "Ver datos" solo tiene sentido, y solo se muestra, en ese
-            // momento puntual: el servidor nunca vuelve a mandar el CVV en ninguna otra carga.
-            const hayDatosReales = !!t.cvv;
-            document.getElementById('btnVerDatos').style.display = hayDatosReales ? '' : 'none';
-            document.getElementById('plasticoNumero').textContent = (datosVisibles && hayDatosReales) ? numeroAgrupado(t.numero_tarjeta) : numeroOculto(t.numero_tarjeta);
+            // El CVV solo llega justo después de emitir; si no, hay que pedirlo con la contraseña.
+            const reales = t.cvv ? t : datosRevelados[tipoActual];
+            const mostrar = datosVisibles && !!reales;
+            document.getElementById('plasticoNumero').textContent = mostrar ? numeroAgrupado(reales.numero_tarjeta) : numeroOculto(t.numero_tarjeta);
             document.getElementById('plasticoTitular').textContent = t.nombre_titular || `${u.nombre} ${u.apellido}`.toUpperCase();
             document.getElementById('plasticoVence').textContent = fmtVence(t.fecha_vencimiento);
-            document.getElementById('plasticoCvv').textContent = (datosVisibles && hayDatosReales) ? t.cvv : '•••';
+            document.getElementById('plasticoCvv').textContent = mostrar ? reales.cvv : '•••';
             document.getElementById('plasticoMarca').textContent = t.marca || '';
             document.getElementById('lblVerDatos').textContent = datosVisibles ? 'Ocultar datos' : 'Ver datos';
             document.getElementById('lblBloqueo').textContent = bloqueada ? 'Desbloquear' : 'Bloquear';
@@ -558,7 +569,50 @@
             cargarMovimientos();
         }
 
-        function toggleDatos() { datosVisibles = !datosVisibles; render(); }
+        function ocultarDatos() {
+            clearTimeout(_timerOcultarDatos);
+            datosVisibles = false;
+            datosRevelados = { DEBITO: null, CREDITO: null };
+            render();
+        }
+
+        function mostrarDatos() {
+            datosVisibles = true;
+            document.getElementById('panelVerDatos').style.display = 'none';
+            clearTimeout(_timerOcultarDatos);
+            _timerOcultarDatos = setTimeout(ocultarDatos, 60000);
+            render();
+        }
+
+        function toggleDatos() {
+            if (datosVisibles) return ocultarDatos();
+            const t = tipoActual === 'CREDITO' ? tarjetas.credito : tarjetas.debito;
+            if (t && t.cvv) return mostrarDatos();
+            const panel = document.getElementById('panelVerDatos');
+            const abrir = panel.style.display === 'none';
+            panel.style.display = abrir ? 'block' : 'none';
+            document.getElementById('errorDatos').classList.remove('visible');
+            if (abrir) { document.getElementById('inputPassDatos').value = ''; document.getElementById('inputPassDatos').focus(); }
+        }
+
+        async function confirmarVerDatos() {
+            const input = document.getElementById('inputPassDatos');
+            const errEl = document.getElementById('errorDatos');
+            const btn = document.getElementById('btnConfirmarDatos');
+            errEl.classList.remove('visible');
+            if (!input.value) { errEl.textContent = 'Ingresá tu contraseña'; errEl.classList.add('visible'); return; }
+            btn.disabled = true;
+            try {
+                datosRevelados[tipoActual] = await api(`/api/tarjetas/${tipoActual.toLowerCase()}/datos`, 'POST', { password: input.value });
+                input.value = '';
+                mostrarDatos();
+            } catch (e) {
+                errEl.textContent = e.message;
+                errEl.classList.add('visible');
+            } finally {
+                btn.disabled = false;
+            }
+        }
 
         function setCuotas(n) {
             cuotasActual = n;
@@ -619,8 +673,7 @@
             return data;
         }
 
-        // El dashboard muestra el saldo que guarda en localStorage; lo actualizamos para que al
-        // volver no muestre el saldo viejo hasta el próximo refresco.
+        // El dashboard muestra el saldo de localStorage; si no, al volver se vería el viejo.
         function actualizarSaldoLocal(nuevoSaldo) {
             if (nuevoSaldo === undefined) return;
             const actual = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
@@ -644,10 +697,7 @@
             err.classList.remove('visible');
             btn.disabled = true; btn.textContent = 'Emitiendo...';
             try {
-                // El servidor manda el número y CVV completos ÚNICA vez, en esta respuesta
-                // (después, /api/tarjetas los devuelve enmascarados para siempre) — igual que
-                // una tarjeta física, que se puede leer entera solo cuando llega. cargarTarjetas()
-                // pisaría esto con la versión enmascarada, así que se mergea DESPUÉS de recargar.
+                // Número y CVV completos llegan solo en esta respuesta: se mergean después de recargar, que los enmascara.
                 const tarjetaNueva = await api('/api/tarjetas/emitir', 'POST', { tipo: tipoActual });
                 mostrarToast(`¡Tu tarjeta de ${tipoActual === 'CREDITO' ? 'crédito' : 'débito'} ya está activa!`, 'exito');
                 await cargarTarjetas();

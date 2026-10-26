@@ -14,15 +14,10 @@ const reservaController = require('./controllers/reservaController');
 const { requireAuth } = require('./utils/sesion');
 const tarjetaController = require('./controllers/tarjetaController');
 
-// Interruptor de mantenimiento: con MAINTENANCE_MODE=true en las variables de entorno,
-// la app le devuelve esta pantalla a cualquiera en vez de servir el banco. Pensado para
-// Vercel Hobby, donde "Deployment Protection: All Deployments" es una función paga y
-// "Standard Protection" no cubre el dominio de producción.
+// Vercel Hobby no protege gratis el dominio de producción: esto pausa el sitio desde una variable de entorno.
 app.use((req, res, next) => {
     if (process.env.MAINTENANCE_MODE !== 'true') return next();
-    // Excepción: el cron diario de préstamos tiene que poder correr aunque el sitio
-    // esté pausado. Solo pasa si además trae el secreto correcto (el propio handler
-    // lo vuelve a chequear, así esto no queda como una puerta trasera pública).
+    // El cron sigue corriendo con el sitio pausado; su handler vuelve a validar el secreto.
     if (process.env.CRON_SECRET && req.path.startsWith('/api/cron/') && req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`) {
         return next();
     }
@@ -35,10 +30,7 @@ app.use((req, res, next) => {
 <p style="color:#9C9C9F;font-size:0.9rem;margin:0;">Volvemos enseguida. Gracias por tu paciencia.</p></div></body></html>`);
 });
 
-// El preflight del aviso de lectura (prompt-aviso-lectura-qr.md) tiene que devolver 200
-// exacto, igual que en los otros bancos de la cátedra — no el 204 que manda por defecto
-// el middleware cors() de abajo para el resto de la app. Va antes para que lo intercepte
-// primero.
+// Los bancos de la cátedra esperan 200 en este preflight, no el 204 que manda cors().
 app.options('/api/qr/aviso-lectura', (req, res) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -55,31 +47,20 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Servir archivos estáticos desde public
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
-// Ruta específica para login.html
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Ruta específica para registro.html
 app.get('/registro', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'registro.html'));
 });
 
-// POST /api/proxy-banco-central se eliminó: reenviaba cualquier body al Banco Central con
-// nuestra API key sin pedir auth. El alta en el Banco Central ahora la hace registrarPersona.
-
-// Endpoints con joins
-// GET /api/personas, GET /api/personas/:id/roles y POST /api/personas (crearPersona) se
-// eliminaron: código muerto (sin ningún caller en el frontend) que además insertaba/leía sin
-// ninguna validación ni chequeo de identidad — en vez de protegerlos, se borraron junto con
-// sus funciones en personaController.js.
 app.get('/api/personas/:id/productos', requireAuth, personaController.obtenerProductos);
 app.post('/api/personas/login', personaController.login);
 app.post('/api/personas/logout', personaController.logout);
@@ -89,7 +70,6 @@ app.get('/api/buscar-persona', requireAuth, personaController.buscarPersona);
 app.get('/api/otra-moneda-persona', requireAuth, personaController.otraMonedaPersona);
 app.post('/api/transferencia', requireAuth, personaController.transferir);
 app.put('/api/actualizar-alias', requireAuth, personaController.actualizarAlias);
-// /api/sincronizar-saldo eliminada: código muerto y peligroso, ver personaController.js.
 app.post('/api/verificar-cuenta', personaController.verificarCuenta);
 app.post('/api/reenviar-codigo', personaController.reenviarCodigo);
 app.post('/api/depositar', requireAuth, personaController.depositar);
@@ -100,7 +80,6 @@ app.post('/api/cuenta-usd/solicitar-verificacion', requireAuth, personaControlle
 app.post('/api/cuenta-usd', requireAuth, personaController.abrirCuentaUsd);
 app.post('/api/cambiar-divisa', requireAuth, personaController.cambiarDivisa);
 
-// Préstamos
 app.get('/api/prestamos/tasas', prestamoController.obtenerTasas);
 app.get('/api/prestamos/perfil-crediticio', requireAuth, prestamoController.perfilCrediticio);
 app.post('/api/prestamos/simular', requireAuth, prestamoController.simular);
@@ -111,19 +90,15 @@ app.get('/api/prestamos/:id/cuotas', requireAuth, prestamoController.cuotas);
 app.post('/api/prestamos/:id/pagar-cuota', requireAuth, prestamoController.pagarCuota);
 app.post('/api/prestamos/:id/cancelar', requireAuth, prestamoController.cancelarAnticipado);
 
-// Cron diario (recordatorios de cuota + escalada a Central de Deudores)
 app.get('/api/cron/prestamos-diario', cronController.diario);
 
-// Asistente de IA (atención al cliente)
 app.post('/api/asistente/chat', requireAuth, asistenteController.chat);
 
-// Notificaciones
 app.get('/api/notificaciones', requireAuth, notificacionController.listar);
 app.get('/api/notificaciones/no-leidas', requireAuth, notificacionController.noLeidas);
 app.put('/api/notificaciones/:id/leer', requireAuth, notificacionController.marcarLeida);
 app.put('/api/notificaciones/marcar-todas-leidas', requireAuth, notificacionController.marcarTodasLeidas);
 
-// Reservas (plazo fijo y frasco, estilo Naranja X)
 app.get('/api/reservas/tasas', reservaController.tasas);
 app.get('/api/reservas', requireAuth, reservaController.listar);
 app.post('/api/reservas/simular', requireAuth, reservaController.simular);
@@ -131,9 +106,7 @@ app.post('/api/reservas/abrir', requireAuth, reservaController.abrir);
 app.post('/api/reservas/:id/depositar', requireAuth, reservaController.depositarFrasco);
 app.post('/api/reservas/:id/retirar', requireAuth, reservaController.retirarFrasco);
 
-// Tarjetas (débito vinculada a la caja de ahorro en ARS y crédito con límite). tasas/simular
-// son públicas (no exponen datos de nadie, mismo criterio que /api/prestamos/tasas); el resto
-// opera sobre la propia tarjeta de la sesión, nunca sobre el idPersona que mande el cliente.
+// tasas y simular son públicas: no exponen datos de ninguna persona.
 app.get('/api/tarjetas', requireAuth, tarjetaController.listar);
 app.get('/api/tarjetas/credito/tasas', tarjetaController.tasas);
 app.post('/api/tarjetas/credito/simular', tarjetaController.simular);
@@ -141,9 +114,9 @@ app.post('/api/tarjetas/emitir', requireAuth, tarjetaController.emitir);
 app.post('/api/tarjetas/credito/pagar', requireAuth, tarjetaController.pagar);
 app.post('/api/tarjetas/:tipo/comprar', requireAuth, tarjetaController.comprar);
 app.put('/api/tarjetas/:tipo/bloqueo', requireAuth, tarjetaController.bloquear);
+app.post('/api/tarjetas/:tipo/datos', requireAuth, tarjetaController.verDatos);
 app.get('/api/tarjetas/:tipo/movimientos', requireAuth, tarjetaController.movimientos);
 
-// Columnas de verificación de email
 const db = require('./config/db');
 db.query(`
   ALTER TABLE Personas ADD COLUMN IF NOT EXISTS verificado BOOLEAN DEFAULT FALSE;
@@ -151,26 +124,21 @@ db.query(`
   ALTER TABLE Personas ADD COLUMN IF NOT EXISTS token_expira TIMESTAMPTZ;
 `).catch(e => console.error('Error agregando columnas verificación:', e.message));
 
-// Rate limiting de los códigos de 6 dígitos (verificación de email + reset de contraseña,
-// comparten estas mismas columnas) — antes no había ningún límite de intentos.
+// Intentos fallidos de los códigos de 6 dígitos (verificación de email y reset de contraseña).
 db.query(`ALTER TABLE Personas ADD COLUMN IF NOT EXISTS intentos_verificacion INTEGER NOT NULL DEFAULT 0`)
   .catch(e => console.error('Error agregando columna intentos_verificacion:', e.message));
 
-// Agregar columna descripcion si no existe (mensajes en transferencias)
 db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS descripcion TEXT`)
   .catch(e => console.error('Error agregando columna descripcion:', e.message));
 
-// Agregar columna tipo si no existe (para distinguir compra/venta de USD de las transferencias normales)
+// tipo distingue cambios de divisa y préstamos de las transferencias comunes.
 db.query(`ALTER TABLE Transacciones ADD COLUMN IF NOT EXISTS tipo VARCHAR(20)`)
   .catch(e => console.error('Error agregando columna tipo:', e.message));
 
-// Ensanchar tipo: 'otorgamiento_prestamo' tiene 21 caracteres y no entraba en VARCHAR(20) — el INSERT
-// fallaba en silencio (el .catch de upsertTransaccion se comía el error) desde que existe Préstamos,
-// así que ningún préstamo otorgado quedó nunca registrado en el historial de movimientos.
+// 'otorgamiento_prestamo' tiene 21 caracteres: no entra en VARCHAR(20).
 db.query(`ALTER TABLE Transacciones ALTER COLUMN tipo TYPE VARCHAR(30)`)
   .catch(e => console.error('Error ensanchando columna tipo:', e.message));
 
-// Crear tabla Transacciones si no existe (historial persistente)
 db.query(`
   CREATE TABLE IF NOT EXISTS Transacciones (
     id                SERIAL PRIMARY KEY,
@@ -188,7 +156,6 @@ db.query(`
   )
 `).catch(e => console.error('Error creando tabla Transacciones:', e.message));
 
-// Préstamos: tipo de producto nuevo + tablas de préstamos/cuotas
 db.query(`INSERT INTO Tipos_Producto (nombre) VALUES ('PRESTAMO') ON CONFLICT (nombre) DO NOTHING`)
   .catch(e => console.error('Error agregando tipo de producto PRESTAMO:', e.message));
 
@@ -227,7 +194,6 @@ db.query(`CREATE INDEX IF NOT EXISTS idx_cuotas_estado_venc ON Cuotas(estado, fe
 db.query(`CREATE INDEX IF NOT EXISTS idx_cuotas_prestamo ON Cuotas(id_prestamo)`)
   .catch(e => console.error('Error creando indice idx_cuotas_prestamo:', e.message));
 
-// Dispositivos conocidos, para el aviso de "nuevo inicio de sesión desde otro dispositivo"
 db.query(`
   CREATE TABLE IF NOT EXISTS Dispositivos_Conocidos (
     id            SERIAL PRIMARY KEY,
@@ -240,7 +206,7 @@ db.query(`
   )
 `).catch(e => console.error('Error creando tabla Dispositivos_Conocidos:', e.message));
 
-// Uso diario del asistente de IA por persona, para no agotar el tope gratuito compartido
+// Tope diario por persona para no agotar la cuota gratuita compartida de la IA.
 db.query(`
   CREATE TABLE IF NOT EXISTS Asistente_Uso (
     id_persona INTEGER NOT NULL REFERENCES Personas(id),
@@ -250,7 +216,6 @@ db.query(`
   )
 `).catch(e => console.error('Error creando tabla Asistente_Uso:', e.message));
 
-// Centro de notificaciones in-app
 db.query(`
   CREATE TABLE IF NOT EXISTS Notificaciones (
     id_notificacion SERIAL PRIMARY KEY,
@@ -265,7 +230,6 @@ db.query(`
 db.query(`CREATE INDEX IF NOT EXISTS idx_notificaciones_persona ON Notificaciones(id_persona, leida, created_at DESC)`)
   .catch(e => console.error('Error creando indice idx_notificaciones_persona:', e.message));
 
-// Reservas: tipo de producto nuevo + tabla de reservas (fija por meses, fija por días, frasco)
 db.query(`INSERT INTO Tipos_Producto (nombre) VALUES ('RESERVA') ON CONFLICT (nombre) DO NOTHING`)
   .catch(e => console.error('Error agregando tipo de producto RESERVA:', e.message));
 
@@ -287,8 +251,7 @@ db.query(`
   )
 `).catch(e => console.error('Error creando tabla Reservas:', e.message));
 
-// Tarjetas: tipos/estados de producto + tabla de débito + columnas nuevas en crédito + movimientos.
-// Va en una sola cadena para que las tablas existan antes de los ALTER/índices que dependen de ellas.
+// Una sola cadena: las tablas tienen que existir antes de los ALTER e índices que dependen de ellas.
 (async () => {
   await db.query(`INSERT INTO Tipos_Producto (nombre) VALUES ('TARJETA_CREDITO'), ('TARJETA_DEBITO') ON CONFLICT (nombre) DO NOTHING`);
   await db.query(`INSERT INTO Estados_Producto (nombre) VALUES ('ACTIVO'), ('BLOQUEADO'), ('CERRADO') ON CONFLICT (nombre) DO NOTHING`);
@@ -331,7 +294,6 @@ db.query(`
       created_at    TIMESTAMPTZ DEFAULT NOW()
     )
   `);
-  // TNA: cuotas con interés (monto_cuota/total/tna por compra) e interés del saldo financiado.
   await db.query(`
     ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS saldo_financiado DECIMAL(15,2) NOT NULL DEFAULT 0;
     ALTER TABLE Tarjetas_Credito ADD COLUMN IF NOT EXISTS fecha_ultimo_interes DATE DEFAULT CURRENT_DATE;
@@ -342,9 +304,7 @@ db.query(`
   await db.query(`CREATE INDEX IF NOT EXISTS idx_consumos_tarjeta_producto ON Consumos_Tarjeta(id_producto, created_at DESC)`);
 })().catch(e => console.error('Error creando tablas de tarjetas:', e.message));
 
-// Aviso de lectura del QR interbancario: registro de quién leyó el QR de quién
-// (prompt-aviso-lectura-qr.md) — no mueve plata, solo dispara la notificación
-// "Fulano escaneó tu QR".
+// Solo registra quién leyó el QR para notificarlo; no mueve plata.
 db.query(`
   CREATE TABLE IF NOT EXISTS Qr_Lecturas (
     id            SERIAL PRIMARY KEY,
@@ -358,13 +318,10 @@ db.query(`
 `).catch(e => console.error('Error creando tabla Qr_Lecturas:', e.message));
 db.query(`CREATE INDEX IF NOT EXISTS idx_qr_lecturas_dedupe ON Qr_Lecturas(id_persona, banco_lector, jti, created_at DESC)`)
   .catch(e => console.error('Error creando indice idx_qr_lecturas_dedupe:', e.message));
-// QR de un solo uso (prompt-aviso-lectura-qr.md v2): con jti, la PRIMERA lectura "cierra"
-// el QR — ninguna otra puede insertar el mismo jti de nuevo. Índice único parcial (solo
-// alcanza a las filas con jti, las sin jti siguen permitiendo varias dentro de los 30s).
+// La primera lectura de un QR con jti lo cierra; los QR sin jti admiten varias lecturas.
 db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_qr_lecturas_jti_unico ON Qr_Lecturas(jti) WHERE jti IS NOT NULL`)
   .catch(e => console.error('Error creando indice idx_qr_lecturas_jti_unico:', e.message));
 
-// Proxy para obtener nombre de banco por código
 app.get('/api/banco/:code', async (req, res) => {
   try {
     const ctrl = new AbortController();
@@ -382,13 +339,11 @@ app.get('/api/banco/:code', async (req, res) => {
   }
 });
 
-// QR interbancario firmado (JWT ES256)
 app.post('/api/qr/firmar', requireAuth, qrController.firmar);
 app.post('/api/qr/verificar', requireAuth, qrController.verificar);
-// Aviso de lectura (rol emisor): lo llaman los otros bancos de la cátedra, sin login.
+// Lo llaman los otros bancos de la cátedra, por eso no pide login.
 app.post('/api/qr/aviso-lectura', qrController.avisoLectura);
-// Polling del QR propio (cada 2s mientras el modal está abierto) para saber si ya lo
-// escanearon y cerrarlo en pantalla — alternativa a Realtime, ver plan en memoria.
+// Polling cada 2 s mientras el modal del QR está abierto, en lugar de Realtime.
 app.get('/api/qr/estado', qrController.estado);
 
 if (require.main === module) {

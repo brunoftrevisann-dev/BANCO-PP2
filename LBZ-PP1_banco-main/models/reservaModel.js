@@ -7,9 +7,7 @@ const { notificarReservaVencida } = require('../utils/notificaciones');
 const MONTO_MINIMO = 1000;
 
 const Reserva = {
-  // Crea el producto + la reserva en una transacción, debitando la caja de ahorro en ARS.
-  // Mismo patrón FOR UPDATE que Prestamo.pagarCuota: hay que leer el saldo actual para decidir
-  // si alcanza, así que no se puede hacer con un UPDATE relativo sin lock.
+  // Hay que leer el saldo para decidir si alcanza, así que va con FOR UPDATE.
   abrirReserva: async (idPersona, { tipo, monto, tna, plazoDias, plazoMeses, nombre }) => {
     if (Number(monto) < MONTO_MINIMO)
       throw Object.assign(new Error(`El monto mínimo es $${MONTO_MINIMO.toLocaleString('es-AR')}`), { code: 'MONTO_MINIMO' });
@@ -64,8 +62,7 @@ const Reserva = {
     }
   },
 
-  // Liquida (paga capital+interés) una reserva fija vencida. Se llama de a una, con su propio
-  // FOR UPDATE, desde getReservasPersona — nunca se expone como endpoint propio.
+  // Se llama desde getReservasPersona, de a una y con su propio FOR UPDATE; no es un endpoint.
   _liquidarFija: async (idReserva) => {
     const client = await db.connect();
     try {
@@ -123,7 +120,7 @@ const Reserva = {
     }
   },
 
-  // Acredita al saldo del frasco el interés devengado desde la última vez que se tocó.
+  // Interés devengado desde la última vez que se tocó el frasco.
   _acreditarInteresFrasco: async (idReserva) => {
     const client = await db.connect();
     try {
@@ -153,9 +150,7 @@ const Reserva = {
     }
   },
 
-  // Punto de entrada de lectura: antes de devolver la lista, liquida las fijas vencidas y
-  // acredita el interés pendiente de los frascos — así el usuario siempre ve el estado real
-  // sin necesidad de que corra ningún cron.
+  // Liquida las fijas vencidas y acredita intereses al leer, así no hace falta un cron.
   getReservasPersona: async (idPersona) => {
     const { rows: pendientes } = await db.query(
       `SELECT r.id_reserva, r.tipo FROM Reservas r

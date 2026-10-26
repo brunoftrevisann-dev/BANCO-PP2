@@ -1,7 +1,4 @@
-// Integración con la Central de Deudores del Banco Central — compartida por
-// prestamoController.js (al otorgar/pagar/cancelar un préstamo) y cronController.js
-// (al escalar cuotas vencidas), para no duplicar la lógica ni que un controller
-// tenga que importar el estado privado de otro.
+// Integración con la Central de Deudores del Banco Central, compartida por préstamos y el cron diario.
 const fetchBC = require('./fetchConTimeout');
 
 async function consultarSituacionBC(dni) {
