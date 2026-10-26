@@ -713,11 +713,9 @@
         .qr-scan-success.visible { opacity: 1; }
         .qr-scan-success svg { animation: qrCheckPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
         @keyframes qrCheckPop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .notif-panel { max-width: 400px; max-height: min(70vh, 560px); display: flex; flex-direction: column; }
-        @media (min-width: 601px) {
-            /* En PC se abre como desplegable debajo de la campana, no en el centro de la pantalla. */
-            #modalNotificaciones { justify-content: flex-end; align-items: flex-start; padding: 72px 24px 24px; }
-        }
+        /* Centrado en todos los tamaños: en el celular no se abre como hoja desde abajo. */
+        #modalNotificaciones { align-items: center !important; padding: 16px !important; }
+        #modalNotificaciones .notif-panel { max-width: 420px; max-height: min(75vh, 560px) !important; border-radius: 20px !important; display: flex; flex-direction: column; }
         .notif-item.no-leida { background: rgba(0,82,255,0.05); }
         .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
         .notif-empty { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 40px 0; font-family: 'Inter', sans-serif; }
