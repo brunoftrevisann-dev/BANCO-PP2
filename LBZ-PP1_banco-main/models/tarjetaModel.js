@@ -2,17 +2,14 @@ const db = require('../config/db');
 const moverSaldo = require('../utils/moverSaldo');
 const crypto = require('crypto');
 
-// Límite de compra con el que se emite toda tarjeta de crédito nueva. No hay scoring propio
-// todavía, así que es un valor fijo (igual que los montos mínimos de Reservas).
+// Valor fijo: todavía no hay scoring propio.
 const LIMITE_CREDITO_INICIAL = 500000;
 const MONTO_MINIMO_COMPRA = 1;
 const CUOTAS_PERMITIDAS = [1, 3, 6, 12];
 const ESTADO_ACTIVO = 'ACTIVO';
 const ESTADO_BLOQUEADO = 'BLOQUEADO';
 
-// BIN propio de tuo para cada producto (ficticios, solo tienen que ser de la marca correcta:
-// 4 = Visa, 5 = Mastercard) + dígitos al azar + dígito verificador de Luhn, así el número
-// pasa la validación de cualquier formulario de tarjeta.
+// BIN ficticio de la marca correcta (4 = Visa, 5 = Mastercard) + Luhn, para que pase cualquier formulario.
 const BIN = { DEBITO: '451761', CREDITO: '527504' };
 
 function digitoLuhn(parcial) {
@@ -35,33 +32,23 @@ const generarCvv = () => String(crypto.randomInt(0, 1000)).padStart(3, '0');
 
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Pago mínimo del resumen: 10% de lo que vence con un piso de $1.000 (o el total si es menor).
+// 10% de lo que vence con piso de $1.000, o el total si es menor.
 const pagoMinimo = (aPagar) => round2(Math.min(Number(aPagar), Math.max(Number(aPagar) * 0.10, 1000)));
 
 const err = (msg, code) => Object.assign(new Error(msg), { code });
 
-// Namespace propio para no colisionar con otros usos de advisory lock que pueda haber en el
-// futuro (el segundo argumento es el idPersona). Serializa emitirDebito/emitirCredito por
-// persona: dos clicks simultáneos en "Emitir tarjeta" ya no pueden leer "no tiene" los dos antes
-// de que el primero llegue a insertar — el segundo espera a que el primero termine (COMMIT o
-// ROLLBACK libera el lock solo, no hace falta soltarlo a mano) y ahí sí ve la tarjeta recién
-// creada. Antes el chequeo "¿ya tiene tarjeta?" era un SELECT sin lock seguido de un INSERT:
-// dos requests concurrentes podían pasar las dos, dejando a la persona con dos tarjetas activas
-// y el límite de crédito duplicado.
+// Advisory lock por persona: dos clicks simultáneos en "Emitir" no pueden crear dos tarjetas.
 const LOCK_NS_EMITIR_TARJETA = 847201;
 async function lockearEmisionTarjeta(client, idPersona) {
   await client.query('SELECT pg_advisory_xact_lock($1, $2)', [LOCK_NS_EMITIR_TARJETA, idPersona]);
 }
 
-// Oculta todo menos los últimos 4 dígitos, mismo formato que ya usaba el frontend para la vista
-// "oculta" (tarjetas.html numeroOculto()) — ahora es el ÚNICO formato que el servidor manda en
-// los listados, el número completo ya no sale de la base salvo en el momento de emitir la tarjeta.
+// El número completo solo sale de la base al emitir la tarjeta.
 function enmascararNumero(numero) {
   return numero ? '•••• •••• •••• ' + numero.slice(-4) : numero;
 }
 
-// Compra en cuotas: 1 cuota sin interés; 3, 6 y 12 con la TNA de tarjetas, en sistema francés
-// (cuota fija, mismo cálculo que Préstamos). La deuda suma el total con interés incluido.
+// 1 cuota sin interés; 3, 6 y 12 con la TNA de tarjetas en sistema francés.
 function calcularFinanciacion(monto, cuotas, tna) {
   const n = Number(cuotas);
   const tnaAplicada = n > 1 ? Number(tna) : 0;
@@ -72,8 +59,7 @@ function calcularFinanciacion(monto, cuotas, tna) {
   return { tna: tnaAplicada, montoCuota, total, interes: round2(total - monto) };
 }
 
-// Cuotas que todavía no vencieron (de compras en cuotas): no entran en el resumen del mes
-// aunque ya ocupen límite. La primera cuota vence en el resumen del mes de la compra.
+// Ocupan límite pero no entran en el resumen del mes; la primera vence en el mes de la compra.
 async function pendienteEnCuotas(client, idProducto) {
   const { rows } = await client.query(
     `SELECT monto, cuotas, monto_cuota, created_at FROM Consumos_Tarjeta
@@ -84,12 +70,7 @@ async function pendienteEnCuotas(client, idProducto) {
   const hoy = Date.now();
   let pendiente = 0;
   for (const c of rows) {
-    // Antes esto contaba "meses de calendario" (hoy.getMonth() - f.getMonth()), así que una
-    // compra del 31/1 consultada el 1/2 (1 día real después) ya contaba como una cuota vencida
-    // de más, mientras que una compra del 1/1 consultada el 28/1 (27 días después) todavía
-    // contaba 0 — el resultado dependía del día del mes de la compra, no del tiempo real
-    // transcurrido. Ahora son días reales / 30, mismo criterio que ya usa Reservas para sus
-    // propios vencimientos (fecha_vencimiento - fecha_alta en días, no en meses).
+    // Días reales / 30, no meses de calendario: si no, depende del día del mes de la compra.
     const diasTranscurridos = Math.floor((hoy - new Date(c.created_at).getTime()) / 86400000);
     const vencidas = Math.min(c.cuotas, Math.floor(diasTranscurridos / 30) + 1);
     const montoCuota = c.monto_cuota !== null ? Number(c.monto_cuota) : Number(c.monto) / c.cuotas;
@@ -98,9 +79,7 @@ async function pendienteEnCuotas(client, idProducto) {
   return round2(pendiente);
 }
 
-// Devenga el interés del saldo financiado (lo que quedó sin pagar del resumen) desde la última
-// vez, a la TNA de tarjetas — mismo criterio "lazy" que los frascos de Reservas: se calcula al
-// leer u operar, sin cron. Recibe la fila de la tarjeta ya lockeada y la devuelve actualizada.
+// Se devenga al leer u operar, sin cron. Recibe la fila ya lockeada y la devuelve actualizada.
 async function devengarInteres(client, t, tna) {
   const { rows } = await client.query(
     `SELECT (CURRENT_DATE - COALESCE(fecha_ultimo_interes, CURRENT_DATE)) AS dias FROM Tarjetas_Credito WHERE id_tarjeta = $1`,
@@ -154,7 +133,7 @@ async function idEstadoProducto(client, nombre) {
   return rows[0].id_estado_producto;
 }
 
-// Inserta con un número nuevo; si choca con el UNIQUE (casi imposible, pero posible) reintenta.
+// Reintenta si el número choca con el UNIQUE.
 async function insertarConNumeroUnico(client, tipo, insertar) {
   for (let intento = 0; intento < 5; intento++) {
     const numero = generarNumero(tipo);
@@ -177,14 +156,7 @@ const Tarjeta = {
   pagoMinimo,
   calcularFinanciacion,
 
-  // Devuelve las tarjetas de la persona (a lo sumo una de cada tipo) con el estado del producto.
-  // En crédito, antes de devolverla devenga el interés pendiente del saldo financiado. El CVV
-  // nunca sale de acá (ni hace falta: no sirve para nada una vez que la tarjeta ya está emitida)
-  // y el número completo se enmascara — el PAN+CVV completos solo se devuelven una vez, en el
-  // momento de emitirDebito/emitirCredito, igual que una tarjeta física que se puede leer entera
-  // solo cuando llega. Antes esto venía completo en cada carga de la pantalla (vía `td.*`/`tc.*`),
-  // así que cualquier inspección de Network, extensión de navegador o futuro bug de XSS alcanzaba
-  // para sacar el PAN + CVV completos — exactamente lo que hace falta para un fraude "card-not-present".
+  // El CVV nunca sale de acá y el número va enmascarado: PAN y CVV completos solo se devuelven al emitir.
   getTarjetasPersona: async (idPersona, tna) => {
     const debito = await db.query(
       `SELECT td.id_tarjeta, td.id_producto, td.id_cuenta, td.numero_tarjeta, td.marca,
@@ -313,8 +285,7 @@ const Tarjeta = {
     }
   },
 
-  // Bloquear/desbloquear: cambia el estado del Producto (ACTIVO <-> BLOQUEADO). Una tarjeta
-  // bloqueada rechaza compras, pero el resumen de crédito se puede seguir pagando.
+  // Una tarjeta bloqueada rechaza compras, pero el resumen de crédito se puede seguir pagando.
   cambiarEstado: async (idPersona, tipo, bloquear) => {
     const tabla = tipo === 'CREDITO' ? 'Tarjetas_Credito' : 'Tarjetas_Debito';
     const { rows } = await db.query(
@@ -329,7 +300,6 @@ const Tarjeta = {
     return { estado: bloquear ? ESTADO_BLOQUEADO : ESTADO_ACTIVO };
   },
 
-  // Compra con débito: sale directo del saldo de la caja de ahorro en ARS, en el momento.
   compraDebito: async (idPersona, { comercio, monto }) => {
     if (!(Number(monto) >= MONTO_MINIMO_COMPRA)) throw err('Monto inválido', 'MONTO_INVALIDO');
 
@@ -369,9 +339,7 @@ const Tarjeta = {
     }
   },
 
-  // Compra con crédito: no toca la cuenta, consume límite disponible por el total financiado
-  // (capital + interés de las cuotas, aunque se pague mes a mes — igual que una tarjeta real).
-  // La TNA la pasa el controller, recién obtenida del BCRA: nunca viene del cliente.
+  // Consume límite por el total financiado. La TNA viene del controller, nunca del cliente.
   compraCredito: async (idPersona, { comercio, monto, cuotas, tna }) => {
     if (!(Number(monto) >= MONTO_MINIMO_COMPRA)) throw err('Monto inválido', 'MONTO_INVALIDO');
     if (!CUOTAS_PERMITIDAS.includes(Number(cuotas))) throw err(`Las cuotas deben ser ${CUOTAS_PERMITIDAS.join(', ')}`, 'CUOTAS_INVALIDAS');
@@ -408,9 +376,7 @@ const Tarjeta = {
     }
   },
 
-  // Pago del resumen de crédito desde la caja de ahorro en ARS: libera límite. Se puede pagar
-  // hasta la deuda total (adelantando cuotas). Lo que quede sin pagar del resumen del mes pasa
-  // a ser saldo financiado y genera interés diario a la TNA de tarjetas.
+  // Lo que quede sin pagar del resumen pasa a saldo financiado y genera interés diario.
   pagarCredito: async (idPersona, monto, tna) => {
     if (!(Number(monto) > 0)) throw err('Monto inválido', 'MONTO_INVALIDO');
 
@@ -468,6 +434,20 @@ const Tarjeta = {
       [idPersona]
     );
     return rows;
+  },
+
+  // Número y CVV completos: el controller tiene que haber verificado la contraseña antes.
+  getDatosCompletos: async (idPersona, tipo) => {
+    const tabla = tipo === 'CREDITO' ? 'Tarjetas_Credito' : 'Tarjetas_Debito';
+    const { rows } = await db.query(
+      `SELECT t.numero_tarjeta, t.cvv, t.fecha_vencimiento, t.nombre_titular FROM ${tabla} t
+       JOIN Productos pr ON t.id_producto = pr.id_producto
+       JOIN Estados_Producto ep ON pr.id_estado_producto = ep.id_estado_producto
+       WHERE pr.id_persona = $1 AND ep.nombre != 'CERRADO'
+       ORDER BY t.id_tarjeta DESC LIMIT 1`,
+      [idPersona]
+    );
+    return rows[0] || null;
   }
 };
 

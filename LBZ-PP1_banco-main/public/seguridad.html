@@ -26,7 +26,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── HEADER ── */
+        /* HEADER */
         header {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -92,7 +92,7 @@
         }
         .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
 
-        /* ── HERO ── */
+        /* HERO */
         .page-hero {
             padding: 140px 48px 80px;
             max-width: 1200px;
@@ -139,7 +139,7 @@
             font-weight: 400;
         }
 
-        /* ── TRUST BANNER ── */
+        /* TRUST BANNER */
         .section { padding: 0 48px 80px; max-width: 1200px; margin: 0 auto; }
 
         .trust-banner {
@@ -177,7 +177,7 @@
             line-height: 1.4;
         }
 
-        /* ── PILARES ── */
+        /* PILARES */
         .pillars-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -218,7 +218,7 @@
             line-height: 1.6;
         }
 
-        /* ── PROCESO ── */
+        /* PROCESO */
         .process-section {
             padding: 0 48px 80px;
             max-width: 1200px;
@@ -283,7 +283,7 @@
             max-width: 580px;
         }
 
-        /* ── AVISO LEGAL ── */
+        /* AVISO LEGAL */
         .legal-section {
             padding: 0 48px 80px;
             max-width: 1200px;
@@ -320,7 +320,7 @@
             line-height: 1.6;
         }
 
-        /* ── CTA ── */
+        /* CTA */
         .cta-section {
             padding: 0 48px 100px;
             max-width: 1200px;
@@ -370,7 +370,7 @@
         }
         .btn-cta:hover { opacity: 0.88; transform: translateY(-1px); }
 
-        /* ── FOOTER ── */
+        /* FOOTER */
         footer {
             border-top: 1px solid var(--border);
             padding: 40px 48px;
@@ -396,8 +396,7 @@
             footer { flex-direction: column; gap: 16px; padding: 32px 24px; }
         }
 
-        /* Phone (≤ 480px): header-left (logo + divisor + "Inicio") + header-actions
-           (Log in + Abrir Cuenta) no entran juntos en una fila de ~320-360px útiles */
+        /* Phone (≤ 480px): logo y botones del header no entran en una sola fila. */
         @media (max-width: 480px) {
             header { padding: 0 14px; }
             .header-divider { display: none; }

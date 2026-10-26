@@ -68,7 +68,7 @@
             .usd-banner-track { animation: none; }
         }
 
-        /* ── PROGRESS BAR ── */
+        /* PROGRESS BAR */
         .progress-bar {
             position: fixed;
             top: 36px; left: 0; right: 0;
@@ -85,7 +85,7 @@
             border-radius: 0 3px 3px 0;
         }
 
-        /* ── HEADER ── */
+        /* HEADER */
         .page-header {
             width: 100%;
             max-width: 480px;
@@ -128,7 +128,7 @@
             text-align: center;
         }
 
-        /* ── FORM ── */
+        /* FORM */
         .form-wrapper {
             width: 100%;
             max-width: 480px;
@@ -330,7 +330,7 @@
 
         .footer-login a:hover { text-decoration: underline; }
 
-        /* ── PASO 2 VERIFICACIÓN ── */
+        /* PASO 2 VERIFICACIÓN */
         .verify-step {
             display: none;
             text-align: center;
@@ -520,9 +520,7 @@
     </div>
 
     <script>
-        // ── COTIZACIÓN DEL DÓLAR ──
-        // Solo MEP (la cotización que usa tuo para comprar/vender dólares) y la TNA de referencia
-        // de préstamos personales — no oficial ni blue, que acá eran solo informativos sin uso real.
+        // Solo MEP y la TNA de préstamos: oficial y blue no se usan en ninguna operación de tuo.
         (async function cargarBannerDolar() {
             const fmt = v => Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const fmtPct = v => (Number(v) * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
@@ -545,7 +543,6 @@
             }
         })();
 
-        // ── THEME ──
         const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
         const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
         function applyThemeReg(t) {
@@ -698,12 +695,10 @@
             }
         }
 
-        // Permitir enviar con Enter en el input del código
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('codigoInput').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') verificarCodigo();
             });
-            // Solo permitir números en el input del código
             document.getElementById('codigoInput').addEventListener('input', (e) => {
                 e.target.value = e.target.value.replace(/\D/g, '');
             });
@@ -748,7 +743,7 @@
                 btn.disabled = true;
                 setProgress(40);
 
-                // El servidor da de alta la persona en el Banco Central y guarda el CBU que le devuelve
+                // El CBU lo obtiene el servidor del Banco Central.
                 const localResponse = await fetch('/api/personas/registrar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -810,7 +805,6 @@
             navTo(href);
         });
 
-        // ── FORTALEZA DE CONTRASEÑA ──────────────────────────────────────
         function checkStrength(val) {
             const wrap  = document.getElementById('strengthWrap');
             const label = document.getElementById('strengthLabel');

@@ -296,9 +296,6 @@
             setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
         }
 
-        // formatearMonto()/valorNumerico() ahora viven en tuo-i18n.js (compartidas con
-        // dashboard.html y prestamos.html), expuestas como funciones globales.
-
         function previsualizar() {
             const val = valorNumerico(document.getElementById('importeDeposito'));
             const preview = document.getElementById('preview');
@@ -335,7 +332,7 @@
                 const data = await res.json();
                 if (!res.ok) { err.textContent = data.error || 'Error al procesar el depósito'; err.style.display = 'block'; return; }
 
-                // Signal dashboard to animate from old saldo to new saldo on return
+                // El dashboard anima el saldo del viejo al nuevo al volver.
                 localStorage.setItem('tuo_pending_deposit_' + u.cbu, JSON.stringify({ amount: importe, nuevoSaldo: data.nuevoSaldo }));
                 _ultimoDeposito = { importe, nuevoSaldo: data.nuevoSaldo, fecha: new Date().toISOString() };
 

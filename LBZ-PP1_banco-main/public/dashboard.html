@@ -48,7 +48,7 @@
             overscroll-behavior-y: contain;
         }
 
-        /* ── HEADER ── */
+        /* HEADER */
         .header {
             background: var(--white);
             border-bottom: 1px solid var(--border);
@@ -148,14 +148,14 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* ── LAYOUT ── */
+        /* LAYOUT */
         .main { max-width: 860px; margin: 36px auto; padding: 0 24px calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 24px); display: flex; flex-direction: column; gap: 28px; }
 
-        /* ── TARJETA DE CUENTA ── */
-        /* ── STACK ARS/USD: ambas tarjetas ocupan la misma celda, así el contenedor siempre mide lo que la más alta de las dos ── */
+        /* TARJETA DE CUENTA */
+        /* STACK ARS/USD: las dos tarjetas comparten celda, así el contenedor mide lo que la más alta */
         .account-card-wrap { position: relative; display: grid; }
 
-        /* ── AVISO DE CUOTA DE PRÉSTAMO ── */
+        /* AVISO DE CUOTA DE PRÉSTAMO */
         .banner-cuota {
             display: flex; align-items: center; gap: 12px;
             padding: 14px 16px; border-radius: 14px; margin-bottom: 16px;
@@ -230,7 +230,7 @@
         }
         .copy-tooltip.show { opacity: 1; }
 
-        /* ── NAV ENTRE TARJETAS ARS/USD ── */
+        /* NAV ENTRE TARJETAS ARS/USD */
         .card-nav-strip { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 12px 0 4px; }
         .card-nav-btn { background: var(--white); border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); transition: color 0.15s, border-color 0.15s; }
         .card-nav-btn:hover:not(:disabled) { color: var(--text); border-color: #aaa; }
@@ -239,10 +239,10 @@
         .card-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.15s, transform 0.15s; }
         .card-nav-dot.active { background: var(--accent); transform: scale(1.3); }
 
-        /* ── SECTION TITLE ── */
+        /* SECTION TITLE */
         .section-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 16px; }
 
-        /* ── ACCIONES RÁPIDAS ── */
+        /* ACCIONES RÁPIDAS */
         .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
         .action-btn {
@@ -269,7 +269,7 @@
         .action-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
         .action-label { font-size: 0.8rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
 
-        /* ── ÚLTIMOS MOVIMIENTOS ── */
+        /* ÚLTIMOS MOVIMIENTOS */
         .recent-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .recent-section-header .section-title { margin-bottom: 0; }
 
@@ -292,7 +292,7 @@
         .tx-date { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
         .tx-amount { font-size: 0.92rem; font-weight: 700; flex-shrink: 0; letter-spacing: -0.02em; }
 
-        /* ── SKELETON ── */
+        /* SKELETON */
         .skeleton-tx-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
         .skeleton-tx-item:last-child { border-bottom: none; }
 
@@ -303,18 +303,18 @@
         .sk-short { height: 9px; width: 55%; margin-top: 7px; }
         .sk-amount { height: 14px; width: 64px; border-radius: 6px; }
 
-        /* ── EMPTY STATE ── */
+        /* EMPTY STATE */
         .empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 0; }
         .empty-icon { width: 56px; height: 56px; background: var(--bg); border-radius: 14px; display: flex; align-items: center; justify-content: center; }
         .empty-state p { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
 
-        /* ── DATE SEPARATOR ── */
+        /* DATE SEPARATOR */
         .date-sep { display: flex; align-items: center; gap: 10px; padding: 10px 0 4px; }
         .date-sep-line { flex: 1; height: 1px; background: var(--border); }
         .date-sep-label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
 
-        /* ── ESTADÍSTICAS ── */
-        /* ── FAVORITES ── */
+        /* ESTADÍSTICAS */
+        /* FAVORITES */
         .fav-section { margin-top: 14px; }
         .fav-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
         .fav-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
@@ -326,7 +326,7 @@
         .fav-del { background: none; border: none; cursor: pointer; color: var(--muted); padding: 3px 5px; border-radius: 5px; transition: color 0.15s; display: flex; align-items: center; flex-shrink: 0; }
         .fav-del:hover { color: #B91C1C; }
 
-        /* ── HISTORIAL FILTERS ── */
+        /* HISTORIAL FILTERS */
         .historial-filters { padding: 12px 18px; display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border); background: var(--white); }
         .filter-chips { display: flex; gap: 4px; flex-wrap: wrap; }
         .filter-chip { padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 0.74rem; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
@@ -355,7 +355,7 @@
         .historial-search:focus { border-color: var(--accent); }
         .historial-search::placeholder { color: var(--muted); }
 
-        /* ── ONBOARDING ── */
+        /* ONBOARDING */
         #onboardingOverlay {
             position: fixed; inset: 0; z-index: 9000;
             display: none; align-items: flex-end; justify-content: center;
@@ -406,7 +406,7 @@
         }
         .ob-btn-next:hover { opacity: 0.88; }
 
-        /* ── CONFIRM LOGOUT MODAL ── */
+        /* CONFIRM LOGOUT MODAL */
         .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(3px); }
         .confirm-box { background: var(--white); border-radius: 20px; padding: 28px 28px 22px; max-width: 300px; width: 88%; box-shadow: 0 20px 60px rgba(0,0,0,0.18); text-align: center; }
         .confirm-icon { width: 50px; height: 50px; background: #FEF2F2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
@@ -418,7 +418,7 @@
         .confirm-btn-danger { flex: 1; padding: 10px; border: none; border-radius: 10px; background: #B91C1C; color: white; font-size: 0.86rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; }
         .confirm-btn-danger:hover { opacity: 0.88; }
 
-        /* ── TOAST ── */
+        /* TOAST */
         .toast-container { position: fixed; bottom: calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 16px); right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast { padding: 12px 18px; border-radius: 10px; font-size: 0.84rem; font-weight: 500; font-family: 'Inter', sans-serif; max-width: 300px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); display: flex; align-items: center; gap: 10px; animation: toastIn 0.25s ease; pointer-events: auto; line-height: 1.4; }
         .toast.success { background: #1A1A1B; color: white; }
@@ -428,7 +428,7 @@
         @keyframes toastIn  { from { opacity:0; transform:translateY(12px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(8px) scale(0.95); } }
 
-        /* ── QR MODAL ── */
+        /* QR MODAL */
         #qrModal { display:none; }
         #qrModal.open { display:flex; }
         .qr-panel {
@@ -481,7 +481,7 @@
         }
         .btn-qr:hover { background: rgba(255,255,255,0.2); color: white; }
 
-        /* ── MENSAJE OTROS MOTIVOS ── */
+        /* MENSAJE OTROS MOTIVOS */
         .mensaje-wrap {
             display: none; padding: 14px 20px 18px;
             border-top: 1px solid var(--border);
@@ -499,7 +499,7 @@
         .mensaje-textarea::placeholder { color: var(--muted); }
         .mensaje-char { font-size: 0.7rem; color: var(--muted); text-align: right; margin-top: 4px; }
 
-        /* ── PULL TO REFRESH ── */
+        /* PULL TO REFRESH */
         #pullIndicator {
             position: fixed; top: 0; left: 0; right: 0; z-index: 200;
             display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -516,7 +516,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── AUTO LOGOUT MODAL ── */
+        /* AUTO LOGOUT MODAL */
         #autoLogoutModal {
             position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,0.5);
             backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 24px;
@@ -541,13 +541,13 @@
         .btn-stay:hover { opacity:0.88; }
         .btn-logout-now { flex:1; padding:12px; background:var(--bg); color:var(--muted); border:1.5px solid var(--border); border-radius:12px; font-size:0.9rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
 
-        /* ── RIPPLE en botones de modal ── */
+        /* RIPPLE en botones de modal */
         .btn-next { position: relative; overflow: hidden; }
         .btn-next .ripple {
             background: rgba(255,255,255,0.25);
         }
 
-        /* ── EXPORT BTN ── */
+        /* EXPORT BTN */
         .btn-export {
             display: inline-flex; align-items: center; gap: 5px;
             font-size: 0.74rem; font-weight: 600; color: var(--muted);
@@ -557,7 +557,7 @@
         }
         .btn-export:hover { color: var(--accent); border-color: var(--accent); }
 
-        /* ── MODAL CONTACTOS ── */
+        /* MODAL CONTACTOS */
         .contact-modal-list { max-height: 420px; overflow-y: auto; }
         .contact-modal-item { display: flex; align-items: center; gap: 12px; padding: 13px 24px; border-bottom: 1px solid var(--border); transition: background 0.12s; }
         .contact-modal-item:last-child { border-bottom: none; }
@@ -571,12 +571,10 @@
         .btn-eliminar-contacto { background: none; border: none; cursor: pointer; color: var(--muted); padding: 6px; border-radius: 7px; display: flex; align-items: center; flex-shrink: 0; transition: color 0.15s, background 0.15s; }
         .btn-eliminar-contacto:hover { color: #B91C1C; background: rgba(185,28,28,0.07); }
 
-        /* ── MODAL BASE ── */
+        /* MODAL BASE */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
         .modal-panel { background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.18); width: 100%; }
-        /* Entrada suave al abrir — reasignada por JS (ver "animarModales" al final del script)
-           cada vez que un modal pasa a visible, sin tener que tocar los ~10 lugares que hoy
-           lo abren con display='flex'/.classList.add('open'). */
+        /* La asigna animarModales() cada vez que un modal pasa a visible. */
         @keyframes modalFadeIn  { from { opacity: 0; } to { opacity: 1; } }
         @keyframes modalPanelIn { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         .modal-overlay.animar-entrada { animation: modalFadeIn 0.18s ease; }
@@ -590,7 +588,7 @@
         .modal-close-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 0.9rem; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
         .modal-close-btn:hover { background: rgba(255,255,255,0.18); }
 
-        /* ── STEPPER ── */
+        /* STEPPER */
         .modal-stepper { display: flex; align-items: center; padding: 22px 36px 0; }
         .stepper-step { display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .stepper-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; border: 2px solid var(--border); color: var(--muted); transition: all 0.25s; font-family: 'Inter', sans-serif; }
@@ -601,7 +599,7 @@
         .stepper-line { flex: 1; height: 2px; background: var(--border); margin: 0 6px; margin-bottom: 22px; transition: background 0.25s; }
         .stepper-line.done { background: #15803D; }
 
-        /* ── MODAL BODY ── */
+        /* MODAL BODY */
         .modal-body { padding: 24px 28px 28px; }
         .paso { animation: stepSlideIn 0.22s ease; }
         .paso.back { animation: stepSlideBack 0.22s ease; }
@@ -623,8 +621,7 @@
             transition: background-color 5000s ease-in-out 0s;
             border-bottom-color: var(--accent) !important;
         }
-        /* Ocultar las flechas nativas del input number: el navegador las dibuja en blanco/gris del
-           sistema, sin respetar el tema del banco, y quedan visualmente rotas. */
+        /* El navegador dibuja las flechas con colores del sistema, sin respetar el tema. */
         .input-modal::-webkit-outer-spin-button,
         .input-modal::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -689,7 +686,7 @@
         [data-theme="dark"] .btn-cerrar-result { background: var(--accent); }
         .btn-cerrar-result:hover { opacity: 0.85; }
 
-        /* ── HISTORIAL MODAL ── */
+        /* HISTORIAL MODAL */
         .historial-panel { max-height: 90vh; display: flex; flex-direction: column; }
         .historial-body { padding: 8px 20px; overflow-y: auto; flex: 1; font-family: 'Inter', sans-serif; }
         .historial-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); animation: txFadeIn 0.3s ease both; cursor: pointer; border-radius: 8px; transition: background 0.12s; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
@@ -716,11 +713,16 @@
         .qr-scan-success.visible { opacity: 1; }
         .qr-scan-success svg { animation: qrCheckPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
         @keyframes qrCheckPop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .notif-panel { max-width: 400px; max-height: min(70vh, 560px); display: flex; flex-direction: column; }
+        @media (min-width: 601px) {
+            /* En PC se abre como desplegable debajo de la campana, no en el centro de la pantalla. */
+            #modalNotificaciones { justify-content: flex-end; align-items: flex-start; padding: 72px 24px 24px; }
+        }
         .notif-item.no-leida { background: rgba(0,82,255,0.05); }
         .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
         .notif-empty { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 40px 0; font-family: 'Inter', sans-serif; }
 
-        /* ── DETALLE TRANSACCIÓN ── */
+        /* DETALLE TRANSACCIÓN */
         .modal-back-btn { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 0.82rem; font-weight: 600; padding: 0; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 4px; }
         .modal-back-btn:hover { opacity: 0.75; }
         .detalle-tx-hero { text-align: center; padding: 8px 0 20px; }
@@ -736,15 +738,15 @@
         .detalle-tx-value { font-weight: 600; color: var(--text); text-align: right; word-break: break-all; }
         .detalle-tx-body { padding: 4px 24px 24px; overflow-y: auto; max-height: calc(90vh - 60px); }
 
-        /* ── DATOS PERSONALES MODAL ── */
+        /* DATOS PERSONALES MODAL */
         .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
         .info-item label { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
         .info-item span { font-size: 0.97rem; font-weight: 600; color: var(--text); }
 
-        /* ── ALIAS EDIT ── */
+        /* ALIAS EDIT */
         #aliasError { color: #ff8080; font-size: 0.75rem; margin-top: 6px; display: none; }
 
-        /* ── RESPONSIVE ── */
+        /* RESPONSIVE */
 
         /* Tablet landscape (≤ 860px) */
         @media (max-width: 860px) {
@@ -852,7 +854,7 @@
         }
         .btn-comprobante-hist:hover { opacity: 0.85; }
 
-        /* ── ASISTENTE DE IA ─────────────────────────────────────────────── */
+        /* ASISTENTE DE IA */
         .asistente-fab {
             position: fixed; right: 24px; width: 56px; height: 56px;
             bottom: calc(var(--qr-bar-height) + env(safe-area-inset-bottom, 0px) + 16px);
@@ -864,7 +866,7 @@
         }
         .asistente-fab:hover { transform: scale(1.06); }
 
-        /* ── BARRA FLOTANTE ESCANEAR QR ── */
+        /* BARRA FLOTANTE ESCANEAR QR */
         :root { --qr-bar-height: 58px; }
         .qr-scan-bar {
             position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
@@ -1187,7 +1189,7 @@
 
     </main>
 
-    <!-- ── MODAL HISTORIAL ── -->
+    <!-- MODAL HISTORIAL -->
     <div id="modalHistorial" class="modal-overlay">
         <div class="modal-panel historial-panel" style="max-width:520px;">
             <div class="modal-header">
@@ -1239,9 +1241,9 @@
         </div>
     </div>
 
-    <!-- ── MODAL NOTIFICACIONES ── -->
+    <!-- MODAL NOTIFICACIONES -->
     <div id="modalNotificaciones" class="modal-overlay">
-        <div class="modal-panel" style="max-width:420px;">
+        <div class="modal-panel notif-panel">
             <div class="modal-header">
                 <span class="modal-header-title">Notificaciones</span>
                 <div style="display:flex;align-items:center;gap:6px;">
@@ -1253,7 +1255,7 @@
         </div>
     </div>
 
-    <!-- ── MODAL ESCÁNER QR ── -->
+    <!-- MODAL ESCÁNER QR -->
     <div id="modalEscanerQr" class="modal-overlay">
         <div class="modal-panel" style="max-width:380px;">
             <div class="modal-header">
@@ -1274,7 +1276,7 @@
     </div>
     <canvas id="qrScanCanvas" style="display:none;"></canvas>
 
-    <!-- ── MODAL TRANSFERENCIA ── -->
+    <!-- MODAL TRANSFERENCIA -->
     <div id="modalTransferencia" class="modal-overlay">
         <div class="modal-panel" style="max-width:440px;">
             <div class="modal-header">
@@ -1379,7 +1381,7 @@
         </div>
     </div>
 
-    <!-- ── MODAL MOTIVO ── -->
+    <!-- MODAL MOTIVO -->
     <div id="modalMotivo" class="modal-overlay">
         <div class="modal-panel" style="max-width:380px;">
             <div class="modal-header">
@@ -1405,7 +1407,7 @@
         </div>
     </div>
 
-    <!-- ── MODAL AGREGAR CONTACTO ── -->
+    <!-- MODAL AGREGAR CONTACTO -->
     <div id="modalAgregarContacto" class="modal-overlay">
         <div class="modal-panel" style="max-width:340px;">
             <div class="modal-header">
@@ -1423,7 +1425,7 @@
         </div>
     </div>
 
-    <!-- ── MODAL DETALLE TRANSACCIÓN ── -->
+    <!-- MODAL DETALLE TRANSACCIÓN -->
     <div id="modalDetalleTx" class="modal-overlay" style="z-index:1050;">
         <div class="modal-panel" style="max-width:440px;">
             <div class="modal-header">
@@ -1438,7 +1440,7 @@
         </div>
     </div>
 
-    <!-- ── CONFIRM ELIMINAR CONTACTO ── -->
+    <!-- CONFIRM ELIMINAR CONTACTO -->
     <div id="confirmEliminarContacto" class="confirm-overlay" style="z-index:1200;">
         <div class="confirm-box">
             <div class="confirm-icon">
@@ -1453,7 +1455,7 @@
         </div>
     </div>
 
-    <!-- ── CONFIRM LOGOUT MODAL ── -->
+    <!-- CONFIRM LOGOUT MODAL -->
     <div id="modalConfirmLogout" class="confirm-overlay">
         <div class="confirm-box">
             <div class="confirm-icon">
@@ -1468,7 +1470,7 @@
         </div>
     </div>
 
-    <!-- ── PDF RECEIPT TEMPLATE (off-screen) ── -->
+    <!-- PDF RECEIPT TEMPLATE (off-screen) -->
     <div id="pdfTpl" style="position:fixed;left:-9999px;top:0;visibility:hidden;width:440px;background:#ffffff;padding:36px 32px;font-family:'Inter',-apple-system,sans-serif;color:#1A1A1B;line-height:1.5;">
         <!-- Header -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:18px;border-bottom:2.5px solid #1A1A1B;">
@@ -1500,7 +1502,7 @@
         </div>
     </div>
 
-    <!-- ── ONBOARDING ── -->
+    <!-- ONBOARDING -->
     <div id="onboardingOverlay">
         <div class="ob-backdrop" id="obBackdrop"></div>
         <div class="ob-spotlight" id="obSpotlight"></div>
@@ -1516,16 +1518,16 @@
         </div>
     </div>
 
-    <!-- ── TOAST CONTAINER ── -->
+    <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ── PULL INDICATOR ── -->
+    <!-- PULL INDICATOR -->
     <div id="pullIndicator">
         <div class="pull-spinner" id="pullSpinner" style="display:none;"></div>
         <span id="pullText">Actualizando...</span>
     </div>
 
-    <!-- ── AUTO LOGOUT MODAL ── -->
+    <!-- AUTO LOGOUT MODAL -->
     <div id="autoLogoutModal">
         <div class="autologout-box">
             <div class="autologout-icon">
@@ -1541,7 +1543,7 @@
         </div>
     </div>
 
-    <!-- ── QR MODAL ── -->
+    <!-- QR MODAL -->
     <div id="qrModal" class="modal-overlay">
         <div class="qr-panel" onclick="event.stopPropagation()">
             <div class="qr-header">
@@ -1578,7 +1580,6 @@
     </div>
 
     <script>
-        // ── DARK MODE ────────────────────────────────────────────────────
         const MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
         const SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
 
@@ -1610,7 +1611,6 @@
 
         applyTheme(resolverTema());
 
-        // ── TOAST ────────────────────────────────────────────────────────
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const el = document.createElement('div');
@@ -1620,9 +1620,7 @@
                 error:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
                 info:    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`
             };
-            // Escapado siempre: varios call sites interpolan nombres/mensajes que vienen de
-            // otro usuario (nombre de contacto, mensaje de notificación de QR leído, etc.) —
-            // ningún call site de hoy necesita pasar HTML real en el mensaje.
+            // Se escapa siempre: varios mensajes traen nombres que escribe otro usuario.
             el.innerHTML = (icons[type] || icons.info) + escapeHtml(message);
             container.appendChild(el);
             setTimeout(() => {
@@ -1631,7 +1629,6 @@
             }, 3200);
         }
 
-        // ── AVATAR UTILS ─────────────────────────────────────────────────
         const AVATAR_COLORS = ['#4338CA','#D97706','#059669','#DB2777','#0284C7','#7C3AED','#DC2626','#10B981','#F59E0B','#0891B2'];
 
         function avatarColor(name) {
@@ -1646,14 +1643,12 @@
             return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : (p[0]?.[0] || '?').toUpperCase();
         }
 
-        // ── CBU FORMAT ───────────────────────────────────────────────────
         function formatCbu(cbu) {
             if (!cbu || cbu.length !== 22) return cbu;
             return `${cbu.slice(0,4)} ${cbu.slice(4,8)} ${cbu.slice(8,12)} ${cbu.slice(12,16)} ${cbu.slice(16,20)} ${cbu.slice(20)}`;
         }
 
-        // Los CBU propios (ARS + USD si hay caja abierta) para pedirle a /api/historial SOLO
-        // los movimientos que me corresponden — el servidor ya no devuelve el banco entero.
+        // /api/historial solo devuelve los movimientos de los CBU que se le piden.
         function cbusPropios() {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
             const cbus = [];
@@ -1662,40 +1657,31 @@
             return cbus;
         }
 
-        // Un movimiento es "mío" si involucra mi CBU en ARS o mi CBU en USD (si tengo caja abierta).
-        // Antes solo se comparaba contra el CBU en ARS, así que las transferencias en USD nunca aparecían.
         function esMiCbu(cbu) {
             if (!cbu) return false;
             const u = JSON.parse(localStorage.getItem('usuarioLogueado') || 'null');
             if (!u) return false;
             return cbu === u.cbu || !!(cuentaUsdDashboard && cbu === cuentaUsdDashboard.cbu);
         }
-        // Una transacción (que no sea depósito ni cambio de divisa) es en USD si mi caja en USD participa.
+        // Depósitos y cambios de divisa no cuentan: solo transacciones donde participa mi caja en USD.
         function esTxUsd(t) {
             return !!(cuentaUsdDashboard && cuentaUsdDashboard.cbu && (t.cbuOrigen === cuentaUsdDashboard.cbu || t.cbuDestino === cuentaUsdDashboard.cbu));
         }
-        // Movimientos de Préstamos (otorgamiento, pago de cuota, cancelación anticipada) usan
-        // el CBU sentinela "PRESTAMO" de un lado — no es una cuenta real, así que en vez de
-        // intentar resolverle un nombre de contraparte, el movimiento se etiqueta "Préstamos".
+        // "PRESTAMO" es un CBU sentinela, no una cuenta: el movimiento se etiqueta en vez de resolver un nombre.
         function esPrestamoTx(t) {
             return t.tipo === 'otorgamiento_prestamo' || t.tipo === 'pago_cuota' || t.tipo === 'cancelacion_prestamo';
         }
-        // Movimientos de Reservas (apertura, vencimiento, depósito/retiro de frasco) usan el CBU
-        // sentinela "RESERVA" del lado que no es una cuenta real — mismo criterio que Préstamos.
+        // CBU sentinela "RESERVA", mismo criterio que Préstamos.
         function esReservaTx(t) {
             return t.tipo === 'apertura_reserva' || t.tipo === 'vencimiento_reserva' || t.tipo === 'deposito_frasco' || t.tipo === 'retiro_frasco';
         }
-        // Movimientos de Tarjetas (compra con débito, pago del resumen de crédito) usan el CBU
-        // sentinela "TARJETA" del lado que no es una cuenta real — mismo criterio que Reservas.
+        // CBU sentinela "TARJETA", mismo criterio que Préstamos.
         function esTarjetaTx(t) {
             return t.tipo === 'compra_debito' || t.tipo === 'pago_tarjeta_credito';
         }
-        // Símbolo de moneda para un MOVIMIENTO (historial/detalle/exportaciones) — no confundir con
-        // el símbolo de "mi propia cuenta" del selector de origen en el modal de transferencia, que
-        // intencionalmente sigue mostrando "US$" (ver plan: alcance limitado a la lista de movimientos).
+        // Solo para movimientos; el selector de origen de la transferencia muestra su propio símbolo.
         function simboloMoneda(esUsd) { return esUsd ? 'US$' : '$'; }
 
-        // ── NOMBRE CACHE ─────────────────────────────────────────────────
         function guardarNombreCbu(cbu, nombre) {
             const cache = JSON.parse(localStorage.getItem('tuo_nombres') || '{}');
             cache[cbu] = nombre;
@@ -1724,7 +1710,6 @@
             }));
         }
 
-        // ── DNI CACHE ────────────────────────────────────────────────────
         function guardarDniCbu(cbu, dni) {
             if (!cbu || !dni) return;
             const c = JSON.parse(localStorage.getItem('tuo_dni_cache') || '{}');
@@ -1735,7 +1720,6 @@
             return JSON.parse(localStorage.getItem('tuo_dni_cache') || '{}')[cbu] || null;
         }
 
-        // ── BANCO CACHE ──────────────────────────────────────────────────
         async function getNombreBanco(code) {
             if (!code) return null;
             const c = JSON.parse(localStorage.getItem('tuo_bancos') || '{}');
@@ -1754,7 +1738,6 @@
             return null;
         }
 
-        // ── EYE ICONS ────────────────────────────────────────────────────
         const EYE_OPEN   = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
         const EYE_CLOSED = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
         let saldoVisible = localStorage.getItem('tuo_ocultar_saldo') !== '1';
@@ -1766,7 +1749,7 @@
 
         let saldoReal = 0;
         let _txsVistas = new Set();
-        let _notifsQrVistas = new Set(); // ids de notificaciones de "aviso de lectura" ya toasteadas
+        let _notifsQrVistas = new Set(); // avisos de lectura de QR ya mostrados
         let _pollingInterval = null;
         let _inicializado = false;      // true sólo después de que cargarRecentTx completa
         let _cargandoRecent = false;    // evita llamadas concurrentes a cargarRecentTx
@@ -1791,7 +1774,6 @@
             }
         }
 
-        // ── COUNT UP ─────────────────────────────────────────────────────
         function countUp(from, to, duration, el) {
             const start = performance.now();
             function step(now) {
@@ -1821,7 +1803,6 @@
             }
         }
 
-        // ── COPY TO CLIPBOARD ────────────────────────────────────────────
         async function copiarAlPortapapeles(campo) {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             const valor = campo === 'cbu' ? u.cbu : u.alias;
@@ -1837,7 +1818,6 @@
             }
         }
 
-        // ── RIPPLE ───────────────────────────────────────────────────────
         document.querySelectorAll('.action-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 const circle = document.createElement('span');
@@ -1851,7 +1831,6 @@
             });
         });
 
-        // ── HEADER DROPDOWN ──────────────────────────────────────────────
         function toggleDropdown() {
             document.getElementById('headerDropdown').classList.toggle('open');
         }
@@ -1861,7 +1840,6 @@
                 document.getElementById('headerDropdown').classList.remove('open');
         });
 
-        // ── SKELETON ─────────────────────────────────────────────────────
         function mostrarSkeleton(container, count = 3) {
             container.innerHTML = Array.from({ length: count }, () => `
                 <div class="skeleton-tx-item">
@@ -1874,17 +1852,11 @@
                 </div>`).join('');
         }
 
-        // Declaradas acá y no junto a la tarjeta USD: el INIT de abajo las usa al cargar la
-        // página, y un `let` usado antes de su línea tira "Cannot access ... before
-        // initialization", lo que cortaba el resto del script (movimientos, banner de cuota, etc.).
+        // Se declaran antes del INIT, que las usa al cargar: un let usado antes de su línea corta el script.
         let cuentaUsdDashboard = null;
-        // Guarda la promesa de cargarCuentaUsdDashboard() para que cargarRecentTx() pueda
-        // esperarla antes de filtrar movimientos — sin esto, si el historial llegaba antes
-        // que los productos, cuentaUsdDashboard todavía era null y los movimientos en USD
-        // se perdían del widget "Últimos movimientos" en esa primera pasada.
+        // cargarRecentTx() la espera para no perder los movimientos en USD en la primera carga.
         let _cuentaUsdDashboardPromise = null;
 
-        // ── INIT ─────────────────────────────────────────────────────────
         const userData = localStorage.getItem('usuarioLogueado');
 
         if (!userData) {
@@ -1909,7 +1881,6 @@
             _cuentaUsdDashboardPromise = cargarCuentaUsdDashboard();
             cargarBannerCuota();
 
-            // Detect pending deposit from depositar.html and animate saldo
             const _pendingDepKey = 'tuo_pending_deposit_' + u.cbu;
             const _pendingDep = JSON.parse(localStorage.getItem(_pendingDepKey) || 'null');
             if (_pendingDep) {
@@ -1926,7 +1897,6 @@
             cargarRecentTx();
             setTimeout(iniciarOnboarding, 800);
 
-            // Abrir transferencia pre-cargada si viene desde contactos.html
             const params = new URLSearchParams(window.location.search);
             const cbuParam = params.get('transferir');
             const monedaParam = params.get('moneda');
@@ -1950,15 +1920,12 @@
         }
 
         function cerrarSesion() {
-            // Limpia la cookie de sesión del lado del server (ver utils/sesion.js) además del
-            // localStorage — si no, la cookie httpOnly seguía viva y autenticada aunque la
-            // pantalla ya mostrara "deslogueado".
+            // Si no, la cookie httpOnly sigue autenticada aunque la pantalla muestre la sesión cerrada.
             fetch('/api/personas/logout', { method: 'POST' }).catch(() => {});
             localStorage.removeItem('usuarioLogueado');
             navTo('login.html');
         }
 
-        // ── FAVORITES ────────────────────────────────────────────────────
         function _favKey() {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             return u ? 'tuo_favoritos_' + u.cbu : 'tuo_favoritos';
@@ -1989,9 +1956,7 @@
 
             const itemHtml = f => {
                 const moneda     = f.moneda === 'USD' ? 'USD' : 'ARS';
-                // Dos capas: primero se escapa para que sea un string JS válido (comillas/barras),
-                // después escapeHtml() para que ese resultado no rompa el atributo onclick="..."
-                // en el que vive (f.nombre es el nombre de un contacto, editable por cualquiera).
+                // Doble escape: string JS válido y atributo onclick válido (el nombre lo edita cualquiera).
                 const safeNombre = escapeHtml(f.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
                 const safeCbu    = escapeHtml(f.cbu.replace(/'/g, "\\'"));
                 return `<div class="fav-item" onclick="seleccionarFavorito('${safeCbu}','${safeNombre}','${moneda}')">
@@ -2006,8 +1971,7 @@
                 </div>`;
             };
 
-            // Separamos en pesos y dólares. Los contactos guardados antes de esta división quedan
-            // como ARS por default (f.moneda === 'USD' es la única forma de marcar dólares).
+            // Los contactos guardados sin moneda quedan como ARS.
             const ars = lista.filter(f => f.moneda !== 'USD');
             const usd = lista.filter(f => f.moneda === 'USD');
 
@@ -2044,7 +2008,6 @@
             showToast('Contacto eliminado');
         }
 
-        // ── CONTACTOS ────────────────────────────────────────────────────
         let _cbuPendienteContacto = null, _nombrePendienteContacto = null;
 
         function cerrarModalContacto() {
@@ -2057,12 +2020,10 @@
             renderizarFavoritos();
         }
 
-        // ── SOUNDS ───────────────────────────────────────────────────────
         function playSound(type) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if (type === 'ingreso') {
-                    // Coins landing / rising arpeggio
                     [1318, 1568, 1760, 2093, 2637].forEach((freq, i) => {
                         const osc  = ctx.createOscillator();
                         const gain = ctx.createGain();
@@ -2076,7 +2037,6 @@
                         osc.start(t); osc.stop(t + 0.28);
                     });
                 } else {
-                    // Coin leaving — descending swoosh + soft click
                     const osc  = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.type = 'triangle';
@@ -2091,14 +2051,13 @@
             } catch {}
         }
 
-        // ── HISTORIAL FILTERS ────────────────────────────────────────────
         let _filtroTipo   = 'todos';
         let _filtroFecha  = 'todos';
         let _filtroTexto  = '';
         let _todasPropias = [];
         let _usuarioHist  = null;
         let _txMap        = {};
-        let _detalleTxToken = 0; // evita que un doble tap rápido en abrirDetalleTx() muestre la tx equivocada
+        let _detalleTxToken = 0; // evita que un doble tap muestre la tx equivocada
 
         function setFiltroTexto(val) {
             _filtroTexto = val;
@@ -2167,10 +2126,7 @@
             }
             return r;
         }
-        // Escribir en el buscador o en los filtros de fecha/monto disparaba un re-render completo
-        // de la lista en CADA tecla — con un historial largo (meses de pruebas acumuladas) eso se
-        // sentía trabado. Estos filtros pasan por una versión debounced; los llamados programáticos
-        // (después de cargar datos, click en un chip) siguen usando renderHistorialFiltrado() directo.
+        // Debounce para tipear; los llamados programáticos usan renderHistorialFiltrado() directo.
         let _debounceHistorial = null;
         function renderHistorialFiltradoDebounced() {
             clearTimeout(_debounceHistorial);
@@ -2375,7 +2331,6 @@
             setTimeout(() => URL.revokeObjectURL(pdfUrl), 30000);
         }
 
-        // ── DETALLE TRANSACCIÓN ──────────────────────────────────────────
         async function abrirDetalleTx(id) {
             const miToken = ++_detalleTxToken;
             const t = _txMap[id];
@@ -2562,7 +2517,6 @@
             let alias   = persona?.alias || cachedPersona?.alias || persona?.alias || null;
             const cbu   = persona?.cbu   || cbuContraparte || '—';
 
-            // Si todavía no tenemos DNI, buscarlo en la API (enriquecida con DB local)
             if (!dni && cbuContraparte && cbuContraparte !== 'DEPOSITO') {
                 try {
                     const r = await fetch(`/api/buscar-persona?tipo=cbu&valor=${encodeURIComponent(cbuContraparte)}&moneda=${esUsd ? 'USD' : 'ARS'}`);
@@ -2571,7 +2525,6 @@
                         if (p.dni) { dni = p.dni; guardarDniCbu(cbuContraparte, p.dni); }
                         if (p.alias && !alias) alias = p.alias;
                         if (p.nombre && nombre === 'Desconocido') nombre = `${p.nombre} ${p.apellido}`;
-                        // Actualizar cache completo
                         const pc = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}');
                         pc[cbuContraparte] = { nombre: p.nombre, apellido: p.apellido, dni: p.dni, alias: p.alias, cbu: p.cbu };
                         localStorage.setItem('tuo_persona_cache', JSON.stringify(pc));
@@ -2595,9 +2548,7 @@
             const bg  = avatarColor(nombre);
             const ini = initials(nombre);
 
-            // Si mientras esperábamos los dos awaits de arriba el usuario abrió otra
-            // transacción (doble tap rápido), esta respuesta ya está vieja — no pisar el
-            // detalle que corresponde a la tx más reciente.
+            // Si mientras tanto se abrió otra transacción, esta respuesta ya está vieja.
             if (miToken !== _detalleTxToken) return;
 
             document.getElementById('detalleTxCuerpo').innerHTML = `
@@ -2721,7 +2672,6 @@
                     <span style="font-weight:600;text-align:right;word-break:break-all;color:#1A1A1B;${vs}">${value}</span>
                 </div>`;
 
-            // Populate PDF template
             document.getElementById('pdf-estado-badge').innerHTML =
                 `<span style="font-size:0.72rem;padding:5px 12px;border-radius:20px;font-weight:700;${estadoOk ? 'background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;' : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;'}">${estadoOk ? (window.t ? window.t('dashboard.tx.approved') : 'Aprobada') : (window.t ? window.t('dashboard.tx.rejected') : 'Rechazada')}</span>`;
             document.getElementById('pdf-dir').textContent = `${labelDir} · ${fechaHora}`;
@@ -2766,13 +2716,11 @@
             }
         }
 
-        // ── DATOS PERSONALES ─────────────────────────────────────────────
         function abrirDatosPersonales() {
             document.getElementById('headerDropdown').classList.remove('open');
             navTo('perfil.html');
         }
 
-        // ── DATE UTILS ───────────────────────────────────────────────────
         function etiquetaFecha(fechaStr) {
             if (!fechaStr) return null;
             const d = new Date(fechaStr);
@@ -2795,17 +2743,13 @@
             return groups;
         }
 
-        // ── RECENT TRANSACTIONS ──────────────────────────────────────────
         async function cargarRecentTx() {
             if (_cargandoRecent) return;
             _cargandoRecent = true;
             const container = document.getElementById('recentTxList');
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             try {
-                // Esperar a cargarCuentaUsdDashboard() ANTES de armar la URL: /api/historial
-                // ahora exige el/los cbu propios como parámetro (ya no devuelve el banco entero
-                // para filtrar del lado del cliente), así que si no esperamos, el cbu en USD
-                // todavía no está disponible y esos movimientos ni se piden.
+                // Sin el cbu en USD, /api/historial ni siquiera devuelve esos movimientos.
                 if (_cuentaUsdDashboardPromise) await _cuentaUsdDashboardPromise;
                 const ctrl = new AbortController();
                 const tid  = setTimeout(() => ctrl.abort(), 15000);
@@ -2819,9 +2763,6 @@
                 const all = Array.isArray(data) ? data : (data.transactions || data.data || []);
                 window._txsCache = all;
                 all.forEach(t => t._id && _txsVistas.add(t._id));
-                // El Banco Central volvió a responder: si el banner de "no responde" había
-                // quedado prendido de una pasada anterior, se oculta — antes nunca se llamaba
-                // con false y quedaba pegado aunque el servidor ya estuviera bien.
                 mostrarBannerMantenimiento(false);
                 iniciarPolling();
                 verificarNotificaciones();
@@ -2915,7 +2856,6 @@
             </div>`;
         }
 
-        // ── POLLING: detección de transferencias en tiempo real ───────────
         function iniciarPolling() {
             if (_pollingInterval) return;
             _pollingInterval = setInterval(verificarNuevasTransferencias, 30000);
@@ -2926,9 +2866,7 @@
             _pollingInterval = null;
         }
 
-        // Pausa cuando el usuario cambia de pestaña; retoma al volver
-        // Sólo actúa si la carga inicial ya terminó (_inicializado) para
-        // evitar el race condition con el visibilitychange de la carga de página.
+        // Espera a _inicializado para no competir con la carga inicial de la página.
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 detenerPolling();
@@ -2949,12 +2887,7 @@
                 const all  = Array.isArray(data) ? data : (data.transactions || data.data || []);
                 const cbuUsd = cuentaUsdDashboard && cuentaUsdDashboard.cbu;
 
-                // Buscar transferencias recibidas que no hayamos visto aún, en ARS y en USD por separado
-                // (el saldo en ARS y el saldo en USD son campos distintos, no se pueden sumar juntos).
-                // Los movimientos de Préstamos y Reservas quedan afuera a propósito: esos ya mueven el
-                // saldo del lado del servidor en el momento mismo de la operación (otorgar/pagar/cancelar,
-                // abrir/vencer/depositar/retirar), así que sumarlos acá de nuevo duplicaría el crédito/débito
-                // sobre un saldo que ya está bien.
+                // ARS y USD por separado; Préstamos y Reservas quedan afuera porque el servidor ya movió ese saldo.
                 const nuevas = all.filter(t =>
                     t.cbuDestino === u.cbu &&
                     (t.estado === 'aprobada' || t.estado === 'approved') &&
@@ -2968,14 +2901,9 @@
                     t._id && !_txsVistas.has(t._id)
                 ) : [];
 
-                // Marcar todas como vistas
                 all.forEach(t => t._id && _txsVistas.add(t._id));
 
-                // El saldo real ya lo actualizó el propio servidor (transferir()/sincronizarTransacciones)
-                // antes de que esta respuesta llegue — acá NUNCA se recalcula a mano sumando "lo nuevo"
-                // sobre el valor que ya estaba en pantalla: eso puede duplicar el crédito si ese valor
-                // ya venía actualizado por otra vía (ej. al abrir el dashboard). En vez de eso, cuando
-                // hay algo nuevo, se pide el saldo real de vuelta y se refleja tal cual está en la base.
+                // El servidor ya actualizó el saldo: se pide el real en vez de sumar lo nuevo, que podía duplicarlo.
                 let productosActuales = null;
                 if (nuevas.length || nuevasUsd.length) {
                     try {
@@ -3004,7 +2932,6 @@
 
                 if (nuevas.length === 0) return;
 
-                // Actualizar saldo con el valor real del servidor (no un cálculo propio)
                 const cuentaArsActual = Array.isArray(productosActuales) ? productosActuales.find(p => p.moneda === 'ARS') : null;
                 if (cuentaArsActual && cuentaArsActual.saldo !== undefined) {
                     const nuevoSaldo = Number(cuentaArsActual.saldo);
@@ -3014,7 +2941,6 @@
                     actualizarSaldoDisplay(nuevoSaldo, true);
                 }
 
-                // Sonido y notificación por cada transferencia nueva
                 playSound('ingreso');
                 nuevas.forEach(t => {
                     const nombre = (t.personaOrigen?.nombre && t.personaOrigen?.apellido)
@@ -3025,7 +2951,6 @@
                     if (t.personaOrigen?.nombre) guardarNombreCbu(t.cbuOrigen, `${t.personaOrigen.nombre} ${t.personaOrigen.apellido}`);
                 });
 
-                // Si el historial modal está abierto, refrescarlo
                 const mh = document.getElementById('modalHistorial');
                 if (mh && mh.style.display === 'flex') {
                     _todasPropias = deduplicarTxs(all.filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
@@ -3034,7 +2959,6 @@
             } catch {}
         }
 
-        // ── NOTIFICACIONES ───────────────────────────────────────────────
         const NOTIF_ICON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
         function colorNotif(tipo) {
             if (['transferencia_recibida', 'deposito', 'cambio_divisa'].includes(tipo)) return '#15803D';
@@ -3058,8 +2982,7 @@
                         badge.style.display = 'none';
                     }
                 }
-                // "Aviso de lectura" de QR: además del contador, muestra un toast apenas
-                // llega (no hay websockets, así que se apoya en este mismo polling de 30s).
+                // Sin websockets, el toast del aviso de lectura se apoya en este mismo polling de 30 s.
                 if (cantidad > 0) avisarLecturasQrNuevas(u.id).catch(() => {});
             } catch {}
         }
@@ -3148,15 +3071,13 @@
             if (e.target === this) cerrarNotificaciones();
         });
 
-        // ── DEDUPLICAR ─────────────────────────────────────────────────────
         function deduplicarTxs(txs) {
             const seenId  = new Set();
             const seenKey = new Map();
             return txs.filter(t => {
                 if (!t._id || seenId.has(t._id)) return false;
                 seenId.add(t._id);
-                // Clave orden-independiente: ordena los CBUs para que A→B y B→A
-                // generados por el BC para la misma transferencia produzcan la misma clave.
+                // Ordena los CBU para que A→B y B→A de la misma transferencia den la misma clave.
                 const ts   = new Date(t.fecha || t.createdAt || t.created_at || 0).getTime();
                 const cbus = [t.cbuOrigen || '', t.cbuDestino || ''].sort();
                 const key  = `${cbus[0]}|${cbus[1]}|${Math.round(Number(t.importe) * 100)}`;
@@ -3166,7 +3087,6 @@
             });
         }
 
-        // ── HISTORIAL ─────────────────────────────────────────────────────
         async function abrirHistorial() {
             const modal  = document.getElementById('modalHistorial');
             const cuerpo = document.getElementById('historialCuerpo');
@@ -3174,7 +3094,6 @@
             mostrarSkeleton(cuerpo, 5);
             _usuarioHist = JSON.parse(localStorage.getItem('usuarioLogueado'));
             const u = _usuarioHist;
-            // Reset filters UI
             _filtroTipo  = 'todos';
             _filtroFecha = 'todos';
             _filtroTexto = '';
@@ -3187,8 +3106,6 @@
             if (maxEl) maxEl.value = '';
             if (txtEl) txtEl.value = '';
             try {
-                // Mismo manejo que cargarRecentTx: timeout de 15 s y mensaje entendible si se
-                // cae la conexión, en vez de quedar cargando o mostrar "Failed to fetch".
                 if (_cuentaUsdDashboardPromise) await _cuentaUsdDashboardPromise;
                 const ctrl = new AbortController();
                 const tid  = setTimeout(() => ctrl.abort(), 15000);
@@ -3226,7 +3143,6 @@
             if (e.target === this) this.style.display = 'none';
         });
 
-        // ── MODAL TRANSFERENCIA ───────────────────────────────────────────
         let destinatarioCbuSeleccionado = null;
         let motivoSeleccionado    = null;
         let mensajeTransferencia  = null;
@@ -3298,16 +3214,13 @@
             document.getElementById('btnOrigenArs').classList.toggle('active', moneda === 'ARS');
             document.getElementById('btnOrigenUsd').classList.toggle('active', moneda === 'USD');
             document.getElementById('importeSymboloTransfer').textContent = moneda === 'ARS' ? '$' : 'US$';
-            // "US$" es más ancho que "$": si no le hacemos lugar al input, el símbolo queda pisando
-            // los dígitos escritos (se veía "bugueado").
+            // "US$" es más ancho que "$": sin este espacio el símbolo pisa los dígitos.
             document.getElementById('inputImporte').style.paddingLeft = moneda === 'ARS' ? '18px' : '38px';
             document.getElementById('inputBusqueda').placeholder = moneda === 'ARS'
                 ? 'Ej: sol.luna.rio  ó  CBU de 22 dígitos'
                 : 'Alias o CBU en USD del destinatario';
         }
 
-        // Si el destinatario encontrado también tiene cuenta local en la otra moneda, ofrece
-        // cambiarse a esa cuenta (y a mi propio origen en esa moneda) con un solo toque.
         function revisarOtraMonedaDestino(cbu, monedaActual) {
             _otraMonedaDestino = null;
             document.getElementById('destinatarioMonedaToggle').style.display = 'none';
@@ -3404,9 +3317,6 @@
             _otraMonedaDestino = null;
         }
 
-        // formatearMonto()/valorNumerico() ahora viven en tuo-i18n.js (compartidas con
-        // depositar.html y prestamos.html), expuestas como funciones globales.
-
         function actualizarImportePreview(val) {
             const n  = parseFloat((val || '').replace(/\./g, '').replace(',', '.'));
             const el = document.getElementById('importePreview');
@@ -3443,11 +3353,9 @@
                     errEl.style.display = 'block';
                     return;
                 }
-                // Cache name and DNI for history display
                 guardarNombreCbu(data.cbu, `${data.nombre} ${data.apellido}`);
                 if (data.dni) guardarDniCbu(data.cbu, data.dni);
 
-                // Cache full persona for outgoing transfer detail lookups
                 const personaCache = JSON.parse(localStorage.getItem('tuo_persona_cache') || '{}');
                 personaCache[data.cbu] = { nombre: data.nombre, apellido: data.apellido, dni: data.dni, alias: data.alias, cbu: data.cbu };
                 localStorage.setItem('tuo_persona_cache', JSON.stringify(personaCache));
@@ -3456,12 +3364,11 @@
                 document.getElementById('destinatarioNombre').textContent = `${data.nombre} ${data.apellido}`;
                 document.getElementById('destinatarioCbu').textContent = `CBU: ${formatCbu(data.cbu)}`;
 
-                // Populate extra details
                 document.getElementById('destinatarioDni').textContent = data.dni || '—';
                 document.getElementById('destinatarioAlias').textContent = data.alias || '—';
                 document.getElementById('destinatarioDetails').style.display = 'flex';
 
-                // Banco: try bankCode from API, fall back to first 3 digits of CBU
+                // Si la API no trae bankCode, los primeros 3 dígitos del CBU identifican al banco.
                 const bankCode = data.bankCode || data.codigoBanco || (data.cbu ? data.cbu.substring(0, 3) : null);
                 if (bankCode) {
                     getNombreBanco(bankCode).then(nombre => {
@@ -3513,15 +3420,13 @@
                     errEl.style.display = 'block';
                     return;
                 }
-                // Save motivo to localStorage scoped by sender CBU
                 const registro = { motivo: motivoSeleccionado || 'Otros motivos', importe, fecha: new Date().toISOString() };
                 const txKey = 'tuo_transferencias_' + cbuOrigenActual;
                 const lista = JSON.parse(localStorage.getItem(txKey) || '[]');
                 lista.push(registro);
                 localStorage.setItem(txKey, JSON.stringify(lista));
 
-                // El saldo principal del dashboard es siempre el de la caja en ARS.
-                // Si la transferencia salió de la caja en USD, no lo tocamos acá — se refleja al entrar a dolares.html.
+                // El saldo principal es siempre el de ARS; una transferencia en USD se refleja en dolares.html.
                 if (origenTransferencia === 'ARS') {
                     u.saldo = data.nuevoSaldo;
                     localStorage.setItem('usuarioLogueado', JSON.stringify(u));
@@ -3534,7 +3439,6 @@
                 document.getElementById('nuevoSaldoDisplay').textContent = fmt;
                 playSound('egreso');
                 mostrarPaso(3);
-                // Show add-to-contacts modal only if not already saved
                 if (!esFavorito(destinatarioCbuSeleccionado)) {
                     _cbuPendienteContacto    = destinatarioCbuSeleccionado;
                     _nombrePendienteContacto = nombreDest;
@@ -3563,7 +3467,6 @@
             if (e.target === this) cerrarModal();
         });
 
-        // ── EDICIÓN DE ALIAS ──────────────────────────────────────────────
         function mostrarEditAlias() {
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
             document.getElementById('inputAlias').value = u.alias || '';
@@ -3609,14 +3512,9 @@
             }
         }
 
-        // ── TARJETA GEMELA EN USD ────────────────────────────────────────────
-        // (cuentaUsdDashboard y _cuentaUsdDashboardPromise se declaran antes del INIT)
-
         function fmtUsdCard(v) { return 'US$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-        // Aviso de cuota de préstamo (estilo "banner destacado", inspirado en el de Naranja X
-        // pero con la identidad de tuo). Se recalcula en cada carga del dashboard, así que
-        // reaparece mientras la cuota siga vigente/vencida — no queda descartado para siempre.
+        // Se recalcula en cada carga: reaparece mientras la cuota siga vigente o vencida.
         async function cargarBannerCuota() {
             const banner = document.getElementById('bannerCuota');
             const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
@@ -3668,10 +3566,7 @@
                 const productos = await res.json();
                 cuentaUsdDashboard = Array.isArray(productos) ? productos.find(p => p.moneda === 'USD') : null;
 
-                // El saldo en ARS que se muestra al cargar la página viene de localStorage (foto
-                // del último login) — si mientras tanto llegó una transferencia de otro banco, o
-                // simplemente pasó el tiempo, puede estar desactualizado. Acá se pide el valor real
-                // y, si difiere, se corrige tanto en pantalla como en el localStorage guardado.
+                // El saldo inicial sale de localStorage (último login) y puede estar desactualizado.
                 const cuentaArs = Array.isArray(productos) ? productos.find(p => p.moneda === 'ARS') : null;
                 if (cuentaArs && cuentaArs.saldo !== undefined && cuentaArs.saldo !== null) {
                     const saldoReal = Number(cuentaArs.saldo);
@@ -3698,7 +3593,7 @@
             const claseSalida  = esUsd ? 'pos-left'  : 'pos-right'; // hacia qué lado se va la que sale
 
             if (entrante.classList.contains('is-active')) {
-                // ya estamos en esa vista, no animar de nuevo
+                // ya estamos en esa vista
             } else {
                 saliente.classList.remove('is-active', 'pos-left', 'pos-right');
                 saliente.classList.add(claseSalida);
@@ -3799,7 +3694,6 @@
             }
         });
 
-        // ── ONBOARDING ──────────────────────────────────────────────────
         const OB_STEPS = [
             {
                 title: '¡Bienvenido/a a tuo!',
@@ -3843,11 +3737,9 @@
             document.getElementById('obTitle').textContent = step.title;
             document.getElementById('obDesc').textContent  = step.desc;
             document.getElementById('obBtnNext').textContent = _obStep === total - 1 ? '¡Listo!' : 'Siguiente';
-            // Dots
             document.getElementById('obDots').innerHTML = OB_STEPS.map((_, i) =>
                 `<div class="ob-dot${i === _obStep ? ' active' : ''}"></div>`
             ).join('');
-            // Spotlight
             const spotlight = document.getElementById('obSpotlight');
             const backdrop  = document.getElementById('obBackdrop');
             if (_obScrollHandler) { window.removeEventListener('scroll', _obScrollHandler); _obScrollHandler = null; }
@@ -3867,9 +3759,7 @@
                     posicionarSpotlight();
                     spotlight.classList.add('visible');
                     backdrop.classList.remove('dim');
-                    // Si la sección no está a la vista, la pantalla se desplaza sola hasta ella;
-                    // mientras dura ese scroll, el spotlight se recalcula en cada frame para que
-                    // "acompañe" a la sección en vez de quedar apuntando a donde estaba antes.
+                    // Mientras dura el scroll, el spotlight se recalcula en cada frame para seguir a la sección.
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     _obScrollHandler = () => posicionarSpotlight();
                     window.addEventListener('scroll', _obScrollHandler, { passive: true });
@@ -3908,7 +3798,6 @@
             navTo(href);
         });
 
-        // ── AUTO LOGOUT ──────────────────────────────────────────────────
         let _idleWarn = null, _idleFinal = null, _cdInterval = null;
         const IDLE_WARN_MS  = 150000; // 2.5 min → mostrar aviso
         const IDLE_TOTAL_MS = 180000; // 3 min → cerrar sesión
@@ -3941,7 +3830,6 @@
         );
         resetIdle();
 
-        // ── PULL TO REFRESH ──────────────────────────────────────────────
         let _pulling = false, _pullAcc = 0;
         const indicator = document.getElementById('pullIndicator');
         const pullText  = document.getElementById('pullText');
@@ -3965,13 +3853,10 @@
             });
         }
 
-        // Un gesto que empieza dentro de un modal es para scrollear el modal, no la página:
-        // sin esto, estando arriba de todo, arrastrar hacia abajo la lista de un modal
-        // disparaba el refresh de fondo.
+        // Un gesto que empieza dentro de un modal es para scrollear el modal, no para refrescar.
         const SELECTOR_OVERLAYS = '.modal-overlay, .confirm-overlay, #onboardingOverlay, #autoLogoutModal';
         const dentroDeOverlay = (target) => !!(target instanceof Element && target.closest(SELECTOR_OVERLAYS));
 
-        // Desktop: rueda del mouse cuando ya está en el tope
         window.addEventListener('wheel', e => {
             if (_pulling || dentroDeOverlay(e.target)) return;
             if (window.scrollY === 0 && e.deltaY < 0) {
@@ -3985,7 +3870,6 @@
             }
         }, { passive: true });
 
-        // Mobile/trackpad táctil
         let _touchY0 = 0;
         let _touchEnOverlay = false;
         window.addEventListener('touchstart', e => {
@@ -4005,10 +3889,7 @@
             if (!_pulling) { _pullAcc = 0; indicator.classList.remove('visible'); }
         }, { passive: true });
 
-        // ── ANIMAR ENTRADA DE MODALES ──────────────────────────────────────
-        // En vez de agregar la animación en cada uno de los ~10 lugares que hoy abren un modal
-        // (algunos con style.display='flex', otros con classList.add('open')), un observador
-        // detecta cuándo un overlay pasa a visible y le agrega la clase que dispara el fade/scale.
+        // Un observador anima cualquier overlay que pase a visible, sin importar cómo se abrió.
         (function animarModales() {
             document.querySelectorAll('.modal-overlay, .confirm-overlay').forEach(overlay => {
                 let visible = false;
@@ -4028,17 +3909,14 @@
             });
         })();
 
-        // ── EXPORT PDF ───────────────────────────────────────────────────
         function exportarPDF() {
             const u = _usuarioHist || JSON.parse(localStorage.getItem('usuarioLogueado'));
 
-            // Collect data: prefer filtered historial, fallback to recent cache
             let datos = _todasPropias.length ? aplicarFiltros(_todasPropias) : [];
             if (!datos.length && window._txsCache) {
                 datos = deduplicarTxs((window._txsCache || []).filter(t => esMiCbu(t.cbuOrigen) || esMiCbu(t.cbuDestino)));
             }
 
-            // If still empty, auto-fetch then generate
             if (!datos.length) {
                 showToast('Cargando datos...', 'info');
                 fetch(`/api/historial?minutos=525600&cbu=${cbusPropios().join(',')}`)
@@ -4063,7 +3941,7 @@
                 showToast('Libreria PDF no disponible. Intentalo en unos segundos.', 'error'); return;
             }
 
-            // jsPDF no soporta tildes en Helvetica — normalizamos todo
+            // jsPDF no soporta tildes en Helvetica.
             const sa = str => (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x00-\x7F]/g, '');
             const fmtAmt = v => Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
             const fmtDate = raw => {
@@ -4081,7 +3959,6 @@
                 const W = doc.internal.pageSize.getWidth();
                 let y = 50;
 
-                // Cabecera
                 doc.setFillColor(0, 82, 255);
                 doc.rect(0, 0, W, 80, 'F');
                 doc.setFont('helvetica', 'bold');
@@ -4096,7 +3973,6 @@
                 doc.text(`Generado: ${fmtDate(new Date())}`, W - 40, 70, { align: 'right' });
                 y = 104;
 
-                // Totales resumen
                 const enviados  = datos.filter(t => t.cbuOrigen === u?.cbu && t.cbuOrigen !== 'DEPOSITO');
                 const recibidos = datos.filter(t => t.cbuDestino === u?.cbu);
                 const totalE = enviados.reduce((s,t)  => s + Number(t.importe), 0);
@@ -4114,7 +3990,6 @@
                 doc.text(`+$ ${fmtAmt(totalR)}`, 40 + (W-80)/2 + 14, y + 34);
                 y += 62;
 
-                // Cabecera tabla
                 doc.setFillColor(30, 30, 30);
                 doc.rect(40, y, W - 80, 20, 'F');
                 doc.setFontSize(8); doc.setTextColor(255); doc.setFont('helvetica', 'bold');
@@ -4123,7 +3998,6 @@
                 doc.text('IMPORTE', W - 44, y + 13, { align: 'right' });
                 y += 26;
 
-                // Filas
                 doc.setFontSize(8.5);
                 datos.forEach((t, i) => {
                     if (y > 780) { doc.addPage(); y = 40; }
@@ -4165,7 +4039,6 @@
                     y += 26;
                 });
 
-                // Pie
                 doc.setDrawColor(220); doc.setLineWidth(0.5);
                 doc.line(40, y + 8, W - 40, y + 8);
                 doc.setFontSize(7.5); doc.setTextColor(170); doc.setFont('helvetica', 'normal');
@@ -4181,7 +4054,6 @@
             }
         }
 
-        // ── BANNER MANTENIMIENTO BC ───────────────────────────────────────
         function mostrarBannerMantenimiento(show) {
             let banner = document.getElementById('bannerBC');
             if (!banner && show) {
@@ -4195,7 +4067,6 @@
             }
         }
 
-        // ── RIPPLE extendido ─────────────────────────────────────────────
         function addRipple(btn) {
             btn.addEventListener('click', function(e) {
                 const circle = document.createElement('span');
@@ -4210,12 +4081,10 @@
         }
         document.querySelectorAll('.btn-next').forEach(addRipple);
 
-        // ── QR DEL CBU ──────────────────────────────────────────────────
         let _qrCbuActual = null;
         let _qrMontoActual = undefined;
         let _qrPollInterval = null;
-        // Decodifica el jti de un JWT que NOSOTROS firmamos — no hace falta verificar la
-        // firma, solo leer el payload para saber qué QR puntual está en pantalla.
+        // Es un JWT nuestro: alcanza con leer el payload, sin verificar la firma.
         function decodificarJtiDeJwt(jwt) {
             try {
                 const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
@@ -4234,8 +4103,7 @@
             modal.classList.add('open');
             await renderizarQr();
         }
-        // El monto es opcional: si el campo está vacío se vuelve a firmar el QR sin monto
-        // (igual que siempre), así el usuario puede pedirlo o sacarlo cuando quiera.
+        // Con el campo vacío se firma el QR sin monto.
         async function renderizarQr() {
             clearInterval(_qrPollInterval);
             document.getElementById('qrContenidoUsado').style.display = 'none';
@@ -4247,13 +4115,12 @@
             const contenidoQr = await obtenerContenidoQr(_qrCbuActual, monto);
             canvas.innerHTML = '';
             if (typeof QRCode !== 'undefined') {
-                // Nivel L y 220px: el JWT firmado es ~10x más largo que un CBU, así los módulos siguen siendo legibles
+                // El JWT es ~10x más largo que un CBU: nivel L y 220 px mantienen legibles los módulos.
                 new QRCode(canvas, { text: contenidoQr, width: 220, height: 220, colorDark: '#1A1A1B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
             } else {
                 canvas.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.82rem;">Cargando QR…</div>';
             }
-            // QR de un solo uso: si logramos firmar (hay jti), nos fijamos cada 2s si ya lo
-            // escanearon para cerrarlo en pantalla — alternativa a Realtime (ver memoria del proyecto).
+            // QR de un solo uso: polling cada 2 s mientras está en pantalla.
             const jti = decodificarJtiDeJwt(contenidoQr);
             if (jti) iniciarPollingQrPropio(jti);
         }
@@ -4298,13 +4165,11 @@
             if (e.target === this) cerrarQR();
         });
 
-        // ── ESCANEAR QR PARA PAGAR ──────────────────────────────────────
         let _qrStream = null;
         let _qrEscaneando = false;
         let _qrUltimoFrame = 0;
 
-        // Botón flotante de la pantalla principal: abre el modal de transferencia (para tener
-        // dónde mostrar el destinatario una vez escaneado) y directo encima la cámara.
+        // Abre la transferencia para tener dónde mostrar el destinatario escaneado.
         function abrirEscanerQrDesdeHome() {
             abrirModalTransferencia();
             abrirEscanerQr();
@@ -4328,7 +4193,7 @@
                 showToast('No pudimos acceder a la cámara. Revisá los permisos del navegador.', 'error');
                 return;
             }
-            // Si el usuario cerró el escáner mientras el navegador le pedía permiso, no dejamos la cámara prendida
+            // El usuario pudo cerrar el escáner mientras el navegador pedía permiso.
             if (modal.style.display !== 'flex') { stream.getTracks().forEach(t => t.stop()); return; }
             _qrStream = stream;
             const video = document.getElementById('qrScanVideo');
@@ -4352,7 +4217,7 @@
         function escanearFrameQr(ts) {
             if (!_qrEscaneando) return;
             const video = document.getElementById('qrScanVideo');
-            // ~8 lecturas por segundo alcanzan y evitan recalentar el celular decodificando cada frame
+            // ~8 lecturas por segundo alcanzan y no recalientan el celular.
             if (ts - _qrUltimoFrame >= 120 && video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth) {
                 _qrUltimoFrame = ts;
                 const escala = Math.min(1, 800 / video.videoWidth);
@@ -4364,8 +4229,7 @@
                 const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const codigo = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
                 if (codigo && codigo.data) {
-                    // Señal visual de éxito antes de cerrar — sin esto el escáner se cerraba de
-                    // golpe y no quedaba claro que sí se había detectado el código.
+                    // Sin esta señal no quedaba claro que el código se había detectado.
                     _qrEscaneando = false;
                     document.getElementById('qrScanMsg').textContent = '¡Código detectado!';
                     document.getElementById('qrScanSuccess').classList.add('visible');
@@ -4380,9 +4244,7 @@
             requestAnimationFrame(escanearFrameQr);
         }
 
-        // Precarga el paso 1 con lo que trae el QR y reusa buscarDestinatario(), que resuelve el nombre real
-        // en el Banco Central y se lo muestra al usuario antes de confirmar: un QR (verificado o no) nunca
-        // manda plata solo, igual que tipear un CBU a mano. Nunca se interpola texto del QR en un toast.
+        // Un QR nunca manda plata solo: buscarDestinatario() muestra el nombre real antes de confirmar.
         async function procesarQrEscaneado(texto) {
             let resultado;
             try {
@@ -4390,8 +4252,7 @@
                 const res = await fetch('/api/qr/verificar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // idPersona: quién escaneó, para el "aviso de lectura" al banco que emitió el QR
-                    // (le muestra "Fulano escaneó tu QR" al dueño) — ver prompt-aviso-lectura-qr.md.
+                    // Para el aviso de lectura al banco que emitió el QR.
                     body: JSON.stringify({ qr: texto, idPersona: u ? u.id : undefined })
                 });
                 resultado = await res.json();
@@ -4412,7 +4273,7 @@
 
             document.getElementById('inputBusqueda').value = claims.cbu;
             await buscarDestinatario();
-            if (destinatarioCbuSeleccionado !== claims.cbu) return; // no se encontró: buscarDestinatario ya mostró el error
+            if (destinatarioCbuSeleccionado !== claims.cbu) return; // buscarDestinatario ya mostró el error
 
             if (claims.monto) {
                 const inputImporte = document.getElementById('inputImporte');
@@ -4428,7 +4289,6 @@
             if (e.target === this) cerrarEscanerQr();
         });
 
-        // ── EXPORT CSV ──────────────────────────────────────────────────
         function exportarCSV() {
             const u = _usuarioHist || JSON.parse(localStorage.getItem('usuarioLogueado'));
             const datos = _todasPropias.length ? aplicarFiltros(_todasPropias) : [];
@@ -4463,7 +4323,7 @@
 
     </script>
 
-    <!-- ── ASISTENTE DE IA ─────────────────────────────────────────────── -->
+    <!-- ASISTENTE DE IA -->
     <button class="asistente-fab" id="asistenteFab" onclick="abrirAsistente()" aria-label="Abrir asistente">💬</button>
     <button class="qr-scan-bar" id="qrFab" onclick="abrirEscanerQrDesdeHome()" aria-label="Escanear QR">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
@@ -4488,9 +4348,7 @@
     </div>
 
     <script>
-        // ── ASISTENTE DE IA: catálogo + lógica de chat ─────────────────────
-        // 'ia'   -> se manda como si el usuario lo hubiera tecleado (dispara tools reales en el backend)
-        // 'guia' -> respuesta fija, sin costo, sin llamar al backend
+        // 'ia' se manda como si el usuario lo tecleara; 'guia' es una respuesta fija que no llama al backend.
         const CATALOGO_ASISTENTE = [
             { cat: '💰 Mi cuenta', opciones: [
                 { texto: 'Ver mi saldo', modo: 'ia' },

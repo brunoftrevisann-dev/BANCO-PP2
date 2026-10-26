@@ -17,10 +17,7 @@ function normalizarParaAlias(texto) {
 
 const esperar = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Intenta asignar un alias a una cuenta USD recién creada. Si el candidato base ya está en uso,
-// prueba una vez más con un sufijo numérico. Ante un error que no sea "alias en uso" (puede ser
-// que el Banco Central todavía no haya terminado de propagar la cuenta recién creada) reintenta
-// una vez más antes de rendirse. Si todo falla, devuelve null (el usuario lo asigna a mano después).
+// Reintenta una vez ante errores que no sean 409: el Banco Central puede no haber propagado la cuenta todavía.
 async function intentarAsignarAliasUsd(cbu, nombre, apellido) {
   const base = `${normalizarParaAlias(nombre)}.${normalizarParaAlias(apellido)}.usd`;
   const candidatos = [base, `${base}.${Math.floor(100 + Math.random() * 900)}`];
@@ -38,7 +35,7 @@ async function intentarAsignarAliasUsd(cbu, nombre, apellido) {
           body: JSON.stringify({ alias })
         });
         if (res.ok) return alias;
-        if (res.status === 409) break; // alias en uso: probar el siguiente candidato, no reintentar este
+        if (res.status === 409) break; // alias en uso: probar el siguiente candidato
         if (intento === 1) { await esperar(600); continue; }
         console.error(`No se pudo asignar alias USD "${alias}" a ${cbu}: HTTP ${res.status}`);
       } catch (err) {
@@ -50,16 +47,8 @@ async function intentarAsignarAliasUsd(cbu, nombre, apellido) {
   return null;
 }
 
-// obtenerPersonas (GET /api/personas), obtenerRoles (GET /api/personas/:id/roles) y
-// crearPersona (POST /api/personas) se eliminaron: código muerto sin ningún caller en el
-// frontend, y crearPersona además insertaba lo que mandara el body sin ninguna validación —
-// en vez de protegerlos con requireAuth, se borraron junto con sus rutas en app.js.
-
 exports.obtenerProductos = async (req, res) => {
   try {
-    // El :id de la URL ya no se usa para decidir de quién son los productos — siempre los
-    // propios, de la sesión verificada (antes cualquiera podía pedir los productos de
-    // cualquier otra persona con solo cambiar el :id en la URL).
     const productos = await Persona.getProductos(req.idPersona);
     if (productos.length === 0) return res.status(404).json({ error: 'Persona no encontrada o sin productos' });
     res.json(productos);
@@ -79,8 +68,7 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
 
-    // Aviso de nuevo dispositivo: nunca bloquea la respuesta del login, y nunca se manda en
-    // el primer login de la cuenta (todavía no hay ningún dispositivo conocido con qué comparar).
+    // En el primer login no se avisa: todavía no hay dispositivos conocidos con qué comparar.
     Persona.registrarDispositivo(persona.id, deviceId, dispositivoDescripcion)
       .then(({ tenia_dispositivos, es_nuevo }) => {
         if (tenia_dispositivos && es_nuevo && persona.email) {
@@ -95,10 +83,7 @@ exports.login = async (req, res) => {
       })
       .catch(e => console.error('Error registrando dispositivo:', e.message));
 
-    // Sesión real: antes cada request mandaba idPersona/cbu "a mano" y el server confiaba
-    // ciegamente en eso. Ahora se firma un JWT (HS256, utils/sesion.js) y se manda en una
-    // cookie httpOnly — el navegador la adjunta solo en cada fetch del mismo origen, así que
-    // el resto de las 14 páginas no necesita ningún cambio para seguir autenticadas.
+    // El navegador adjunta la cookie httpOnly en cada fetch del mismo origen.
     setCookieSesion(res, await firmarSesion(persona.id));
 
     res.json(persona);
@@ -114,10 +99,7 @@ exports.logout = async (req, res) => {
 
 exports.obtenerHistorial = async (req, res) => {
   const minutos = Math.min(parseInt(req.query.minutos) || 30, 1440);
-  // Antes esto devolvía la tabla Transacciones entera (de todos los usuarios del banco) a
-  // cualquiera que llamara al endpoint, confiando en un ?cbu= que mandaba el cliente (con lo
-  // que además se podía pedir el historial de CUALQUIER otro CBU). Ahora los CBU se resuelven
-  // del lado del servidor a partir de la sesión — nunca de lo que mande el cliente.
+  // Los CBU salen de la sesión, nunca de lo que mande el cliente.
   let cbus;
   try {
     const productos = await Persona.getProductos(req.idPersona);
@@ -127,7 +109,6 @@ exports.obtenerHistorial = async (req, res) => {
   }
   if (cbus.length === 0) return res.json([]);
   try {
-    // 1. Sincronizar transacciones recientes desde BC API al local DB
     const response = await fetchBC(`${process.env.BANCO_URL}/transactions?minutos=${minutos}`, {
       headers: { 'x-api-key': process.env.BANCO_TOKEN, 'x-environment': process.env.BANCO_ENV }
     });
@@ -140,7 +121,6 @@ exports.obtenerHistorial = async (req, res) => {
   } catch { /* BC puede estar caído, continuamos con datos locales */ }
 
   try {
-    // 2. Devolver, desde la DB local, solo los movimientos de los CBU pedidos
     const propias = await Persona.getTransaccionesPorCbu(cbus);
     res.json(propias);
   } catch (error) {
@@ -153,10 +133,9 @@ exports.buscarPersona = async (req, res) => {
     const { tipo, valor, moneda } = req.query;
     if (!tipo || !valor) return res.status(400).json({ error: 'tipo y valor requeridos' });
     if (tipo !== 'cbu' && tipo !== 'alias') return res.status(400).json({ error: 'tipo debe ser cbu o alias' });
-    // La caja en ARS se busca en /persons; cualquier otra moneda (ej. USD) vive en /accounts
+    // La caja en ARS vive en /persons; cualquier otra moneda, en /accounts.
     const recurso = moneda && moneda !== 'ARS' ? 'accounts' : 'persons';
-    // El alias en el Banco Central es sensible a mayúsculas/minúsculas; se normaliza a minúscula
-    // para que no falle por autocapitalización del navegador o por cómo lo haya tipeado el usuario.
+    // El Banco Central distingue mayúsculas; el navegador suele autocapitalizar.
     const valorBusqueda = tipo === 'alias' ? valor.toLowerCase() : valor;
     const url = tipo === 'cbu'
       ? `${process.env.BANCO_URL}/${recurso}/${encodeURIComponent(valorBusqueda)}`
@@ -165,7 +144,6 @@ exports.buscarPersona = async (req, res) => {
       headers: { 'x-api-key': process.env.BANCO_TOKEN, 'x-environment': process.env.BANCO_ENV }
     });
     const data = await response.json();
-    // Si la BC API no devuelve DNI, enriquecer con datos de la base local
     if (response.ok && data.cbu && !data.dni) {
       try {
         const local = await Persona.getByCbu(data.cbu);
@@ -180,9 +158,7 @@ exports.buscarPersona = async (req, res) => {
   }
 };
 
-// Dado el cbu de un destinatario, indica si esa misma persona (cliente local de tuo)
-// también tiene una cuenta abierta en la otra moneda, para ofrecer transferirle a esa en su lugar.
-// Cuentas de otros bancos (resueltas solo vía Banco Central, sin fila local) no tienen equivalente: disponible=false.
+// Las cuentas de otros bancos no tienen fila local, así que nunca tienen equivalente.
 exports.otraMonedaPersona = async (req, res) => {
   try {
     const { cbu, monedaActual } = req.query;
@@ -211,18 +187,12 @@ exports.transferir = async (req, res) => {
 
     const cuentaOrigen = await Persona.getByCbu(cbuOrigen);
     if (!cuentaOrigen) return res.status(404).json({ error: 'Cuenta origen no encontrada' });
-    // Antes cualquiera autenticado podía poner el cbuOrigen de OTRA persona y vaciarle la
-    // cuenta — el server nunca chequeaba que la cuenta de origen fuera la suya.
     if (cuentaOrigen.id_persona !== req.idPersona)
       return res.status(403).json({ error: 'No podés transferir desde una cuenta que no es tuya' });
     if (Number(cuentaOrigen.saldo) < Number(importe))
       return res.status(422).json({ error: 'Saldo insuficiente' });
 
-    // Si el destino es una cuenta propia de tuo, se conoce su moneda real de antemano — nunca
-    // se movía plata 1:1 entre monedas distintas (ej. transferir pesos a una cuenta en dólares
-    // ajena) sin pasar por cambiarDivisa ni ninguna conversión: se acreditaba el mismo número
-    // en la otra moneda, plata gratis. Para un cbu de otro banco esto no se puede chequear acá
-    // (no sabemos su moneda de antemano), queda del lado del Banco Central.
+    // Solo se puede chequear con cuentas de tuo; la moneda de un cbu de otro banco la valida el Banco Central.
     const cuentaDestino = await Persona.getByCbu(cbuDestino);
     if (cuentaDestino && cuentaDestino.moneda !== cuentaOrigen.moneda)
       return res.status(400).json({ error: 'No podés transferir entre cuentas de monedas distintas' });
@@ -246,9 +216,7 @@ exports.transferir = async (req, res) => {
       return res.status(422).json({ error: bcData.motivoRechazo || 'Transferencia rechazada por el banco central', estado: bcData.estado });
     }
 
-    // Débito + crédito atómicos (lockean las dos cuentas y recién ahí mueven la plata) —
-    // antes esto se calculaba a partir del saldo leído más arriba, así que dos transferencias
-    // simultáneas desde la misma cuenta podían perder una de las dos (lost update).
+    // Lockea las dos cuentas antes de mover la plata, para que dos transferencias simultáneas no se pisen.
     let nuevoSaldo;
     try {
       ({ nuevoSaldoOrigen: nuevoSaldo } = await Persona.debitarYAcreditar(cbuOrigen, cbuDestino, Number(importe)));
@@ -257,7 +225,6 @@ exports.transferir = async (req, res) => {
       throw error;
     }
 
-    // Guardar descripcion en DB para ambas partes (tuo→tuo)
     if (bcData._id && descripcion) {
       await Persona.upsertTransaccion({
         ...bcData,
@@ -299,7 +266,7 @@ exports.cotizacionDolar = async (req, res) => {
   }
 };
 
-// Paso 1: verifica que dni/telefono/email coincidan con la persona logueada y manda el código por email
+// Paso 1 de la apertura en USD: valida los datos contra la persona logueada y manda el código.
 exports.solicitarAperturaUsd = async (req, res) => {
   try {
     const idPersona = req.idPersona;
@@ -323,7 +290,7 @@ exports.solicitarAperturaUsd = async (req, res) => {
   }
 };
 
-// Paso 2: confirma el código y recién ahí abre la cuenta en el Banco Central
+// Paso 2: recién con el código confirmado se abre la cuenta en el Banco Central.
 exports.abrirCuentaUsd = async (req, res) => {
   try {
     const idPersona = req.idPersona;
@@ -352,7 +319,7 @@ exports.abrirCuentaUsd = async (req, res) => {
     if (!bcRes.ok) return res.status(bcRes.status).json(bcData);
     if (!bcData.cbu) return res.status(502).json({ error: 'El Banco Central no devolvió los datos de la cuenta USD' });
 
-    // El Banco Central no asigna alias solo al abrir la cuenta: se lo generamos y asignamos acá
+    // El Banco Central no asigna alias al abrir la cuenta.
     const alias = bcData.alias || await intentarAsignarAliasUsd(bcData.cbu, persona.nombre, persona.apellido);
 
     const cuenta = await Persona.crearCuentaUsd(idPersona, bcData.cbu, alias);
@@ -378,7 +345,7 @@ exports.cambiarDivisa = async (req, res) => {
       return res.status(400).json({ error: 'direccion debe ser compra o venta' });
     if (Number(importeUsd) <= 0) return res.status(400).json({ error: 'El importe debe ser mayor a 0' });
 
-    // Compra/venta de USD siempre usa la cotización MEP ("bolsa" en dolarapi)
+    // Compra y venta usan siempre el MEP ("bolsa" en dolarapi).
     const rateRes = await fetchBC('https://dolarapi.com/v1/dolares/bolsa');
     if (!rateRes.ok) return res.status(502).json({ error: 'No se pudo obtener la cotización del dólar' });
     const { compra, venta } = await rateRes.json();
@@ -393,8 +360,7 @@ exports.cambiarDivisa = async (req, res) => {
     const txId = 'CAMBIO-' + require('crypto').randomUUID();
     const createdAt = new Date().toISOString();
 
-    // Se registra en el historial igual que un depósito o transferencia. Si falla el guardado,
-    // no bloqueamos la respuesta: la plata ya se movió correctamente entre las dos cuentas.
+    // Si falla el guardado no se corta la respuesta: la plata ya se movió.
     await Persona.upsertTransaccion({
       _id: txId,
       cbuOrigen: direccion === 'compra' ? resultado.cbuArs : resultado.cbuUsd,
@@ -426,18 +392,14 @@ exports.actualizarAlias = async (req, res) => {
     if (!/^[a-zA-Z0-9.\-]+$/.test(alias))
       return res.status(400).json({ error: 'El alias solo puede contener letras, números, puntos y guiones' });
 
-    // Antes cualquiera autenticado podía cambiarle el alias a la cuenta de otra persona con
-    // solo mandar su cbu — se chequea pertenencia ANTES de tocar nada en el Banco Central.
+    // Se chequea pertenencia antes de tocar nada en el Banco Central.
     const cuentaPropia = await Persona.getByCbu(cbu);
     if (!cuentaPropia) return res.status(404).json({ error: 'Cuenta no encontrada' });
     if (cuentaPropia.id_persona !== req.idPersona)
       return res.status(403).json({ error: 'Esa cuenta no es tuya' });
 
-    // El Banco Central distingue mayúsculas/minúsculas en el alias: se normaliza a minúscula
-    // para que después siempre se pueda encontrar sin importar cómo lo haya tipeado quien busca.
     alias = alias.toLowerCase();
 
-    // La caja en ARS actualiza el alias en /persons; cualquier otra moneda (ej. USD) vive en /accounts
     const recurso = moneda && moneda !== 'ARS' ? 'accounts' : 'persons';
     const bcRes = await fetchBC(`${process.env.BANCO_URL}/${recurso}/${encodeURIComponent(cbu)}/alias`, {
       method: 'PUT',
@@ -466,7 +428,6 @@ exports.actualizarAlias = async (req, res) => {
   }
 };
 
-// Registrar persona con cuenta bancaria
 exports.depositar = async (req, res) => {
   try {
     const { cbu, importe } = req.body;
@@ -476,8 +437,6 @@ exports.depositar = async (req, res) => {
 
     const cuenta = await Persona.getByCbu(cbu);
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
-    // Antes cualquiera autenticado podía acreditarle plata a la cuenta de otra persona con
-    // solo mandar su cbu — no movía su propio saldo, pero sí generaba movimientos falsos.
     if (cuenta.id_persona !== req.idPersona)
       return res.status(403).json({ error: 'Esa cuenta no es tuya' });
 
@@ -534,10 +493,6 @@ exports.verificarCuenta = async (req, res) => {
   }
 };
 
-// sincronizarSaldo (PUT /api/sincronizar-saldo) se eliminó: código muerto sin ningún caller
-// en el frontend, y dejaba que cualquiera autenticado le pusiera CUALQUIER saldo a CUALQUIER
-// cbu con solo mandarlo en el body — ni siquiera chequeaba pertenencia. Ruta borrada en app.js.
-
 const PALABRAS_ALIAS = [
   'sol', 'luna', 'estrella', 'rio', 'mar', 'montana', 'cielo', 'tierra',
   'viento', 'fuego', 'agua', 'piedra', 'flor', 'arbol', 'verde', 'azul',
@@ -549,14 +504,11 @@ function generarAliasRegistro() {
   return `${shuffled[0]}.${shuffled[1]}.${shuffled[2]}`;
 }
 
-// El CBU y el alias los obtiene el servidor del Banco Central: antes los pedía el navegador
-// (vía /api/proxy-banco-central, abierto y sin auth) y los mandaba acá, y se guardaban sin
-// verificar — cualquiera podía registrarse con un CBU inventado o ajeno.
+// El CBU lo pide el servidor al Banco Central: nunca se acepta uno que mande el cliente.
 exports.registrarPersona = async (req, res) => {
   try {
     const { nombre, apellido, dni, email, telefono, fecha_nac, domicilio, password } = req.body;
 
-    // Validar campos requeridos
     if (!nombre || !apellido || !dni || !email || !telefono || !fecha_nac || !domicilio || !password) {
       const faltantes = [];
       if (!nombre) faltantes.push('nombre');

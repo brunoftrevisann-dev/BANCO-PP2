@@ -2,7 +2,6 @@ const db = require('../config/db');
 const moverSaldo = require('../utils/moverSaldo');
 
 const Prestamo = {
-  // CBUs (ARS y USD si tiene) de una persona, para el cálculo de ingreso/egreso
   getCbusPersona: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT cb.cbu, cb.moneda
@@ -14,13 +13,7 @@ const Prestamo = {
     return rows;
   },
 
-  // Ingreso mensual promedio de los últimos 6 meses (ARS + USD convertido a ARS con la
-  // cotización MEP vigente). Deliberadamente NO resta los egresos: mide cuánto entra a las
-  // cuentas propias (depósitos, transferencias recibidas), no un neto. Un gasto grande y
-  // puntual (un traspaso de ahorros, comprar algo caro) no debería arruinar el cupo de
-  // crédito por 6 meses — se parece más a cómo un banco real mide capacidad de pago
-  // (el ingreso/sueldo declarado), no a un balance de caja. Transferencias entre las propias
-  // cuentas (ej. cambio de divisa) no cuentan como ingreso: ambos lados son "propios".
+  // Mide lo que entra, no un neto (un gasto puntual no arruina el cupo); las transferencias entre cuentas propias no cuentan.
   calcularIngresoPromedio: async (idPersona, tasaMepVenta) => {
     const cuentas = await Prestamo.getCbusPersona(idPersona);
     if (cuentas.length === 0) return 0;
@@ -38,9 +31,8 @@ const Prestamo = {
 
     let ingresosArs = 0;
     for (const t of rows) {
-      if (cbus.includes(t.cbu_origen)) continue; // viene de otra cuenta propia (ej. cambio de divisa): no cuenta
-      if (t.cbu_origen === 'PRESTAMO') continue; // el otorgamiento de un préstamo no es "ingreso" — si contara,
-      // pedir un préstamo inflaría el ingreso promedio y con eso el cupo para el próximo préstamo
+      if (cbus.includes(t.cbu_origen)) continue; // otra cuenta propia (ej. cambio de divisa)
+      if (t.cbu_origen === 'PRESTAMO') continue; // si contara, cada préstamo inflaría el cupo del siguiente
       const moneda     = monedaPorCbu[t.cbu_destino] || 'ARS';
       const importeArs = moneda === 'USD' ? Number(t.importe) * tasaMepVenta : Number(t.importe);
       ingresosArs += importeArs;
@@ -48,8 +40,7 @@ const Prestamo = {
     return ingresosArs / 6;
   },
 
-  // % de cuotas ya vencidas pagadas a tiempo o antes. null si nunca tuvo un préstamo
-  // (para no penalizar a alguien sin historial en el cálculo del puntaje).
+  // null si nunca tuvo un préstamo, para no penalizar la falta de historial.
   calcularHistorialPagos: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT COUNT(*) AS total,
@@ -67,8 +58,6 @@ const Prestamo = {
     return Number(rows[0].puntuales) / total;
   },
 
-  // Crea el préstamo (Producto + Prestamo + todas sus Cuotas) en una sola transacción,
-  // mismo patrón BEGIN/COMMIT que Persona.crearCuentaUsd en personaModel.js.
   crearPrestamoConCuotas: async (idPersona, { monto, plazoMeses, tna, cft, cuotaMonto, cuotas }) => {
     const client = await db.connect();
     try {
@@ -91,9 +80,6 @@ const Prestamo = {
       );
       const idPrestamo = prestamoResult.rows[0].id_prestamo;
 
-      // Acreditar el monto del préstamo en la caja de ahorro en ARS — sin esto el préstamo
-      // se cobra en cuotas pero nunca se entregó la plata, algo que se nos pasó en la primera
-      // versión y se detectó recién probando contra una cuenta real.
       const cuentaResult = await client.query(
         `UPDATE Cuentas_Bancarias cb SET saldo = saldo + $1
          FROM Productos pr
@@ -129,7 +115,6 @@ const Prestamo = {
     }
   },
 
-  // Historial completo de préstamos de una persona (activos y cerrados), con progreso
   getPrestamosPersona: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT p.*,
@@ -155,7 +140,6 @@ const Prestamo = {
     return rows;
   },
 
-  // Un préstamo pertenece a la persona que lo pidió (para no dejar ver/operar el de otro)
   esDuenioPrestamo: async (idPrestamo, idPersona) => {
     const { rows } = await db.query(
       `SELECT 1 FROM Prestamos p
@@ -166,7 +150,7 @@ const Prestamo = {
     return rows.length > 0;
   },
 
-  // La próxima cuota pendiente (de cualquier préstamo activo), para el banner del dashboard
+  // Para el banner del dashboard.
   getProximaCuotaPersona: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT c.*, p.id_prestamo
@@ -181,7 +165,6 @@ const Prestamo = {
     return rows[0] || null;
   },
 
-  // Cantidad de cuotas vencidas sin pagar, sumando todos los préstamos activos de la persona
   getCuotasVencidasPersona: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT COUNT(*) AS vencidas
@@ -194,7 +177,7 @@ const Prestamo = {
     return Number(rows[0]?.vencidas || 0);
   },
 
-  // Capital pendiente total (todos los préstamos activos) — lo que se reporta como "monto" al BC
+  // Es lo que se reporta como "monto" al Banco Central.
   getMontoAdeudadoPersona: async (idPersona) => {
     const { rows } = await db.query(
       `SELECT COALESCE(SUM(p.monto), 0) - COALESCE(SUM(cpag.capital_pagado), 0) AS monto_adeudado
@@ -210,8 +193,7 @@ const Prestamo = {
     return Number(rows[0]?.monto_adeudado || 0);
   },
 
-  // Paga la próxima cuota pendiente (no se puede elegir una fuera de orden). Bloquea la cuenta
-  // ARS y la cuota con FOR UPDATE, mismo patrón que Persona.cambiarDivisa en personaModel.js.
+  // Solo la próxima cuota pendiente: no se puede pagar una fuera de orden.
   pagarCuota: async (idPrestamo, idCuota, idPersona) => {
     const client = await db.connect();
     try {
@@ -249,10 +231,7 @@ const Prestamo = {
       if (Number(cuenta.saldo) < Number(cuota.monto))
         throw Object.assign(new Error('Saldo insuficiente'), { code: 'SALDO_INSUFICIENTE' });
 
-      // cuota.fecha_vencimiento llega como objeto Date (columna DATE, pg lo parsea así), no
-      // como string — concatenarle 'T23:59:59' con "+" llamaba a Date.toString() en vez de
-      // toISOString(), daba una fecha inválida, y la comparación de abajo salía siempre false:
-      // ninguna cuota se marcaba PAGADA_ANTICIPADA nunca, pagara cuando pagara.
+      // pg devuelve las columnas DATE como objeto Date, no como string.
       const finDelDiaVencimiento = new Date(cuota.fecha_vencimiento);
       finDelDiaVencimiento.setHours(23, 59, 59, 999);
       const pagadaAntes = new Date() < finDelDiaVencimiento;
@@ -280,9 +259,7 @@ const Prestamo = {
     }
   },
 
-  // Cancelación anticipada total: solo se cobra el capital pendiente, sin los intereses
-  // de las cuotas futuras (sin comisión, default v1). Marca todas las cuotas restantes
-  // como CANCELADA y el préstamo como CANCELADO.
+  // Solo se cobra el capital pendiente, sin intereses futuros ni comisión.
   cancelarAnticipado: async (idPrestamo, idPersona) => {
     const client = await db.connect();
     try {
@@ -340,8 +317,6 @@ const Prestamo = {
     }
   },
 
-  // Usado por el cron: cuotas que vencen en exactamente 3 días, todavía pendientes,
-  // con los datos de la persona para el mail de recordatorio.
   getCuotasPorVencerEn3Dias: async () => {
     const { rows } = await db.query(
       `SELECT c.*, per.id AS id_persona, per.email, per.nombre, per.dni
@@ -356,8 +331,6 @@ const Prestamo = {
     return rows;
   },
 
-  // Usado por el cron: marca como VENCIDA cualquier cuota PENDIENTE cuya fecha ya pasó,
-  // y devuelve los datos necesarios para mandar el mail + reportar al Banco Central.
   marcarCuotasVencidasYObtener: async () => {
     const { rows } = await db.query(
       `UPDATE Cuotas c SET estado = 'VENCIDA'

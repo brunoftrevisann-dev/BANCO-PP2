@@ -7,10 +7,7 @@ async function jose() {
 const obtenerBankCode = () => Number(process.env.BANK_CODE || 12);
 const obtenerKid = () => process.env.QR_KID || 'tuo-1';
 
-// Clave pública de firma — no es secreta, puede vivir en el código (prompt-aviso-lectura-qr.md
-// v2, sección 1). La privada (con "d") ya NO vive en Express/Vercel: se movió a un secret de
-// Supabase (QR_JWT_PRIVATE_KEY) que solo lee la Edge Function qr-firmar. Mismo par de claves
-// de siempre — nunca se compartió públicamente, así que no hay ruptura de compatibilidad.
+// La clave privada vive solo en un secret de Supabase (Edge Function qr-firmar); la pública puede estar acá.
 const CLAVE_PUBLICA_JWK = {
   kty: 'EC', crv: 'P-256',
   x: 'FpUlRhsV90k-HnjgOjjHdmR_BQXAh9cgkNjDZn56YNs',
@@ -21,9 +18,7 @@ function obtenerClavePublicaJwk() {
   return CLAVE_PUBLICA_JWK;
 }
 
-// Firma vía la Edge Function qr-firmar (Supabase), que es la única que tiene acceso a la
-// clave privada. Protegida con un secret compartido propio — no es la clave de firma, solo
-// autoriza a este backend a pedir firmas.
+// El secret compartido solo autoriza a este backend a pedir firmas; no es la clave de firma.
 async function firmarQr({ cbu, alias, monto, moneda }) {
   const secreto = process.env.QR_FIRMAR_INTERNAL_SECRET;
   if (!secreto) throw new Error('QR_FIRMAR_INTERNAL_SECRET no está configurada');
@@ -48,10 +43,7 @@ async function firmarQr({ cbu, alias, monto, moneda }) {
   }
 }
 
-// Verifica un QR con NUESTRA PROPIA clave pública (nunca la de otro banco) — lo usa el
-// endpoint que recibe "avisos de lectura" de otros bancos (prompt-aviso-lectura-qr.md):
-// ahí solo hace falta probar que el QR es nuestro y no venció, no la identidad de quien
-// lo leyó (eso no se puede verificar sin firma del banco lector, y a propósito no se pide).
+// Solo prueba que el QR es nuestro y no venció: la identidad del banco lector no se puede verificar.
 async function verificarQrPropio(jwt) {
   const { jwtVerify, importJWK } = await jose();
   const clavePublica = await importJWK(obtenerClavePublicaJwk(), 'ES256');
@@ -61,8 +53,7 @@ async function verificarQrPropio(jwt) {
   return { cbu: payload.cbu, jti: typeof payload.jti === 'string' ? payload.jti : null };
 }
 
-// Los claims de un QR ajeno se usan para precargar formularios: se devuelven solo los campos
-// esperados y con el tipo esperado, nunca el objeto crudo.
+// Los claims ajenos precargan formularios: solo se devuelven los campos esperados, con su tipo.
 function normalizarClaims(crudo) {
   if (!crudo || typeof crudo.cbu !== 'string' || !/^\d{22}$/.test(crudo.cbu)) return null;
   const claims = { cbu: crudo.cbu };

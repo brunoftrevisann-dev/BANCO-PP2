@@ -7,12 +7,9 @@ const { notificarPrestamoOtorgado, notificarPrestamoSaldado, notificarPrestamoCa
 const round2 = (v) => Math.round(v * 100) / 100;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-// Reglas de negocio confirmadas con el usuario (ver memoria del proyecto, new_requirements_roadmap.md)
 const REFERENCIA_INGRESO_MENSUAL = 1500000; // ARS/mes para los 60 puntos completos de capacidad de pago
 const PISO_RECHAZO_MORA = 100000;           // monto máximo permitido igual con situación BC 3+
-const TOPE_ABSOLUTO_PRESTAMO = 15000000;    // techo fijo de "tuo" (banco digital, entre lo que presta
-                                             // una billetera virtual —Ualá $5-12M— y un banco tradicional
-                                             // grande —$40-100M—) sin importar cuánto dé la fórmula por ingreso
+const TOPE_ABSOLUTO_PRESTAMO = 15000000;    // techo fijo de tuo: entre una billetera (Ualá, $5-12M) y un banco grande ($40-100M)
 const MULTIPLICADORES_BUCKET = { alto: 3, medio: 1.5, bajo: 0.5 };
 const ORDEN_BUCKET = { bajo: 0, medio: 1, alto: 2 };
 const peorBucket = (a, b) => (ORDEN_BUCKET[a] <= ORDEN_BUCKET[b] ? a : b);
@@ -28,8 +25,7 @@ async function obtenerTasaMepVenta() {
   }
 }
 
-// Promedia la TNA de todos los bancos de api.argentinadatos.com para el plazo pedido
-// (default confirmado con el usuario: promedio, no una entidad puntual).
+// Promedio de todos los bancos, no una entidad puntual.
 async function calcularTasaReferencia(plazoMeses) {
   const res = await fetchBC('https://api.argentinadatos.com/v1/finanzas/creditos/prestamosPersonales', {}, 10000);
   if (!res.ok) throw new Error('No se pudo obtener la tasa de referencia de préstamos');
@@ -49,8 +45,7 @@ async function calcularTasaReferencia(plazoMeses) {
   return { tna, cft: null };
 }
 
-// Sistema francés: cuota fija, cada una con su desglose capital/interés (necesario para
-// poder calcular después el pago de una cancelación anticipada).
+// Sistema francés; el desglose capital/interés hace falta para la cancelación anticipada.
 function calcularAmortizacion(monto, tna, plazoMeses) {
   const i = tna / 12;
   const n = plazoMeses;
@@ -79,9 +74,7 @@ function calcularAmortizacion(monto, tna, plazoMeses) {
   return { cuotaMonto: round2(cuotaMonto), cuotas };
 }
 
-// Puntaje interno (0-100) + tope externo de la Central de Deudores. montoSolicitado se usa
-// solo para decidir un eventual rechazo directo en mora seria (situación 3+); pasar 0 al
-// consultar el perfil "en general" (pantalla de perfil crediticio, sin un pedido concreto).
+// montoSolicitado solo decide el rechazo directo por mora (situación 3+); 0 para el perfil general.
 async function calcularPerfil(idPersona, montoSolicitado) {
   const dni = await Persona.getDni(idPersona);
   const tasaMep = await obtenerTasaMepVenta();
@@ -344,6 +337,5 @@ exports.cancelarAnticipado = async (req, res) => {
   }
 };
 
-// Reutilizada por el asistente de IA (asistenteController) para responder "¿cuánto puedo pedir
-// prestado?" sin duplicar la lógica de puntaje.
+// La usa el asistente de IA para responder cuánto se puede pedir prestado.
 exports.calcularPerfil = calcularPerfil;

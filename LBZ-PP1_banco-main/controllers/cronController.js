@@ -3,12 +3,9 @@ const { enviarRecordatorioCuota, enviarCuotaVencida } = require('../utils/mailer
 const { situacionPorVencidas, reportarSituacionBC } = require('../utils/centralDeudores');
 const { notificarCuotaPorVencer, notificarCuotaVencida } = require('../utils/notificaciones');
 
-// Corre una vez por día (Vercel Cron, ver vercel.json): manda los recordatorios de cuota
-// por vencer, escala a "vencida" lo que ya pasó de fecha, y reporta la nueva situación al
-// Banco Central (una vez por persona afectada, no una vez por cuota).
+// Vercel Cron (vercel.json): reporta al Banco Central una vez por persona afectada, no por cuota.
 exports.diario = async (req, res) => {
-  // Defensa en profundidad: el middleware de mantenimiento ya chequea esto mismo, pero el
-  // endpoint no debe quedar público una vez que se saque el mantenimiento.
+  // El middleware de mantenimiento ya lo chequea, pero el endpoint no puede depender de eso.
   if (!process.env.CRON_SECRET || req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'No autorizado' });
   }

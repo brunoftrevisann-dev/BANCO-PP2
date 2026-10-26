@@ -1,8 +1,6 @@
 const fetchConTimeout = require('./fetchConTimeout');
 
-// TNA de financiación con tarjeta de crédito: la publica el BCRA como variable 1215
-// ("Tasa de interés de financiaciones con tarjetas de crédito", % nominal anual, mensual).
-// Mismo criterio que Préstamos y Reservas: tasa de mercado, no una inventada por tuo.
+// TNA de financiación con tarjeta que publica el BCRA (variable 1215): tasa de mercado, no inventada.
 const URL_BCRA = 'https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/1215';
 const TNA_RESPALDO = 0.80;               // si el BCRA no responde (último valor publicado ~80%)
 const CACHE_MS = 6 * 60 * 60 * 1000;     // la serie es mensual: no hace falta pedirla en cada compra
@@ -28,8 +26,7 @@ async function obtenerTnaTarjeta() {
   }
 }
 
-// TEA equivalente con capitalización mensual. No hay comisiones ni seguros, así que el
-// CFT coincide con la TEA.
+// Sin comisiones ni seguros, el CFT coincide con la TEA.
 const teaDesdeTna = (tna) => Math.pow(1 + tna / 12, 12) - 1;
 
 async function obtenerTasasTarjeta() {

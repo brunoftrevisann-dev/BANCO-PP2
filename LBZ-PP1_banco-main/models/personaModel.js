@@ -6,10 +6,7 @@ const moverSaldo = require('../utils/moverSaldo');
 
 const ES_HASH_BCRYPT = /^\$2[aby]\$/;
 
-// Compara una contraseña contra lo que hay guardado. Las cuentas nuevas ya se crean con hash
-// bcrypt; las viejas (de antes de este cambio) siguen en texto plano — se comparan tal cual
-// y, si coincide, se rehashean en el momento (migración perezosa y transparente, sin forzar
-// un reset masivo a nadie).
+// Las cuentas viejas tienen la contraseña en texto plano: si coincide, se rehashea en el momento.
 async function compararYMigrarPassword(password, guardado, idPersona) {
   if (ES_HASH_BCRYPT.test(guardado)) return bcrypt.compare(password, guardado);
   if (password !== guardado) return false;
@@ -28,10 +25,7 @@ function borrarUsuarioAuth(id) {
   });
 }
 
-// Si la creación en Supabase Auth no respondió, el usuario pudo haberse creado igual y quedaría
-// huérfano (sin fila en Personas), bloqueando ese email para siempre. Se borra por el id que
-// generamos nosotros; si todavía no existe (404) se reintenta una vez, por si Supabase seguía
-// procesando el alta. Corre en segundo plano para no demorar la respuesta al usuario.
+// Si Supabase no respondió, el usuario pudo crearse igual; se reintenta una vez por si seguía procesando.
 function limpiarUsuarioAuthHuerfano(id) {
   (async () => {
     for (let intento = 1; intento <= 2; intento++) {
@@ -62,8 +56,7 @@ const Persona = {
   },
 
   findByCredentials: async (email, password) => {
-    // Ya no se puede comparar la contraseña en el WHERE de SQL (bcrypt no es un "=" directo) —
-    // se busca solo por email y se compara/migra en JS con compararYMigrarPassword().
+    // bcrypt no se puede comparar en el WHERE: se busca por email y se compara en JS.
     const query = `
       SELECT p.id, p.nombre, p.apellido, p.dni, p.email, p.telefono, p.direccion, p.password,
              cb.cbu, cb.alias, cb.saldo, cb.moneda,
@@ -97,8 +90,7 @@ const Persona = {
     return rows[0] || null;
   },
 
-  // Incremento atómico: una sola instrucción SQL, Postgres la aplica entera o nada —
-  // dos acreditaciones concurrentes a la misma cuenta nunca se pisan entre sí.
+  // Un solo UPDATE relativo: dos acreditaciones simultáneas no se pisan.
   acreditar: async (cbu, importe) => {
     const { rows } = await db.query(
       'UPDATE Cuentas_Bancarias SET saldo = saldo + $1 WHERE cbu = $2 RETURNING saldo',
@@ -107,12 +99,7 @@ const Persona = {
     return rows[0] ? Number(rows[0].saldo) : null;
   },
 
-  // Débito del origen + crédito del destino en UNA sola transacción, bloqueando ambas
-  // filas con FOR UPDATE antes de tocarlas (mismo patrón que cambiarDivisa/pagarCuota) —
-  // reemplaza el "leer saldo, calcular en JS, pisar con un UPDATE" que tenía transferir()
-  // y que permitía perder plata con dos transferencias simultáneas desde la misma cuenta.
-  // Lockea las dos filas en una sola consulta y en orden por cbu para que dos transferencias
-  // cruzadas (A→B y B→A al mismo tiempo) no puedan deadlockear entre sí.
+  // Lockea las dos filas en una consulta y en orden por cbu, para que A→B y B→A simultáneas no hagan deadlock.
   debitarYAcreditar: async (cbuOrigen, cbuDestino, importe) => {
     const client = await db.connect();
     try {
@@ -154,11 +141,7 @@ const Persona = {
     return rows[0]?.dni || null;
   },
 
-  // Registra (o actualiza) el dispositivo con el que se logueó esta persona. `tenia_dispositivos`
-  // indica si YA existía algún dispositivo conocido para esta cuenta antes de este mismo login
-  // (para no mandar el aviso de "nuevo dispositivo" justo en el primer login de la cuenta, que
-  // siempre parecería "nuevo" sin serlo realmente). `es_nuevo` indica si ESTE dispositivo puntual
-  // no estaba entre los ya conocidos.
+  // tenia_dispositivos evita el aviso de "nuevo dispositivo" en el primer login de la cuenta.
   registrarDispositivo: async (idPersona, deviceId, descripcion) => {
     if (!deviceId) return { tenia_dispositivos: true, es_nuevo: false };
     const previosResult = await db.query(
@@ -181,7 +164,6 @@ const Persona = {
     return rows[0] || null;
   },
 
-  // Verifica que dni/telefono/email coincidan exactamente con los datos ya registrados de esa persona
   verificarDatosPersona: async (idPersona, dni, telefono, email) => {
     const { rows } = await db.query(
       `SELECT id FROM Personas WHERE id = $1 AND dni = $2 AND telefono = $3 AND LOWER(email) = LOWER($4)`,
@@ -209,7 +191,7 @@ const Persona = {
     return rows[0] || null;
   },
 
-  // Crea la caja de ahorro en USD localmente (la cuenta ya fue abierta en el Banco Central antes de llamar esto)
+  // La cuenta ya tiene que estar abierta en el Banco Central.
   crearCuentaUsd: async (idPersona, cbu, alias) => {
     const client = await db.connect();
     try {
@@ -234,7 +216,6 @@ const Persona = {
     }
   },
 
-  // Compra o vende USD moviendo saldo entre la caja ARS y la caja USD de la misma persona
   cambiarDivisa: async (idPersona, direccion, importeUsd, tasaCompra, tasaVenta) => {
     const client = await db.connect();
     try {
@@ -251,8 +232,7 @@ const Persona = {
       const usd = rows.find(r => r.moneda === 'USD');
       if (!ars || !usd) throw Object.assign(new Error('Necesitás una caja en ARS y otra en USD para operar'), { code: 'NO_CUENTA' });
 
-      // importeArs se redondea a centavos: es lo que se mueve de verdad (la columna es DECIMAL(15,2))
-      // y lo que se le muestra al usuario, en vez de un float con 10 decimales.
+      // Se redondea a centavos porque es lo que se mueve y lo que se muestra.
       let importeArs, deltaArs, deltaUsd;
       if (direccion === 'compra') {
         importeArs = Math.round(importeUsd * tasaVenta * 100) / 100;
@@ -304,14 +284,8 @@ const Persona = {
     );
   },
 
-  // Se usa al sincronizar el lote de transacciones que llegan del Banco Central en cada poll de
-  // /api/historial. Antes se procesaba una por una (una conexión + varias consultas cada una, incluso
-  // para las cientos que ya conocíamos de polls anteriores) y eso volvía la carga del historial muy
-  // lenta. Ahora: 1) inserta todo el lote en una sola sentencia, ON CONFLICT DO NOTHING así las que ya
-  // existían no vuelven a tocarse; 2) de las que resultaron genuinamente nuevas, en un solo query
-  // adicional averigua cuáles NO vinieron de una cuenta propia (o sea, llegaron de otro banco) y
-  // recién a esas les acredita el saldo — así nunca se acredita una transferencia tuo→tuo dos veces
-  // (esas ya se acreditan al toque en transferir()) ni se vuelve a acreditar algo ya visto.
+  // Inserta el lote con ON CONFLICT DO NOTHING y solo acredita las nuevas que vienen de otro banco:
+  // las transferencias tuo→tuo ya se acreditaron en transferir().
   sincronizarTransacciones: async (txs) => {
     if (!Array.isArray(txs) || txs.length === 0) return;
     const client = await db.connect();
@@ -356,7 +330,6 @@ const Persona = {
         const setLocales = new Set(locales.map(r => r.cbu));
         for (const r of aprobadas) {
           if (!setLocales.has(r.cbu_origen)) {
-            // El origen no es una cuenta nuestra: vino de otro banco. Acreditamos al destino.
             await client.query('UPDATE Cuentas_Bancarias SET saldo = saldo + $1 WHERE cbu = $2', [r.importe, r.cbu_destino]);
             acreditadas.push(r);
           }
@@ -389,9 +362,7 @@ const Persona = {
     }
   },
 
-  // Antes era getAllTransacciones(): devolvía la tabla Transacciones ENTERA (de todo el banco,
-  // todas las cuentas) a quien pidiera /api/historial — cualquier usuario logueado podía ver
-  // los movimientos de cualquier otro. Ahora exige los cbu de la propia persona (ARS y/o USD).
+  // Exige los cbu de la propia persona: nunca devuelve movimientos de todo el banco.
   getTransaccionesPorCbu: async (cbus) => {
     const { rows } = await db.query(
       'SELECT * FROM Transacciones WHERE cbu_origen = ANY($1) OR cbu_destino = ANY($1) ORDER BY created_at DESC',
@@ -412,6 +383,12 @@ const Persona = {
       descripcion:     r.descripcion || null,
       tipo:            r.tipo || null
     }));
+  },
+
+  verificarPasswordPorId: async (idPersona, password) => {
+    const { rows } = await db.query('SELECT password FROM Personas WHERE id = $1', [idPersona]);
+    if (!rows[0]) return false;
+    return compararYMigrarPassword(password, rows[0].password, idPersona);
   },
 
   verificarPassword: async (email, password) => {
@@ -437,10 +414,7 @@ const Persona = {
     return { nombre: rows[0].nombre, token };
   },
 
-  // Rate limiting: antes no había ningún límite de intentos, así que se podían probar las
-  // 1.000.000 de combinaciones de 6 dígitos a fuerza bruta dentro de la ventana de 5 minutos.
-  // Busca por email primero (no por email+token juntos) para poder contar los intentos
-  // fallidos aunque el código no coincida.
+  // Busca solo por email para contar los intentos fallidos aunque el código no coincida.
   verificarTokenPassword: async (email, token) => {
     const { rows } = await db.query(
       `SELECT id, token_verificacion, token_expira, intentos_verificacion FROM Personas
@@ -482,8 +456,7 @@ const Persona = {
     return rows[0] || null;
   },
 
-  // Mismo rate limiting que verificarTokenPassword: busca por email solo, para poder contar
-  // los intentos fallidos aunque el código no coincida.
+  // Busca solo por email para contar los intentos fallidos aunque el código no coincida.
   verificarToken: async (email, token) => {
     const { rows } = await db.query(
       'SELECT id, token_verificacion, token_expira, intentos_verificacion FROM Personas WHERE email = $1',
@@ -504,12 +477,10 @@ const Persona = {
     return { ok: true };
   },
 
-  // Registrar persona con cuenta bancaria (CBU del Banco Central)
   registrarConCuenta: async (data) => {
     const { nombre, apellido, dni, email, telefono, fecha_nac, domicilio, cbu, alias, password } = data;
 
-    // 1. Crear usuario en Supabase Auth (aparece en el panel de Autenticación). El id lo
-    // generamos acá para poder borrarlo aunque Supabase no llegue a responder.
+    // El id se genera acá para poder borrar el usuario aunque Supabase no llegue a responder.
     const authId = crypto.randomUUID();
     let authRes;
     try {
@@ -524,8 +495,7 @@ const Persona = {
       });
     } catch (err) {
       limpiarUsuarioAuthHuerfano(authId);
-      // Se convierte el AbortError en un error común: si no, registrarPersona lo reportaría
-      // como timeout del Banco Central, que a esta altura ya respondió bien.
+      // Si no, registrarPersona lo reportaría como timeout del Banco Central, que ya respondió bien.
       if (err.name === 'AbortError') throw new Error('Supabase Auth tardó demasiado en responder. Intentá de nuevo.');
       throw err;
     }
@@ -547,8 +517,7 @@ const Persona = {
     try {
       await client.query('BEGIN');
 
-      // 2. Insertar persona en la tabla Personas (password ya hasheada — la que va al
-      // Supabase Auth de arriba es la de verdad, porque esa la tiene que poder usar Supabase)
+      // En Personas va el hash; la contraseña real es la que usa Supabase Auth.
       const passwordHash = await bcrypt.hash(password, 10);
       const personaResult = await client.query(
         `INSERT INTO Personas (nombre, apellido, dni, email, telefono, fecha_nac, direccion, password)
@@ -557,7 +526,6 @@ const Persona = {
       );
       const persona = personaResult.rows[0];
 
-      // 3. Crear producto (Caja de Ahorro) - id_tipo_producto = 1, id_estado_producto = 1
       const productoResult = await client.query(
         `INSERT INTO Productos (id_persona, id_tipo_producto, id_estado_producto)
          VALUES ($1, 1, 1) RETURNING *`,
@@ -565,7 +533,6 @@ const Persona = {
       );
       const producto = productoResult.rows[0];
 
-      // 4. Crear cuenta bancaria con CBU y alias
       const cuentaResult = await client.query(
         `INSERT INTO Cuentas_Bancarias (id_producto, cbu, alias, saldo)
          VALUES ($1, $2, $3, 10000) RETURNING *`,
@@ -589,7 +556,6 @@ const Persona = {
       };
     } catch (error) {
       await client.query('ROLLBACK');
-      // Si la transacción DB falló, eliminar el usuario de Auth para no dejar huérfanos
       await borrarUsuarioAuth(authUser.id || authId).catch(() => {});
       throw error;
     } finally {

@@ -247,7 +247,6 @@
         const u = JSON.parse(localStorage.getItem('usuarioLogueado'));
         if (!u) { navTo('login.html'); }
 
-        // ── FAVORITES UTILS ──
         const AVATAR_COLORS = ['#4338CA','#D97706','#059669','#DB2777','#0284C7','#7C3AED','#DC2626','#10B981','#F59E0B','#0891B2'];
 
         function avatarColor(name) {
@@ -274,7 +273,6 @@
             localStorage.setItem(favKey(), JSON.stringify(getFavoritos().filter(f => f.cbu !== cbu)));
         }
 
-        // ── RENDER ──
         function renderContactos() {
             const lista = getFavoritos();
             const el = document.getElementById('contactsCard');
@@ -308,7 +306,7 @@
                 </div>
             `;
 
-            // Los contactos guardados antes de esta división no tienen moneda guardada: quedan como ARS.
+            // Los contactos guardados sin moneda quedan como ARS.
             const ars = lista.filter(f => f.moneda !== 'USD');
             const usd = lista.filter(f => f.moneda === 'USD');
             let html = '';
@@ -321,7 +319,6 @@
             navTo('dashboard.html?transferir=' + encodeURIComponent(cbu) + '&moneda=' + encodeURIComponent(moneda || 'ARS'));
         }
 
-        // ── ELIMINAR ──
         let _cbuPendiente = null;
         function pedirEliminar(cbu, nombre) {
             _cbuPendiente = cbu;
@@ -340,7 +337,6 @@
             renderContactos();
         }
 
-        // ── NAV ──
         function navTo(url) {
             document.body.classList.add('leaving');
             setTimeout(() => { window.location.href = url; }, 230);
